@@ -1,0 +1,1 @@
+https://lb01.simepar.br/riak/pgw-simepar_telemetricas/mapa_prec_ontem.png

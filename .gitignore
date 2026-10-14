@@ -1,0 +1,83 @@
+# ==============================================================================
+# .gitignore para Proyecto HidroPanel / URL-agep
+# ==============================================================================
+
+# --- Bases de datos y almacenamiento local ---
+# hidrografia.db supera los 370MB y se genera/sincroniza automáticamente
+*.db
+*.sqlite
+*.sqlite3
+*.db-journal
+*.db-wal
+*.db-shm
+
+# --- Binarios y ejecutables compilados ---
+# Ejecutables generados por PyInstaller (compilar_exe.bat)
+*.exe
+*.dll
+*.so
+*.dylib
+*.bin
+
+# --- Artefactos de PyInstaller y empaquetado Python ---
+build/
+dist/
+*.spec
+*.manifest
+
+# --- Caché y artefactos de Python ---
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.eggs/
+
+# --- Entornos virtuales ---
+.venv/
+venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+
+# --- Mapas e imágenes descargadas dinámicamente ---
+# Evita subir los mapas meteorológicos diarios descargados por descargar_mapa_simepar.py
+mapas_simepar/*.png
+!mapas_simepar/.gitkeep
+
+# --- Archivos de registro y temporales ---
+*.log
+logs/
+*.tmp
+*.temp
+tmp/
+
+# --- Variables de entorno y credenciales locales ---
+.env
+.env.local
+.env.*.local
+!*.env.example
+
+# --- IDEs y Editores de código ---
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+*.sublime-project
+*.sublime-workspace
+
+# --- Archivos del sistema operativo ---
+# Windows
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
