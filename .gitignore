@@ -45,12 +45,29 @@ venv.bak/
 mapas_simepar/*.png
 !mapas_simepar/.gitkeep
 
+# --- Datos hidrológicos descargados dinámicamente (ONS / COPEL) ---
+data/*
+!data/.gitkeep
+Areia.txt
+Baixo Iguazu.txt
+Baixo Iguazú.txt
+Capanema.txt
+Cataratas.txt
+Caxias.txt
+OSORIO.txt
+SANTIAGO.txt
+TRACTEBEL*.txt
+segredo.txt
+
+
 # --- Archivos de registro y temporales ---
 *.log
 logs/
 *.tmp
 *.temp
 tmp/
+activar_entorno.bat
+activar_entorno.ps1
 
 # --- Variables de entorno y credenciales locales ---
 .env

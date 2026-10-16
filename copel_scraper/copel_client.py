@@ -18,7 +18,7 @@ class CopelClient:
     """
     BASE_URL = "https://www.copel.com/mhbweb/paginas/bacia-iguacu.jsf"
 
-    def __init__(self, timeout=25):
+    def __init__(self, timeout=35):
         self.timeout = timeout
         self.session = requests.Session()
         self.session.headers.update({

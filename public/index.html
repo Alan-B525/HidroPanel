@@ -2,2349 +2,1167 @@
 <html lang="es" class="h-full">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>HidroPanel | Telemetría y Altura de Ríos</title>
-  
-  <!-- Tailwind CSS -->
-  <script src="https://cdn.tailwindcss.com"></script>
-  
-  <!-- Chart.js & Plugins -->
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1/dist/chartjs-plugin-zoom.min.js"></script>
-  
-  <!-- Leaflet CSS & JS -->
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>HidroPanel | Telemetría Fluvial & Caudales de Represas · Cuenca del Plata</title>
 
-  <!-- Google Fonts -->
+  <!-- Google Fonts: Inter, Space Grotesk, JetBrains Mono, Fraunces -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&family=Space+Grotesk:wght@500;600;700;800&display=swap" rel="stylesheet">
 
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
   <script>
     tailwind.config = {
       darkMode: 'class',
       theme: {
         extend: {
-          fontFamily: { sans: ['Inter', 'sans-serif'] },
+          fontFamily: {
+            sans: ['Inter', 'system-ui', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+            data: ['Space Grotesk', 'sans-serif'],
+            display: ['Fraunces', 'Georgia', 'serif']
+          },
+          colors: {
+            brand: {
+              950: '#071c33',
+              900: '#0b2a4a',
+              800: '#123a5e',
+              700: '#1a4b6d',
+              600: '#2f6690',
+              500: '#0284c7',
+              gold: '#f9b81b'
+            }
+          }
         }
       }
     }
   </script>
+
+  <!-- Chart.js & Plugins -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1/dist/chartjs-plugin-zoom.min.js"></script>
+
+  <!-- Leaflet CSS & JS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+  <!-- Tokens & Estilos Propios -->
+  <link rel="stylesheet" href="css/tokens.css">
+
   <style>
-    /* Scrollbars adaptativas */
+    /* Scrollbars elegantes */
     ::-webkit-scrollbar { width: 6px; height: 6px; }
-    html:not(.dark) ::-webkit-scrollbar-track { background: #f1f5f9; }
-    html:not(.dark) ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+    html:not(.dark) ::-webkit-scrollbar-track { background: #f8fafc; }
+    html:not(.dark) ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 9999px; }
     html:not(.dark) ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
-    
-    .dark ::-webkit-scrollbar-track { background: #090d16; }
-    .dark ::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 4px; }
+    .dark ::-webkit-scrollbar-track { background: #07121e; }
+    .dark ::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 9999px; }
     .dark ::-webkit-scrollbar-thumb:hover { background: #334155; }
 
-    /* Tarjetas de superficie estilo Glass/Card */
-    .glass-card {
-      background: #ffffff;
-      border: 1px solid #e2e8f0;
-      box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05), 0 1px 2px -1px rgba(0, 0, 0, 0.05);
-      transition: background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
-    }
-    .dark .glass-card {
-      background: #0f172a;
-      border: 1px solid #1e293b;
-      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
+    /* Contenedor centralizado para evitar estiramientos desproporcionados */
+    .dashboard-container {
+      max-width: 1240px;
+      width: 100%;
+      margin: 0 auto;
     }
 
-    /* Popups de Leaflet dinámicos según tema */
-    .leaflet-popup-content-wrapper, .leaflet-popup-tip {
-      border-radius: 0.75rem !important;
-      line-height: 1.4 !important;
-      transition: background-color 0.2s ease, color 0.2s ease;
+    /* Tarjetas analíticas */
+    .card-panel {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 0.875rem;
+      box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+      transition: background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
     }
+    .dark .card-panel {
+      background: #0d1a29;
+      border: 1px solid #1e2e42;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+    }
+
+    /* Barra de nivel Nivel-Bar Gauge */
+    .nivel-bar-track {
+      position: relative;
+      height: 16px;
+      border-radius: 9999px;
+      background: #e2e8f0;
+      box-shadow: inset 0 2px 4px rgba(0,0,0,0.06);
+    }
+    .dark .nivel-bar-track {
+      background: #142336;
+      box-shadow: inset 0 2px 4px rgba(0,0,0,0.3);
+    }
+    .nivel-bar-fill {
+      height: 100%;
+      border-radius: 9999px;
+      transition: width 0.6s cubic-bezier(0.16, 1, 0.3, 1), background-color 0.3s ease;
+    }
+
+    /* Popups Leaflet según tema */
     .dark .leaflet-popup-content-wrapper, .dark .leaflet-popup-tip {
-      background: #0f172a !important;
+      background: #0d1a29 !important;
       color: #f1f5f9 !important;
-      border: 1px solid #334155 !important;
-      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.6) !important;
+      border: 1px solid #1e2e42 !important;
     }
     html:not(.dark) .leaflet-popup-content-wrapper, html:not(.dark) .leaflet-popup-tip {
       background: #ffffff !important;
       color: #0f172a !important;
       border: 1px solid #e2e8f0 !important;
-      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.12) !important;
-    }
-    .leaflet-popup-content {
-      margin: 10px 12px !important;
-      line-height: 1.4 !important;
-    }
-    .dark .leaflet-container {
-      background-color: #090d16 !important;
-      font-family: 'Inter', sans-serif !important;
-    }
-    html:not(.dark) .leaflet-container {
-      background-color: #f1f5f9 !important;
-      font-family: 'Inter', sans-serif !important;
     }
 
-    /* Marcadores de estación mejorados en Leaflet */
-    .station-pin-leaflet-wrapper {
-      background: transparent !important;
-      border: none !important;
+    /* Botones activos */
+    .btn-basin-filter.active,
+    .btn-dam-filter.active,
+    .btn-layout.active,
+    .btn-range.active {
+      background-color: #0284c7 !important;
+      color: #ffffff !important;
+      font-weight: 700;
     }
-    .station-pin-container {
-      position: absolute;
-      left: 0;
-      top: 0;
-      transform: translate(-50%, -100%);
-      transform-origin: bottom center;
-      display: inline-flex;
-      flex-direction: column;
-      align-items: center;
-      cursor: pointer;
-      pointer-events: auto;
-      user-select: none;
-      transition: transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1), filter 0.15s ease;
-      white-space: nowrap;
-    }
-    .station-pin-container:hover {
-      transform: translate(-50%, -100%) scale(1.12);
-      z-index: 10000 !important;
-      filter: drop-shadow(0 6px 12px rgba(0, 0, 0, 0.25));
-    }
-    .dark .station-pin-container:hover {
-      filter: drop-shadow(0 6px 16px rgba(0, 0, 0, 0.7));
-    }
+
+    /* Semáforo de estados oficiales */
+    .dot-normal     { background-color: #10b981; }
+    .dot-alerta     { background-color: #ea580c; }
+    .dot-evacuacion { background-color: #dc2626; animation: pulse 1.8s infinite; }
   </style>
 </head>
-<body class="h-full flex flex-col font-sans antialiased overflow-hidden selection:bg-sky-500 selection:text-white bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 transition-colors duration-200">
+<body class="h-full flex flex-col font-sans antialiased overflow-hidden bg-slate-100/70 dark:bg-[#07121e] text-slate-800 dark:text-slate-100 transition-colors duration-200">
 
-  <!-- ENCABEZADO SUPERIOR -->
-  <header class="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 px-4 sm:px-6 py-2.5 flex items-center justify-between z-20 shrink-0 gap-3 shadow-sm dark:shadow-none transition-colors duration-200">
-    <!-- Logotipo y Nombre -->
-    <div class="flex items-center space-x-3 shrink-0">
-      <div class="w-8 h-8 rounded-lg overflow-hidden flex items-center justify-center shadow-md shadow-emerald-700/20 shrink-0" title="Entidad Binacional Yacyretá (EBY)">
-        <img src="icon_eby_symbol.svg" alt="EBY - Entidad Binacional Yacyretá" class="w-full h-full object-contain" />
-      </div>
-      <div>
-        <h1 class="text-base font-bold tracking-tight text-slate-900 dark:text-white leading-tight">HidroPanel</h1>
+  <!-- ============================================================
+       ENCABEZADO INSTITUCIONAL OFICIAL (Entidad Binacional Yacyretá)
+       ============================================================ -->
+  <!-- ============================================================
+       ENCABEZADO INSTITUCIONAL OFICIAL (Entidad Binacional Yacyretá)
+       ============================================================ -->
+  <header class="bg-[#0f294a] border-b-[3px] border-[#008348] text-white px-3 sm:px-6 py-2 flex items-center justify-between z-30 shrink-0 gap-2 sm:gap-4 shadow-md">
+    
+    <div class="flex items-center space-x-3">
+      <div class="flex items-center space-x-2.5 cursor-pointer select-none" onclick="setViewMode('caudales')">
+        <img src="icon_eby.svg" alt="Entidad Binacional Yacyretá" class="h-8 sm:h-9 w-auto object-contain" />
+        <div class="flex flex-col">
+          <span class="font-bold text-sm tracking-tight text-white leading-none">HidroPanel</span>
+          <span class="text-[9px] text-emerald-400 font-semibold tracking-wider uppercase mt-0.5">Yacyretá • Hidrología</span>
+        </div>
       </div>
     </div>
 
-    <!-- SELECTOR DE VISTA: GRÁFICOS vs MAPA vs LLUVIAS (SIMEPAR) -->
-    <div class="flex items-center bg-slate-100 dark:bg-slate-950 p-1 rounded-lg border border-slate-200 dark:border-slate-800 text-xs transition-colors duration-200">
-      <button id="btn-view-charts" onclick="setViewMode('charts')" class="view-btn flex items-center space-x-1.5 px-3 py-1 rounded-md font-medium transition bg-sky-600 dark:bg-sky-500 text-white shadow">
-        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <!-- SELECTOR DE VISTAS (Segmented Tabs Modernizadas) -->
+    <nav class="flex items-center bg-[#07172b]/90 backdrop-blur-md p-1 rounded-xl border border-white/10 text-xs shadow-inner gap-1">
+      
+      <!-- VISTA 1: CAUDALES -->
+      <button id="btn-view-caudales" onclick="setViewMode('caudales')" class="view-btn flex items-center space-x-1.5 px-3 py-1.5 rounded-lg font-bold transition bg-[#008348] text-white shadow-sm" title="Balance de erogaciones de Itaipú, cascada del Iguazú y aporte a Yacyretá">
+        <svg class="w-3.5 h-3.5 text-emerald-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+        </svg>
+        <span>Caudales</span>
+      </button>
+
+      <!-- VISTA 2: GRÁFICOS & ALTURAS -->
+      <button id="btn-view-charts" onclick="setViewMode('charts')" class="view-btn flex items-center space-x-1.5 px-3 py-1.5 rounded-lg font-medium transition text-white/80 hover:text-white hover:bg-white/10" title="55 estaciones hidrométricas de la Cuenca del Plata">
+        <svg class="w-3.5 h-3.5 text-sky-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z"/>
         </svg>
-        <span>Gráficos</span>
+        <span>Hidrómetros</span>
       </button>
-      <button id="btn-view-map" onclick="setViewMode('map')" class="view-btn flex items-center space-x-1.5 px-3 py-1 rounded-md font-medium transition text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white">
-        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+
+      <!-- VISTA 3: MAPA & RADAR EN VIVO -->
+      <button id="btn-view-map" onclick="setViewMode('map')" class="view-btn flex items-center space-x-1.5 px-3 py-1.5 rounded-lg font-medium transition text-white/80 hover:text-white hover:bg-white/10" title="Mapa con capas CARTO Voyager/Dark, presas y radar RainViewer">
+        <svg class="w-3.5 h-3.5 text-sky-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"/>
         </svg>
-        <span>Mapa</span>
+        <span>Mapa & Radar</span>
       </button>
-      <button id="btn-view-simepar" onclick="setViewMode('simepar')" class="view-btn flex items-center space-x-1.5 px-3 py-1 rounded-md font-medium transition text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white" title="Precipitación diaria SIMEPAR">
-        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+
+      <!-- VISTA 4: SIMEPAR (Lluvias) -->
+      <button id="btn-view-simepar" onclick="setViewMode('simepar')" class="view-btn flex items-center space-x-1.5 px-3 py-1.5 rounded-lg font-medium transition text-white/80 hover:text-white hover:bg-white/10" title="Precipitación acumulada diaria SIMEPAR">
+        <svg class="w-3.5 h-3.5 text-blue-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 00-9.78 2.096A4.001 4.001 0 003 15z"/>
         </svg>
-        <span>Lluvias (SIMEPAR)</span>
+        <span class="hidden md:inline">Lluvias</span>
       </button>
-    </div>
+    </nav>
 
-    <!-- BOTONES DE ACCIÓN & TEMA -->
-    <div class="flex items-center space-x-2 sm:space-x-3">
-      <!-- BOTÓN CAMBIAR TEMA (CLARO / OSCURO) -->
-      <button id="btn-theme-toggle" onclick="toggleTheme()" title="Cambiar tema (Claro / Oscuro)" class="flex items-center justify-center p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white border border-slate-200 dark:border-slate-700 transition">
-        <!-- Icono de Sol (visible en modo oscuro) -->
-        <svg id="theme-icon-sun" class="w-4 h-4 hidden text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <!-- ACCIONES DE DERECHA: UMBRALES, TEMA, STATUS, REFRESH -->
+    <div class="flex items-center space-x-2 shrink-0">
+      <!-- Botón Configurar Umbrales -->
+      <button id="btn-header-umbrales" type="button" onclick="openThresholdsModal()" class="flex items-center space-x-1.5 bg-white/10 hover:bg-white/20 active:bg-white/25 text-white text-xs font-semibold px-2.5 sm:px-3 py-1.5 rounded-lg border border-white/15 transition shadow-xs cursor-pointer" title="Configurar niveles oficiales de alerta y evacuación">
+        <svg class="w-3.5 h-3.5 text-amber-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"/>
+        </svg>
+        <span class="hidden sm:inline">Umbrales</span>
+      </button>
+
+      <!-- Alternador Tema Claro / Oscuro -->
+      <button id="btn-theme-toggle" type="button" onclick="toggleTheme()" title="Cambiar tema (Claro / Oscuro)" class="p-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-white/90 border border-white/20 transition shadow-xs cursor-pointer">
+        <svg id="theme-icon-sun" class="w-4 h-4 hidden text-amber-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
         </svg>
-        <!-- Icono de Luna (visible en modo claro) -->
-        <svg id="theme-icon-moon" class="w-4 h-4 hidden text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg id="theme-icon-moon" class="w-4 h-4 hidden text-sky-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
         </svg>
       </button>
 
-      <button id="btn-sync-current" onclick="syncCurrentStation()" class="flex items-center space-x-1.5 bg-sky-600 hover:bg-sky-500 active:bg-sky-700 text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition shadow-sm">
+      <!-- Botón Sincronizar Global -->
+      <button id="btn-sync-all" type="button" onclick="syncAll()" class="flex items-center space-x-1.5 bg-[#008348] hover:bg-[#006e3c] active:bg-[#005a31] text-white text-xs font-bold px-3 py-1.5 rounded-lg transition shadow-xs border border-emerald-400/30 cursor-pointer" title="Sincronizar telemetría fluvial, represas y caudales">
         <svg id="sync-icon" class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
         </svg>
-        <span id="sync-label">Actualizar</span>
-      </button>
-
-      <button onclick="syncAllStations()" title="Actualizar todas las estaciones" class="hidden sm:inline-flex bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white text-xs font-medium px-3 py-1.5 rounded-lg transition border border-slate-200 dark:border-slate-700">
-        Actualizar Todas
+        <span class="hidden sm:inline">Sincronizar</span>
       </button>
     </div>
   </header>
 
-  <!-- CONTENEDOR PRINCIPAL (FLEX: SIDEBAR + MAIN) -->
-  <div class="flex-1 flex overflow-hidden">
+  <!-- CARRUSEL DISCRETO DE ALERTAS / TICKER HIDROLÓGICO CONTINUO -->
+  <div id="alert-banner-container" class="w-full shrink-0"></div>
 
-    <!-- BARRA LATERAL: LISTA DE ESTACIONES -->
-    <aside class="w-72 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 flex flex-col shrink-0 z-10 shadow-sm dark:shadow-none transition-colors duration-200">
-      <!-- Buscador -->
-      <div class="p-3 border-b border-slate-200 dark:border-slate-800">
-        <div class="relative">
-          <input id="search-station" type="text" placeholder="Buscar estación..." 
-                 oninput="filterStations()"
-                 class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg pl-8 pr-3 py-1.5 text-xs text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-sky-500 focus:bg-white dark:focus:bg-slate-950 transition">
-          <svg class="w-3.5 h-3.5 text-slate-400 dark:text-slate-500 absolute left-2.5 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
-          </svg>
-        </div>
-      </div>
+  <!-- ============================================================
+       CONTENEDOR PRINCIPAL FLUIDO Y CONTENIDO (DASHBOARD CONTAINER)
+       ============================================================ -->
+  <div class="flex-1 flex overflow-hidden relative">
 
-      <!-- Conteo de catálogo -->
-      <div class="px-3 py-1.5 bg-slate-50/80 dark:bg-slate-950/40 border-b border-slate-200 dark:border-slate-800/60 flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400">
-        <span>Estaciones Activas</span>
-        <span id="catalog-count" class="font-mono font-semibold text-sky-600 dark:text-sky-400">--</span>
-      </div>
+    <!-- ============================================================
+         ÁREA DE CONTENIDO PRINCIPAL (CAUDALES, HIDRÓMETROS, MAPA, LLUVIAS)
+         ============================================================ -->
+    <main class="flex-1 flex flex-col overflow-hidden bg-slate-100/50 dark:bg-[#07121e] relative min-w-0 w-full">
 
-      <!-- Lista limpia de estaciones -->
-      <div id="stations-list" class="flex-1 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800/40 p-2 space-y-0.5">
-        <!-- Renderizado dinámico -->
-      </div>
-    </aside>
-
-    <!-- ÁREA DE CONTENIDO (GRÁFICOS, MAPA O LLUVIAS) -->
-    <main class="flex-1 flex flex-col overflow-hidden bg-slate-50/60 dark:bg-slate-950 transition-colors duration-200">
-
-      <!-- ========================================== -->
-      <!-- VISTA 1: PANEL DE GRÁFICOS (SUBPLOTS 1,2,4,8) -->
-      <!-- ========================================== -->
-      <div id="view-charts-container" class="flex-1 flex flex-col overflow-y-auto p-4 sm:p-6 space-y-4">
-        
-        <!-- BARRA DE CONTROLES: SUBPLOTS + RANGOS + CSV -->
-        <div class="flex flex-wrap items-center justify-between gap-3 bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 p-2.5 rounded-xl shadow-sm dark:shadow-none transition-colors duration-200">
+      <!-- ============================================================
+           VISTA 1: CAUDALES DE RÍOS & REPRESAS (BALANCE HIDROLÓGICO HACIA YACYRETÁ)
+           ============================================================ -->
+      <div id="view-caudales-container" class="flex-1 flex flex-col overflow-y-auto p-2.5 sm:p-4 lg:p-5 space-y-3 sm:space-y-4">
+        <div class="dashboard-container space-y-3 sm:space-y-4">
           
-          <!-- SELECTOR DE SUBPLOTS (1, 2, 4, 8) -->
-          <div class="flex items-center space-x-1.5">
-            <span class="text-xs font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-1.5 mr-1">
-              <svg class="w-4 h-4 text-sky-600 dark:text-sky-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/>
-              </svg>
-              Gráficos:
-            </span>
-            <div class="bg-slate-100 dark:bg-slate-950 p-1 rounded-lg border border-slate-200 dark:border-slate-800 flex items-center space-x-1 text-xs">
-              <button onclick="setLayout(1)" id="btn-layout-1" class="layout-btn px-2.5 py-1 rounded font-semibold transition bg-sky-600 dark:bg-sky-500 text-white shadow">1</button>
-              <button onclick="setLayout(2)" id="btn-layout-2" class="layout-btn px-2.5 py-1 rounded font-medium transition text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white">2</button>
-              <button onclick="setLayout(4)" id="btn-layout-4" class="layout-btn px-2.5 py-1 rounded font-medium transition text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white">4</button>
-              <button onclick="setLayout(8)" id="btn-layout-8" class="layout-btn px-2.5 py-1 rounded font-medium transition text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white">8</button>
-            </div>
-          </div>
-
-          <!-- FILTRO TEMPORAL Y EXPORTACIÓN -->
-          <div class="flex items-center space-x-2">
-            <!-- Rango de tiempo -->
-            <div class="bg-slate-100 dark:bg-slate-950 p-1 rounded-lg border border-slate-200 dark:border-slate-800 flex items-center space-x-1 text-xs">
-              <button onclick="setRange('24h')" data-range="24h" class="range-btn px-2.5 py-1 rounded font-medium transition bg-sky-600 dark:bg-sky-500 text-white shadow">24h</button>
-              <button onclick="setRange('7d')" data-range="7d" class="range-btn px-2.5 py-1 rounded font-medium transition text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white">7d</button>
-              <button onclick="setRange('30d')" data-range="30d" class="range-btn px-2.5 py-1 rounded font-medium transition text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white">30d</button>
-              <button onclick="setRange('todo')" data-range="todo" class="range-btn px-2.5 py-1 rounded font-medium transition text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white">Todo</button>
-            </div>
-
-            <!-- Botón CSV -->
-            <button onclick="downloadCSV()" title="Descargar datos en CSV" class="flex items-center space-x-1 bg-white hover:bg-slate-50 dark:bg-slate-950 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white px-2.5 py-1.5 rounded-lg text-xs font-medium transition shadow-sm dark:shadow-none">
-              <svg class="w-3.5 h-3.5 text-slate-500 dark:text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-              </svg>
-              <span>CSV</span>
-            </button>
-          </div>
-        </div>
-
-        <!-- --------------------------------------- -->
-        <!-- MODO 1: VISTA DE UN GRÁFICO DETALLADO -->
-        <!-- --------------------------------------- -->
-        <div id="single-plot-view" class="space-y-4">
-          <!-- Título de estación seleccionada y Controles de Cota / Nivel -->
-          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            <div>
-              <div class="flex items-center space-x-2.5">
-                <h2 id="current-station-title" class="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">Seleccione una estación</h2>
-                <span id="station-cota-badge" class="hidden text-[10px] px-2 py-0.5 rounded-full font-bold bg-sky-100 dark:bg-sky-950 text-sky-700 dark:text-sky-400 border border-sky-300 dark:border-sky-800 uppercase tracking-wider">Cota (msnm)</span>
+          <!-- ESQUEMA FLUVIAL DE CASCADA DE CENTRALES -->
+          <div class="card-panel p-3.5 sm:p-4">
+            <div class="flex flex-wrap items-center justify-between gap-2.5 mb-2.5 border-b border-slate-100 dark:border-slate-800 pb-2">
+              <div class="flex items-center space-x-2">
+                <h3 class="text-xs sm:text-sm font-bold uppercase tracking-wider text-slate-800 dark:text-slate-200 flex items-center gap-2">
+                  <svg class="w-4 h-4 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                  </svg>
+                  <span>Esquema Fluvial de Centrales Hidroeléctricas</span>
+                </h3>
               </div>
-              <p id="current-station-meta" class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Cargando telemetría...</p>
-            </div>
-
-            <div class="flex items-center flex-wrap gap-2.5">
-              <!-- Selector Nivel vs Cota (Visible para Posadas) -->
-              <div id="posadas-cota-panel" class="hidden items-center space-x-2 bg-white dark:bg-slate-900 px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm text-xs transition">
-                <span class="text-[11px] font-semibold text-slate-500 dark:text-slate-400">Ver:</span>
-                <div class="bg-slate-100 dark:bg-slate-950 p-0.5 rounded-lg border border-slate-200 dark:border-slate-800 flex items-center space-x-0.5">
-                  <button id="btn-posadas-nivel" onclick="setPosadasMode('nivel')" class="px-2.5 py-1 rounded-md text-xs font-semibold transition bg-sky-600 dark:bg-sky-500 text-white shadow">Nivel</button>
-                  <button id="btn-posadas-cota" onclick="setPosadasMode('cota')" class="px-2.5 py-1 rounded-md text-xs font-medium transition text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white">Cota</button>
-                </div>
-
-                <div class="flex items-center space-x-1.5 pl-2 border-l border-slate-200 dark:border-slate-800" title="Offset para calibrar Cota = Nivel + Offset">
-                  <label for="posadas-offset-input" class="text-[11px] text-slate-500 dark:text-slate-400 font-medium">Offset:</label>
-                  <input id="posadas-offset-input" type="number" step="0.01" value="71.53" 
-                         onchange="setPosadasOffset(this.value)" 
-                         oninput="setPosadasOffset(this.value)" 
-                         class="w-20 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-md px-2 py-0.5 text-xs font-mono font-bold text-sky-600 dark:text-sky-400 focus:outline-none focus:border-sky-500 text-center" 
-                         placeholder="71.53">
-                </div>
-              </div>
-
-              <!-- Coordenadas badge -->
-              <div id="station-coords-badge" class="hidden sm:flex items-center space-x-1.5 text-xs text-slate-600 dark:text-slate-400 bg-white dark:bg-slate-900 px-2.5 py-1.5 rounded-xl border border-slate-200 dark:border-slate-800 font-mono shadow-sm dark:shadow-none">
-                <svg class="w-3 h-3 text-sky-600 dark:text-sky-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
-                <span id="station-coords-text">--</span>
-              </div>
-            </div>
-          </div>
-
-          <!-- TARJETAS DE MÉTRICAS -->
-          <div class="grid grid-cols-2 md:grid-cols-4 gap-3.5">
-            <!-- Altura / Cota Actual -->
-            <div class="glass-card p-4 rounded-xl">
-              <div class="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1 flex items-center justify-between">
-                <span id="kpi-current-title">Altura Actual</span>
-                <span id="kpi-trend-pill" class="text-[10px] px-1.5 py-0.5 rounded font-semibold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700">--</span>
-              </div>
-              <div class="flex items-baseline space-x-1">
-                <span id="kpi-current-val" class="text-3xl font-extrabold text-sky-600 dark:text-sky-400">--</span>
-                <span id="kpi-current-unit" class="kpi-unit text-xs text-slate-400 dark:text-slate-500">m</span>
-              </div>
-              <p id="kpi-current-time" class="text-[11px] text-slate-400 dark:text-slate-500 mt-1">Sin datos</p>
-            </div>
-
-            <!-- Máxima -->
-            <div class="glass-card p-4 rounded-xl">
-              <div id="kpi-max-title" class="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Máxima (Período)</div>
-              <div class="flex items-baseline space-x-1">
-                <span id="kpi-max-val" class="text-3xl font-extrabold text-emerald-600 dark:text-emerald-400">--</span>
-                <span id="kpi-max-unit" class="kpi-unit text-xs text-slate-400 dark:text-slate-500">m</span>
-              </div>
-              <p id="kpi-max-desc" class="text-[11px] text-slate-400 dark:text-slate-500 mt-1">Nivel pico</p>
-            </div>
-
-            <!-- Mínima -->
-            <div class="glass-card p-4 rounded-xl">
-              <div id="kpi-min-title" class="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Mínima (Período)</div>
-              <div class="flex items-baseline space-x-1">
-                <span id="kpi-min-val" class="text-3xl font-extrabold text-amber-600 dark:text-amber-400">--</span>
-                <span id="kpi-min-unit" class="kpi-unit text-xs text-slate-400 dark:text-slate-500">m</span>
-              </div>
-              <p id="kpi-min-desc" class="text-[11px] text-slate-400 dark:text-slate-500 mt-1">Nivel más bajo</p>
-            </div>
-
-            <!-- Promedio -->
-            <div class="glass-card p-4 rounded-xl">
-              <div id="kpi-avg-title" class="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Promedio (Período)</div>
-              <div class="flex items-baseline space-x-1">
-                <span id="kpi-avg-val" class="text-3xl font-extrabold text-purple-600 dark:text-purple-400">--</span>
-                <span id="kpi-avg-unit" class="kpi-unit text-xs text-slate-400 dark:text-slate-500">m</span>
-              </div>
-              <p id="kpi-avg-desc" class="text-[11px] text-slate-400 dark:text-slate-500 mt-1">Media histórica</p>
-            </div>
-          </div>
-
-          <!-- GRÁFICO DETALLADO -->
-          <div class="glass-card rounded-xl p-5 flex flex-col flex-1 min-h-[380px] relative">
-            <div class="flex items-center justify-between mb-3">
-              <div class="flex items-center space-x-3">
-                <h3 id="main-chart-title" class="text-sm font-semibold text-slate-800 dark:text-slate-200">Evolución Temporal de Altura</h3>
-                <button onclick="resetZoomSingle()" class="text-[11px] text-sky-600 dark:text-sky-400 hover:text-sky-700 dark:hover:text-sky-300 underline font-medium">Restablecer Zoom</button>
-              </div>
-              <span id="main-chart-legend" class="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
-                <span class="w-3 h-0.5 bg-sky-600 dark:bg-sky-400 rounded"></span> Altura en metros (Rueda del ratón para zoom temporal)
-              </span>
-            </div>
-
-            <div class="relative flex-1 w-full h-[330px]">
-              <canvas id="mainHeightChart"></canvas>
               
-              <!-- Loader -->
-              <div id="chart-loader" class="hidden absolute inset-0 bg-white/80 dark:bg-slate-950/70 backdrop-blur-sm flex flex-col items-center justify-center rounded-xl space-y-2 z-10 transition-colors">
-                <div class="w-6 h-6 border-2 border-sky-500 border-t-transparent rounded-full animate-spin"></div>
-                <span class="text-xs text-slate-700 dark:text-slate-300">Cargando mediciones...</span>
+              <div class="flex items-center space-x-2.5">
+                <span id="rep-sync-label" class="text-xs font-mono text-slate-500 dark:text-slate-400">Sincronizado ONS</span>
+              </div>
+            </div>
+            
+            <div id="river-schematic-flow" class="overflow-x-auto py-1">
+              <!-- Renderizado dinámico desde represas.js -->
+            </div>
+          </div>
+
+          <!-- TARJETAS DE CENTRALES PRINCIPALES -->
+          <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3.5">
+            <!-- ITAIPÚ BINACIONAL -->
+            <div class="card-panel p-3.5 space-y-2">
+              <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-800/80 pb-1.5">
+                <div>
+                  <h4 class="font-bold text-slate-900 dark:text-white text-sm">Itaipú Binacional</h4>
+                  <span class="text-[10px] text-slate-400">Río Paraná • Brasil / Paraguay</span>
+                </div>
+                <span id="rep-it-time" class="text-[10px] font-mono text-slate-400">--</span>
+              </div>
+
+              <div>
+                <div class="text-[11px] font-semibold text-slate-500">Caudal Defluente Total:</div>
+                <div class="flex items-baseline space-x-1">
+                  <span id="rep-it-defl" class="text-2xl font-extrabold font-data text-sky-600 dark:text-sky-400">--</span>
+                  <span class="text-xs font-bold text-slate-400">m³/s</span>
+                </div>
+              </div>
+
+              <div class="grid grid-cols-2 gap-2 text-xs">
+                <div class="bg-slate-50 dark:bg-slate-900/80 p-2 rounded-lg border border-slate-200 dark:border-slate-800">
+                  <div class="text-[10px] font-bold text-slate-500 uppercase">Turbinada</div>
+                  <div id="rep-it-turb" class="font-mono font-bold text-sky-600 dark:text-sky-400">-- m³/s</div>
+                </div>
+                <div class="bg-slate-50 dark:bg-slate-900/80 p-2 rounded-lg border border-slate-200 dark:border-slate-800">
+                  <div class="text-[10px] font-bold text-slate-500 uppercase">Vertida</div>
+                  <div id="rep-it-vert" class="font-mono font-bold text-amber-600 dark:text-amber-400">-- m³/s</div>
+                </div>
+              </div>
+
+              <div class="flex items-center justify-between text-xs text-slate-500 pt-1">
+                <span>Afluente: <strong id="rep-it-aflu" class="text-slate-800 dark:text-slate-200 font-mono">--</strong></span>
+                <span>Cota: <strong id="rep-it-cota" class="text-slate-800 dark:text-slate-200 font-mono">--</strong></span>
+              </div>
+            </div>
+
+            <!-- BAIXO IGUAÇU (COPEL) -->
+            <div class="card-panel p-3.5 space-y-2">
+              <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-800/80 pb-1.5">
+                <div>
+                  <h4 class="font-bold text-slate-900 dark:text-white text-sm">Baixo Iguaçu</h4>
+                  <span class="text-[10px] text-slate-400">COPEL • Última central Río Iguazú</span>
+                </div>
+                <span id="rep-bx-time" class="text-[10px] font-mono text-slate-400">--</span>
+              </div>
+
+              <div>
+                <div class="text-[11px] font-semibold text-slate-500">Caudal Defluente Total:</div>
+                <div class="flex items-baseline space-x-1">
+                  <span id="rep-bx-defl" class="text-2xl font-extrabold font-data text-emerald-600 dark:text-emerald-400">--</span>
+                  <span class="text-xs font-bold text-slate-400">m³/s</span>
+                </div>
+              </div>
+
+              <div class="grid grid-cols-2 gap-2 text-xs">
+                <div class="bg-slate-50 dark:bg-slate-900/80 p-2 rounded-lg border border-slate-200 dark:border-slate-800">
+                  <div class="text-[10px] font-bold text-slate-500 uppercase">Turbinada</div>
+                  <div id="rep-bx-turb" class="font-mono font-bold text-sky-600 dark:text-sky-400">-- m³/s</div>
+                </div>
+                <div class="bg-slate-50 dark:bg-slate-900/80 p-2 rounded-lg border border-slate-200 dark:border-slate-800">
+                  <div class="text-[10px] font-bold text-slate-500 uppercase">Vertida</div>
+                  <div id="rep-bx-vert" class="font-mono font-bold text-amber-600 dark:text-amber-400">-- m³/s</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- PORTO CAPANEMA -->
+            <div class="card-panel p-3.5 space-y-2">
+              <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-800/80 pb-1.5">
+                <div>
+                  <h4 class="font-bold text-slate-900 dark:text-white text-sm">Porto Capanema</h4>
+                  <span class="text-[10px] text-slate-400">COPEL / ANA • Río Iguazú</span>
+                </div>
+                <span id="rep-cap-time" class="text-[10px] font-mono text-slate-400">--</span>
+              </div>
+
+              <div>
+                <div class="text-[11px] font-semibold text-slate-500">Caudal Medido (Pasante):</div>
+                <div class="flex items-baseline space-x-1">
+                  <span id="rep-cap-caudal" class="text-2xl font-extrabold font-data text-amber-600 dark:text-amber-400">--</span>
+                  <span class="text-xs font-bold text-slate-400">m³/s</span>
+                </div>
+              </div>
+
+              <div class="flex items-center justify-between text-xs text-slate-500 pt-1">
+                <span>Nivel de Regla:</span>
+                <strong id="rep-cap-regla" class="text-slate-800 dark:text-slate-200 font-mono">-- m</strong>
+              </div>
+            </div>
+
+            <!-- ESTACIÓN CATARATAS -->
+            <div class="card-panel p-3.5 space-y-2">
+              <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-800/80 pb-1.5">
+                <div>
+                  <h4 class="font-bold text-slate-900 dark:text-white text-sm">Cataratas</h4>
+                  <span class="text-[10px] text-slate-400">COPEL / Parques • Río Iguazú</span>
+                </div>
+                <span id="rep-cat-time" class="text-[10px] font-mono text-slate-400">--</span>
+              </div>
+
+              <div>
+                <div class="text-[11px] font-semibold text-slate-500">Caudal Pasante en Cataratas:</div>
+                <div class="flex items-baseline space-x-1">
+                  <span id="rep-cat-caudal" class="text-2xl font-extrabold font-data text-amber-600 dark:text-amber-400">--</span>
+                  <span class="text-xs font-bold text-slate-400">m³/s</span>
+                </div>
+              </div>
+
+              <div class="flex items-center justify-between text-xs text-slate-500 pt-1">
+                <span>Nivel de Regla:</span>
+                <strong id="rep-cat-regla" class="text-slate-800 dark:text-slate-200 font-mono">-- m</strong>
               </div>
             </div>
           </div>
 
-          <!-- TABLA DE LECTURAS RECIENTES -->
-          <div class="glass-card rounded-xl p-4">
-            <div class="mb-3">
-              <h4 class="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Últimas Mediciones</h4>
+          <!-- GRÁFICOS COMPARATIVOS DE CAUDALES -->
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-3.5">
+            <!-- Gráfico 1: Caudal Total a Yacyretá vs Aportes -->
+            <div class="card-panel p-3.5 sm:p-4 flex flex-col min-h-[320px] relative">
+              <div class="flex items-center justify-between mb-2 pb-1.5 border-b border-slate-100 dark:border-slate-800">
+                <div>
+                  <h4 class="text-xs font-bold uppercase tracking-wider text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
+                    <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+                    <span>Caudal Hacia Yacyretá vs Aportes</span>
+                  </h4>
+                  <span class="text-[10px] text-slate-400">Últimas 36 horas • m³/s</span>
+                </div>
+                <div class="flex items-center space-x-2">
+                  <span class="hidden sm:flex text-[10px] text-slate-400 font-sans items-center gap-1">
+                    <svg class="w-3 h-3 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5M7.188 2.239l.777 2.897M5.136 7.965l-2.898-.777M13.95 4.05l-2.122 2.122m-5.657 5.656l-2.12 2.122"/></svg>
+                    <span>Arrastre para zoom</span>
+                  </span>
+                  <button type="button" onclick="RepresasView.resetCaudalesZoom()" title="Restablecer Zoom" class="text-slate-400 hover:text-slate-800 dark:hover:text-white p-1 rounded hover:bg-slate-100 dark:hover:bg-slate-800 transition">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                  </button>
+                </div>
+              </div>
+              <div class="relative flex-1 w-full h-[250px]">
+                <canvas id="chartCaudalesYacyreta"></canvas>
+                <!-- Botón flotante Reiniciar Zoom (Estilo PNA) -->
+                <button id="floating-reset-zoom-caudales" type="button" onclick="RepresasView.resetCaudalesZoom()" class="hidden absolute top-2 right-2 z-10 px-2.5 py-1 rounded-md text-xs font-semibold bg-white/95 dark:bg-slate-900/95 text-emerald-600 dark:text-emerald-400 border border-slate-200 dark:border-slate-700 shadow-sm hover:bg-emerald-50 dark:hover:bg-slate-800 transition items-center gap-1.5 backdrop-blur-xs">
+                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                  <span>Reiniciar zoom</span>
+                </button>
+              </div>
             </div>
+
+            <!-- Gráfico 2: Desglose Itaipú (Turbinada vs Vertida) -->
+            <div class="card-panel p-3.5 sm:p-4 flex flex-col min-h-[320px] relative">
+              <div class="flex items-center justify-between mb-2 pb-1.5 border-b border-slate-100 dark:border-slate-800">
+                <div>
+                  <h4 class="text-xs font-bold uppercase tracking-wider text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
+                    <span class="w-2 h-2 rounded-full bg-sky-500"></span>
+                    <span>Itaipú: Turbinada vs Vertida</span>
+                  </h4>
+                  <span class="text-[10px] text-slate-400">Valores oficiales ONS • m³/s</span>
+                </div>
+                <div class="flex items-center space-x-2">
+                  <span class="hidden sm:flex text-[10px] text-slate-400 font-sans items-center gap-1">
+                    <svg class="w-3 h-3 text-sky-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5M7.188 2.239l.777 2.897M5.136 7.965l-2.898-.777M13.95 4.05l-2.122 2.122m-5.657 5.656l-2.12 2.122"/></svg>
+                    <span>Arrastre para zoom</span>
+                  </span>
+                  <button type="button" onclick="RepresasView.resetItaipuZoom()" title="Restablecer Zoom" class="text-slate-400 hover:text-slate-800 dark:hover:text-white p-1 rounded hover:bg-slate-100 dark:hover:bg-slate-800 transition">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                  </button>
+                </div>
+              </div>
+              <div class="relative flex-1 w-full h-[250px]">
+                <canvas id="chartItaipuTurbinado"></canvas>
+                <!-- Botón flotante Reiniciar Zoom (Estilo PNA) -->
+                <button id="floating-reset-zoom-itaipu" type="button" onclick="RepresasView.resetItaipuZoom()" class="hidden absolute top-2 right-2 z-10 px-2.5 py-1 rounded-md text-xs font-semibold bg-white/95 dark:bg-slate-900/95 text-sky-600 dark:text-sky-400 border border-slate-200 dark:border-slate-700 shadow-sm hover:bg-sky-50 dark:hover:bg-slate-800 transition items-center gap-1.5 backdrop-blur-xs">
+                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                  <span>Reiniciar zoom</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- TABLA COMPLETA DE TODAS LAS CENTRALES CON FILTROS -->
+          <div class="card-panel p-4 space-y-3">
+            <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 dark:border-slate-800 pb-2">
+              <div>
+                <h4 class="text-xs font-bold uppercase tracking-wider text-slate-800 dark:text-slate-200">
+                  Matriz Hidráulica de Presas y Centrales Monitoreadas
+                </h4>
+                <p class="text-[11px] text-slate-400">Valores oficiales de cota, volumen de embalse y caudales en m³/s</p>
+              </div>
+
+              <!-- Filtros de Cuencas en Tabla -->
+              <div class="flex items-center gap-1 text-xs">
+                <button onclick="setDamTableFilter('todas')" class="btn-dam-filter px-2.5 py-1 rounded-md font-semibold transition active bg-emerald-600 text-white" data-filter="todas">Todas</button>
+                <button onclick="setDamTableFilter('parana')" class="btn-dam-filter px-2.5 py-1 rounded-md font-medium transition text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800" data-filter="parana">Río Paraná</button>
+                <button onclick="setDamTableFilter('iguazu')" class="btn-dam-filter px-2.5 py-1 rounded-md font-medium transition text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800" data-filter="iguazu">Cascada Iguazú</button>
+                <button onclick="setDamTableFilter('afluentes')" class="btn-dam-filter px-2.5 py-1 rounded-md font-medium transition text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800" data-filter="afluentes">Afluentes</button>
+              </div>
+            </div>
+
             <div class="overflow-x-auto">
               <table class="w-full text-xs text-left">
-                <thead class="text-slate-600 dark:text-slate-400 border-b border-slate-200 dark:border-slate-800 bg-slate-50/60 dark:bg-transparent">
+                <thead class="text-slate-600 dark:text-slate-400 border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/40">
                   <tr>
-                    <th class="py-2 px-3 font-medium">Fecha y Hora</th>
-                    <th id="th-table-value" class="py-2 px-3 font-medium">Altura Neta</th>
-                    <th class="py-2 px-3 font-medium">Variación</th>
+                    <th class="py-2.5 px-3">Central / Presa</th>
+                    <th class="py-2.5 px-3">Cota / Nivel</th>
+                    <th class="py-2.5 px-3">Vol. %</th>
+                    <th class="py-2.5 px-3">Afluente</th>
+                    <th class="py-2.5 px-3">Turbinada</th>
+                    <th class="py-2.5 px-3">Vertida</th>
+                    <th class="py-2.5 px-3 font-bold">Defluente</th>
+                    <th class="py-2.5 px-3">Fecha / Hora</th>
                   </tr>
                 </thead>
-                <tbody id="readings-table-body" class="divide-y divide-slate-100 dark:divide-slate-800/40 text-slate-700 dark:text-slate-300">
-                  <tr><td colspan="3" class="py-3 text-center text-slate-400 dark:text-slate-500">Seleccione una estación</td></tr>
+                <tbody id="represas-table-body" class="divide-y divide-slate-100 dark:divide-slate-800/40 text-slate-700 dark:text-slate-300 font-mono">
+                  <tr><td colspan="8" class="text-center py-4 text-slate-400">Cargando datos de represas...</td></tr>
                 </tbody>
               </table>
             </div>
           </div>
-        </div>
 
-        <!-- --------------------------------------- -->
-        <!-- MODO MULTI-PLOT: CUADRÍCULA DE SUBPLOTS -->
-        <!-- --------------------------------------- -->
-        <div id="multi-plot-view" class="hidden w-full">
-          <!-- Contenedor dinámico de la cuadrícula -->
-          <div id="subplots-grid" class="grid gap-4">
-            <!-- Los subplots (2, 4 u 8) se generan dinámicamente -->
-          </div>
         </div>
-
       </div>
 
-      <!-- ========================================== -->
-      <!-- VISTA 2: MAPA DE UBICACIÓN DE HIDRÓMETROS  -->
-      <!-- ========================================== -->
-      <div id="view-map-container" class="hidden flex-1 flex flex-col p-4 sm:p-6 space-y-3 overflow-hidden">
-        
-        <!-- Barra de herramientas del Mapa -->
-        <div class="flex flex-wrap items-center justify-between gap-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-3 rounded-xl shrink-0 shadow-sm dark:shadow-none transition-colors duration-200">
-          <div class="flex items-center space-x-3">
-            <div class="flex items-center space-x-1.5 text-xs text-slate-800 dark:text-slate-300 font-semibold">
-              <svg class="w-4 h-4 text-sky-600 dark:text-sky-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
-              </svg>
-              <span>Mapa de Hidrómetros:</span>
-            </div>
-
-            <!-- Selector de estación para centrar -->
-            <select id="map-station-select" onchange="onMapStationSelectChange(this.value)" class="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-200 text-xs rounded-lg px-2.5 py-1.5 focus:outline-none focus:border-sky-500 font-medium">
-              <option value="">Ir a una estación...</option>
-            </select>
-          </div>
-
-          <!-- Saltos rápidos a regiones -->
-          <div class="flex items-center space-x-1.5 text-xs">
-            <span class="text-slate-500 dark:text-slate-400 text-[11px] hidden md:inline">Zonas:</span>
-            <button onclick="zoomMapToRegion('iguazu')" class="bg-slate-100 hover:bg-slate-200 dark:bg-slate-950 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-800 text-slate-700 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white px-2 py-1 rounded text-xs transition">Alto Paraná</button>
-            <button onclick="zoomMapToRegion('paraguay')" class="bg-slate-100 hover:bg-slate-200 dark:bg-slate-950 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-800 text-slate-700 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white px-2 py-1 rounded text-xs transition">Río Paraguay</button>
-            <button onclick="zoomMapToRegion('medio')" class="bg-slate-100 hover:bg-slate-200 dark:bg-slate-950 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-800 text-slate-700 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white px-2 py-1 rounded text-xs transition">Paraná Medio</button>
-            <button onclick="zoomMapToRegion('delta')" class="bg-slate-100 hover:bg-slate-200 dark:bg-slate-950 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-800 text-slate-700 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white px-2 py-1 rounded text-xs transition">Delta & Plata</button>
-          </div>
-        </div>
-
-        <!-- Contenedor del Mapa Leaflet -->
-        <div class="flex-1 w-full rounded-xl overflow-hidden border border-slate-200 dark:border-slate-800 relative shadow-inner">
-          <div id="stationsMap" class="w-full h-full"></div>
-        </div>
-
-      </div>
-
-      <!-- ========================================== -->
-      <!-- VISTA 3: MAPA DE LLUVIAS (SIMEPAR)        -->
-      <!-- ========================================== -->
-      <div id="view-simepar-container" class="hidden flex-1 flex flex-col p-4 sm:p-6 space-y-3 overflow-hidden">
-        
-        <!-- Barra de herramientas SIMEPAR -->
-        <div class="flex flex-wrap items-center justify-between gap-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-3 rounded-xl shrink-0 shadow-sm dark:shadow-none transition-colors duration-200">
-          <div class="flex items-center space-x-3">
-            <div class="flex items-center space-x-1.5 text-xs text-slate-800 dark:text-slate-300 font-semibold">
-              <svg class="w-4 h-4 text-sky-600 dark:text-sky-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 00-9.78 2.096A4.001 4.001 0 003 15z"/>
-              </svg>
-              <span>Precipitación Acumulada (SIMEPAR):</span>
-            </div>
-
-            <!-- Controles de Navegación Temporal (Flechas + Mini Calendario) -->
-            <div class="flex items-center space-x-1.5">
-              <!-- Flecha Día Anterior (hacia el pasado) -->
-              <button type="button" 
-                      id="btn-simepar-prev-day" 
-                      onclick="stepSimeparDate(-1)" 
-                      title="Día anterior"
-                      class="flex items-center justify-center w-8 h-8 bg-slate-50 hover:bg-slate-100 dark:bg-slate-950 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white rounded-lg transition shadow-sm disabled:opacity-30 disabled:cursor-not-allowed select-none cursor-pointer"
-                      aria-label="Día anterior">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
-                </svg>
-              </button>
-
-              <!-- Selector de fechas con Mini Calendario desplegable -->
-              <div class="relative" id="simepar-datepicker-container">
-                <input type="hidden" id="simepar-date-select" value="" />
-                
-                <button type="button" 
-                        id="simepar-calendar-btn" 
-                        onclick="toggleSimeparCalendar()"
-                        class="flex items-center space-x-2 bg-slate-50 hover:bg-slate-100 dark:bg-slate-950 dark:hover:bg-slate-800/80 border border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-200 text-xs rounded-lg px-2.5 py-1.5 focus:outline-none focus:ring-2 focus:ring-sky-500/20 font-medium transition shadow-sm select-none cursor-pointer h-8">
-                  <svg class="w-3.5 h-3.5 text-sky-600 dark:text-sky-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
-                  </svg>
-                  <span id="simepar-calendar-display" class="font-semibold">Cargando fechas...</span>
-                  <svg id="simepar-calendar-chevron" class="w-3 h-3 text-slate-400 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
-                  </svg>
-                </button>
-
-                <!-- Popover del Mini Calendario -->
-                <div id="simepar-calendar-popover" 
-                     class="hidden absolute left-0 top-full mt-1.5 z-40 w-64 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-xl p-3 select-none">
-                  
-                  <!-- Encabezado de Navegación del Mes -->
-                  <div class="flex items-center justify-between mb-2">
-                    <button type="button" onclick="changeSimeparMonth(-1); event.stopPropagation();" 
-                            class="p-1 rounded-lg text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition" title="Mes anterior">
-                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
-                      </svg>
-                    </button>
-                    <span id="simepar-month-label" class="text-xs font-semibold text-slate-800 dark:text-slate-200 capitalize select-none">
-                      Octubre 2026
-                    </span>
-                    <button type="button" onclick="changeSimeparMonth(1); event.stopPropagation();" 
-                            class="p-1 rounded-lg text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition" title="Mes siguiente">
-                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
-                      </svg>
-                    </button>
-                  </div>
-
-                  <!-- Cabecera de Días de la Semana -->
-                  <div class="grid grid-cols-7 gap-1 text-center mb-1 text-[10px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
-                    <div>Lu</div><div>Ma</div><div>Mi</div><div>Ju</div><div>Vi</div><div>Sá</div><div>Do</div>
-                  </div>
-
-                  <!-- Grilla de Días -->
-                  <div id="simepar-days-grid" class="grid grid-cols-7 gap-1">
-                    <!-- Generado dinámicamente -->
-                  </div>
-
-                  <!-- Pie y Leyenda -->
-                  <div class="mt-2.5 pt-2 border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-between text-[10px] text-slate-500 dark:text-slate-400">
-                    <div class="flex items-center space-x-1.5">
-                      <span class="w-1.5 h-1.5 rounded-full bg-sky-500 inline-block"></span>
-                      <span>Con mapa</span>
-                    </div>
-                    <button type="button" onclick="goToLatestSimeparDate(); event.stopPropagation();" class="text-sky-600 dark:text-sky-400 hover:underline font-medium cursor-pointer">
-                      Último disponible
-                    </button>
-                  </div>
-
+      <!-- ============================================================
+           VISTA 2: PANEL DE GRÁFICOS & HIDRÓMETROS (CURVAS DE NIVEL)
+           ============================================================ -->
+      <div id="view-charts-container" class="hidden flex-1 flex flex-col overflow-y-auto p-2.5 sm:p-4 lg:p-5 space-y-3 sm:space-y-4">
+        <div class="dashboard-container space-y-3 sm:space-y-4">
+          
+          <!-- BARRA DE CONTROLES: SUBPLOTS + RANGOS + COTA + CSV -->
+          <div class="card-panel p-2 sm:p-2.5 flex flex-wrap items-center justify-between gap-2 sm:gap-2.5">
+            
+            <!-- SELECTOR DE SUBPLOTS (1, 2, 4, 8) Y SELECTOR DE CURVA -->
+            <div class="flex items-center flex-wrap gap-2.5">
+              <div class="flex items-center space-x-1.5">
+                <span class="text-xs font-bold text-slate-700 dark:text-slate-300 mr-1">Gráficos:</span>
+                <div class="bg-slate-100 dark:bg-slate-900 p-1 rounded-lg border border-slate-200 dark:border-slate-800 flex items-center space-x-1 text-xs">
+                  <button onclick="setLayout(1)" class="btn-layout px-2.5 py-1 rounded font-bold transition active bg-sky-600 text-white" data-layout="1">1</button>
+                  <button onclick="setLayout(2)" class="btn-layout px-2.5 py-1 rounded font-medium transition text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white" data-layout="2">2</button>
+                  <button onclick="setLayout(4)" class="btn-layout px-2.5 py-1 rounded font-medium transition text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white" data-layout="4">4</button>
+                  <button onclick="setLayout(8)" class="btn-layout px-2.5 py-1 rounded font-medium transition text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white" data-layout="8">8</button>
                 </div>
               </div>
 
-              <!-- Flecha Día Posterior (hacia el futuro) -->
-              <button type="button" 
-                      id="btn-simepar-next-day" 
-                      onclick="stepSimeparDate(1)" 
-                      title="Día posterior"
-                      class="flex items-center justify-center w-8 h-8 bg-slate-50 hover:bg-slate-100 dark:bg-slate-950 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white rounded-lg transition shadow-sm disabled:opacity-30 disabled:cursor-not-allowed select-none cursor-pointer"
-                      aria-label="Día posterior">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+              <!-- SELECTOR DE CURVA INDEPENDIENTE (AGP / PREFECTURA PNA / AMBAS) -->
+              <div class="flex items-center space-x-1.5">
+                <span class="text-xs font-bold text-slate-700 dark:text-slate-300 mr-1">Curva:</span>
+                <div class="bg-slate-100 dark:bg-slate-900 p-1 rounded-lg border border-slate-200 dark:border-slate-800 flex items-center space-x-1 text-xs">
+                  <button id="btn-chart-src-agp" onclick="setChartSource('agp')" class="btn-chart-src px-2.5 py-1 rounded font-bold transition active bg-sky-600 text-white shadow-xs" title="Graficar únicamente mediciones de telemetría AGP">AGP</button>
+                  <button id="btn-chart-src-pna" onclick="setChartSource('pna')" class="btn-chart-src px-2.5 py-1 rounded font-medium transition text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white" title="Graficar únicamente registros de Prefectura PNA">Prefectura PNA</button>
+                  <button id="btn-chart-src-ambas" onclick="setChartSource('ambas')" class="btn-chart-src px-2.5 py-1 rounded font-medium transition text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white" title="Superponer ambas curvas con 2 escalas de eje Y independientes">Ambas</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- FILTRO TEMPORAL, COTA POSADAS Y CSV -->
+            <div class="flex items-center flex-wrap gap-2">
+              <!-- Rango de tiempo -->
+              <div class="bg-slate-100 dark:bg-slate-900 p-1 rounded-lg border border-slate-200 dark:border-slate-800 flex items-center space-x-1 text-xs">
+                <button onclick="setRange('24h')" class="btn-range px-2.5 py-1 rounded font-bold transition active bg-sky-600 text-white" data-range="24h">24h</button>
+                <button onclick="setRange('7d')" class="btn-range px-2.5 py-1 rounded font-medium transition text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white" data-range="7d">7d</button>
+                <button onclick="setRange('30d')" class="btn-range px-2.5 py-1 rounded font-medium transition text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white" data-range="30d">30d</button>
+                <button onclick="setRange('todo')" class="btn-range px-2.5 py-1 rounded font-medium transition text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white" data-range="todo">Todo</button>
+              </div>
+
+              <!-- Panel Cota Posadas -->
+              <div id="posadas-cota-panel" class="hidden items-center space-x-2 bg-slate-100 dark:bg-slate-900 px-2.5 py-1 rounded-lg border border-slate-200 dark:border-slate-800 text-xs">
+                <span class="text-[11px] font-bold text-slate-500">Ver:</span>
+                <button id="btn-posadas-nivel" onclick="setPosadasMode('nivel')" class="px-2 py-0.5 rounded font-bold transition bg-sky-600 text-white">Nivel</button>
+                <button id="btn-posadas-cota" onclick="setPosadasMode('cota')" class="px-2 py-0.5 rounded font-medium transition text-slate-600 dark:text-slate-400">Cota</button>
+                <label for="posadas-offset-input" class="text-[11px] text-slate-400">Offset:</label>
+                <input id="posadas-offset-input" type="number" step="0.01" value="71.53" onchange="setPosadasOffset(this.value)" class="w-16 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded px-1.5 py-0.5 text-xs font-mono font-bold text-sky-600 text-center">
+              </div>
+
+              <!-- Reset Zoom -->
+              <button onclick="resetZoom()" class="bg-white hover:bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 px-2.5 py-1 rounded-lg text-xs font-medium transition" title="Restablecer zoom del gráfico">
+                Zoom Reset
+              </button>
+
+              <!-- Descarga CSV -->
+              <button onclick="downloadCSV()" class="flex items-center space-x-1 bg-white hover:bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 px-2.5 py-1 rounded-lg text-xs font-medium transition" title="Descargar datos en CSV">
+                <svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
                 </svg>
+                <span>CSV</span>
               </button>
             </div>
           </div>
 
-          <!-- Acciones de mapa de lluvias -->
-          <div class="flex items-center space-x-2">
-            <button onclick="syncSimeparMap()" id="btn-sync-simepar" class="flex items-center space-x-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white border border-slate-200 dark:border-slate-700 px-3 py-1.5 rounded-lg text-xs font-medium transition shadow-sm">
-              <svg id="sync-simepar-icon" class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
-              </svg>
-              <span id="sync-simepar-label">Descargar mapa de ayer</span>
-            </button>
-            <a id="btn-download-simepar-img" href="#" target="_blank" download class="bg-sky-600 hover:bg-sky-500 text-white px-3 py-1.5 rounded-lg text-xs font-medium transition shadow-sm flex items-center space-x-1">
-              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
-              <span>Guardar PNG</span>
-            </a>
+          <!-- MODO 1: COCKPIT LIMNIGRÁFICO EN 2 COLUMNAS (NO ESTIRADO) -->
+          <div id="single-plot-view" class="space-y-3 sm:space-y-3.5">
+            
+            <!-- Encabezado de la Estación con Selector Rápido e Información -->
+            <div class="card-panel p-2.5 sm:p-3 space-y-2">
+              <div class="flex flex-wrap items-center justify-between gap-2.5">
+                <!-- Selector Principal y Estación Activa -->
+                <div class="flex items-center flex-wrap gap-2 min-w-0">
+                  <div class="flex items-center space-x-2">
+                    <span class="text-xs font-bold uppercase tracking-wider text-slate-500">Estación:</span>
+                    <select id="charts-station-select" onchange="selectStation(parseInt(this.value), true)" 
+                            class="bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg px-2.5 py-1 text-xs font-bold text-slate-900 dark:text-white shadow-xs focus:outline-none focus:ring-2 focus:ring-sky-500 max-w-[240px] sm:max-w-[360px] md:max-w-[420px]">
+                      <option value="">Cargando estaciones...</option>
+                    </select>
+                  </div>
+
+                  <!-- Botones Rápidos de Referencia -->
+                  <div class="hidden sm:flex items-center space-x-1 text-xs">
+                    <span class="text-[10px] text-slate-400 font-medium mr-0.5">Rápidos:</span>
+                    <button type="button" onclick="selectStationByCode('PNJUPI')" class="px-2 py-0.5 rounded text-[11px] font-semibold bg-slate-100 hover:bg-sky-100 dark:bg-slate-800 dark:hover:bg-sky-950/60 text-slate-700 dark:text-slate-300 hover:text-sky-700 dark:hover:text-sky-400 transition" title="Jupiá (Eng. Souza Dias - ONS)">Jupiá</button>
+                    <button type="button" onclick="selectStationByCode('PNPPRI')" class="px-2 py-0.5 rounded text-[11px] font-semibold bg-slate-100 hover:bg-sky-100 dark:bg-slate-800 dark:hover:bg-sky-950/60 text-slate-700 dark:text-slate-300 hover:text-sky-700 dark:hover:text-sky-400 transition" title="Porto Primavera (Eng. Sérgio Motta - ONS)">P. Primavera</button>
+                    <button type="button" onclick="selectStationByCode('PUERTO_IGUAZU')" class="px-2 py-0.5 rounded text-[11px] font-semibold bg-slate-100 hover:bg-sky-100 dark:bg-slate-800 dark:hover:bg-sky-950/60 text-slate-700 dark:text-slate-300 hover:text-sky-700 dark:hover:text-sky-400 transition">Iguazú</button>
+                    <button type="button" onclick="selectStationByCode('POSADAS')" class="px-2 py-0.5 rounded text-[11px] font-semibold bg-slate-100 hover:bg-sky-100 dark:bg-slate-800 dark:hover:bg-sky-950/60 text-slate-700 dark:text-slate-300 hover:text-sky-700 dark:hover:text-sky-400 transition">Posadas</button>
+                    <button type="button" onclick="selectStationByCode('ITUZAINGO')" class="px-2 py-0.5 rounded text-[11px] font-semibold bg-slate-100 hover:bg-sky-100 dark:bg-slate-800 dark:hover:bg-sky-950/60 text-slate-700 dark:text-slate-300 hover:text-sky-700 dark:hover:text-sky-400 transition">Ituzaingó</button>
+                    <button type="button" onclick="selectStationByCode('CORRIENTES')" class="px-2 py-0.5 rounded text-[11px] font-semibold bg-slate-100 hover:bg-sky-100 dark:bg-slate-800 dark:hover:bg-sky-950/60 text-slate-700 dark:text-slate-300 hover:text-sky-700 dark:hover:text-sky-400 transition">Corrientes</button>
+                    <button type="button" onclick="selectStationByCode('SANTAFE')" class="px-2 py-0.5 rounded text-[11px] font-semibold bg-slate-100 hover:bg-sky-100 dark:bg-slate-800 dark:hover:bg-sky-950/60 text-slate-700 dark:text-slate-300 hover:text-sky-700 dark:hover:text-sky-400 transition">Santa Fe</button>
+                    <button type="button" onclick="selectStationByCode('ROSARIO')" class="px-2 py-0.5 rounded text-[11px] font-semibold bg-slate-100 hover:bg-sky-100 dark:bg-slate-800 dark:hover:bg-sky-950/60 text-slate-700 dark:text-slate-300 hover:text-sky-700 dark:hover:text-sky-400 transition">Rosario</button>
+                  </div>
+                </div>
+
+                <!-- Cota, Coords y Botón de Umbrales -->
+                <div class="flex items-center space-x-2">
+                  <span id="station-cota-badge" class="hidden text-[10px] px-2 py-0.5 rounded-full font-bold bg-sky-100 dark:bg-sky-950 text-sky-700 dark:text-sky-400 border border-sky-300 dark:border-sky-800 uppercase">Cota msnm</span>
+                  
+                  <!-- Botón Configurar Umbrales -->
+                  <button type="button" onclick="openThresholdsModal(State.selectedStationId)" class="flex items-center space-x-1.5 bg-amber-500/10 hover:bg-amber-500/20 active:bg-amber-500/25 text-amber-700 dark:text-amber-300 text-xs font-semibold px-2.5 py-1 rounded-lg border border-amber-500/30 transition shadow-xs" title="Configurar niveles de alerta para esta estación">
+                    <svg class="w-3.5 h-3.5 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"/>
+                    </svg>
+                    <span>Configurar Umbrales</span>
+                  </button>
+                </div>
+              </div>
+
+              <!-- Detalle de nombre y metadatos -->
+              <div class="border-t border-slate-100 dark:border-slate-800/80 pt-1.5 flex flex-wrap items-baseline justify-between gap-1">
+                <h2 id="current-station-title" class="text-base sm:text-lg font-bold text-slate-900 dark:text-white tracking-tight truncate">Seleccione una estación</h2>
+                <p id="current-station-meta" class="text-[11px] text-slate-500 dark:text-slate-400">Cargando mediciones...</p>
+              </div>
+            </div>
+
+            <!-- GRID PRINCIPAL DEL COCKPIT (8 COLS IZQ / 4 COLS DER) -->
+            <div class="grid grid-cols-1 xl:grid-cols-12 gap-3 sm:gap-3.5 items-start">
+              
+              <!-- COLUMNA IZQUIERDA: GRÁFICO + TABLA (8 COLS) -->
+              <div class="xl:col-span-8 flex flex-col space-y-3 sm:space-y-3.5 min-w-0">
+                
+                <!-- GRÁFICO PRINCIPAL DE EVOLUCIÓN TEMPORAL -->
+                <div class="card-panel p-3 sm:p-3.5 flex flex-col relative">
+                  <div class="flex items-center justify-between mb-1.5">
+                    <h3 class="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center gap-2">
+                      <span class="w-2 h-2 rounded-full bg-[#008348]"></span>
+                      <span>Evolución Temporal de Altura</span>
+                    </h3>
+                  </div>
+
+                  <div class="relative w-full" style="height: 380px; min-height: 320px;">
+                    <canvas id="mainHeightChart" style="width: 100%; height: 100%; display: block;"></canvas>
+
+                    <!-- Botón Flotante Reiniciar Zoom (Estilo PNA) -->
+                    <button id="floating-reset-zoom-main" type="button" onclick="Charts.resetZoom()" class="hidden absolute top-2 right-2 z-10 px-2.5 py-1 rounded-md text-xs font-semibold bg-white/95 dark:bg-slate-900/95 text-sky-700 dark:text-sky-300 border border-slate-200 dark:border-slate-700 shadow-sm hover:bg-sky-50 dark:hover:bg-slate-800 transition items-center gap-1.5 backdrop-blur-xs">
+                      <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                      <span>Reiniciar zoom</span>
+                    </button>
+                    
+                    <!-- Loader -->
+                    <div id="chart-loader" class="hidden absolute inset-0 bg-white/80 dark:bg-slate-950/70 backdrop-blur-sm flex flex-col items-center justify-center rounded-xl space-y-2 z-10">
+                      <div class="w-6 h-6 border-2 border-emerald-600 border-t-transparent rounded-full animate-spin"></div>
+                      <span class="text-xs text-slate-700 dark:text-slate-300">Cargando mediciones...</span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- TABLA DE LECTURAS RECIENTES -->
+                <div class="card-panel p-2.5 sm:p-3">
+                  <div class="flex items-center justify-between mb-1.5 pb-1 border-b border-slate-100 dark:border-slate-800">
+                    <h4 class="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
+                      Últimas Mediciones Registradas
+                    </h4>
+                    <span id="kpi-points-count" class="text-[11px] font-mono text-slate-400">-- mediciones</span>
+                  </div>
+                  <div class="overflow-x-auto max-h-[160px] sm:max-h-[190px]">
+                    <table class="w-full text-xs text-left">
+                      <thead class="text-slate-600 dark:text-slate-400 border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/40 sticky top-0">
+                        <tr>
+                          <th class="py-1.5 px-2.5 font-semibold text-[11px] sm:text-xs">Fecha y Hora</th>
+                          <th class="py-1.5 px-2.5 font-semibold text-[11px] sm:text-xs text-sky-700 dark:text-sky-400">Medición AGP</th>
+                          <th class="py-1.5 px-2.5 font-semibold text-[11px] sm:text-xs text-amber-600 dark:text-amber-400">Prefectura PNA</th>
+                          <th class="py-1.5 px-2.5 font-semibold text-[11px] sm:text-xs">Variación / Tendencia</th>
+                        </tr>
+                      </thead>
+                      <tbody id="readings-table-body" class="divide-y divide-slate-100 dark:divide-slate-800/40 text-slate-700 dark:text-slate-300 font-mono">
+                        <tr><td colspan="4" class="py-3 text-center text-slate-400">Seleccione una estación</td></tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
+              </div>
+
+              <!-- COLUMNA DERECHA: SITUACIÓN + GAUGE + EXTREMOS + HERRAMIENTAS (4 COLS) -->
+              <div class="xl:col-span-4 flex flex-col space-y-2.5 sm:space-y-3">
+                
+                <!-- CARD 1: NIVEL ACTUAL & MONITOREO DUAL (AGP + PREFECTURA) -->
+                <div class="card-panel p-3 sm:p-3.5 space-y-2.5">
+                  <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-800/80 pb-1.5">
+                    <div class="text-[11px] uppercase font-bold tracking-wider text-slate-500">Medición Dual Oficial</div>
+                    <div class="flex items-center space-x-1.5">
+                      <span id="sit-status-badge" class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+                      <span id="sit-status-text" class="text-xs font-extrabold font-data text-slate-900 dark:text-white uppercase">NORMAL</span>
+                    </div>
+                  </div>
+
+                  <!-- 1. Medición AGP en Tiempo Real -->
+                  <div class="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 space-y-1">
+                    <div class="flex items-center justify-between text-[10px] text-slate-500 dark:text-slate-400 font-semibold uppercase tracking-wider">
+                      <span class="flex items-center gap-1.5 text-sky-700 dark:text-sky-400 font-bold">
+                        <span class="w-2 h-2 rounded-full bg-sky-500 animate-pulse"></span>
+                        <span>Medición AGP</span>
+                      </span>
+                      <span id="sit-current-trend" class="text-[10px] px-1.5 py-0.5 rounded font-bold bg-slate-200/70 dark:bg-slate-800 text-slate-700 dark:text-slate-300">▬ Estable</span>
+                    </div>
+                    <div class="flex items-baseline justify-between">
+                      <div class="flex items-baseline space-x-1">
+                        <span id="sit-current-val" class="text-2xl sm:text-3xl font-extrabold text-[#0080c8] dark:text-sky-400 font-data">--</span>
+                        <span class="kpi-unit-label text-xs font-bold text-slate-400">m</span>
+                        <span id="sit-current-rate" class="text-[10px] font-mono font-bold text-slate-500 ml-1"></span>
+                      </div>
+                      <span id="sit-current-time" class="text-[10px] text-slate-400 font-mono text-right truncate max-w-[140px]">--:--</span>
+                    </div>
+
+                    <!-- Alerta de falta de reporte -->
+                    <div id="sit-transmission-warning" class="hidden mt-2 p-2 rounded-lg bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/80 text-amber-800 dark:text-amber-300 text-[11px] font-semibold flex items-center space-x-2">
+                      <svg class="w-4 h-4 shrink-0 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                      </svg>
+                      <span id="sit-transmission-warning-text">Estación sin reporte reciente</span>
+                    </div>
+                  </div>
+
+                  <!-- 2. Prefectura Naval Argentina (PNA) Oficial -->
+                  <div class="p-2.5 rounded-xl bg-amber-50/60 dark:bg-amber-950/20 border border-amber-200/80 dark:border-amber-900/40 space-y-1">
+                    <div class="flex items-center justify-between text-[10px] text-slate-500 dark:text-slate-400 font-semibold uppercase tracking-wider">
+                      <span id="sit-pna-title" class="flex items-center gap-1.5 text-amber-800 dark:text-amber-400 font-bold">
+                        <span>⚓ Prefectura Naval Argentina</span>
+                      </span>
+                      <span id="sit-pna-trend" class="text-[10px] px-1.5 py-0.5 rounded font-bold bg-amber-200/60 dark:bg-amber-900/40 text-amber-900 dark:text-amber-200">--</span>
+                    </div>
+                    <div class="flex items-baseline justify-between">
+                      <div class="flex items-baseline space-x-1">
+                        <span id="sit-pna-val" class="text-2xl sm:text-3xl font-extrabold text-amber-700 dark:text-amber-300 font-data">--</span>
+                        <span class="text-xs font-bold text-amber-600/70 dark:text-amber-400/70">m</span>
+                      </div>
+                      <span id="sit-pna-time" class="text-[10px] text-amber-700/80 dark:text-amber-400/80 font-mono text-right truncate max-w-[150px]">Guardia: --</span>
+                    </div>
+                  </div>
+
+                  <!-- 3. Indicador de Offset / Discrepancia entre fuentes -->
+                  <div id="sit-diff-container" class="flex items-center justify-between px-2.5 py-1.5 rounded-lg bg-slate-100/80 dark:bg-slate-800/60 text-xs">
+                    <span class="text-[11px] font-medium text-slate-600 dark:text-slate-400 flex items-center gap-1.5">
+                      <span class="text-slate-400 font-bold">⚖️</span>
+                      <span>Diferencia (AGP − PNA):</span>
+                    </span>
+                    <span id="sit-diff-val" class="font-data font-bold text-xs text-slate-800 dark:text-slate-200">--</span>
+                  </div>
+
+                  <!-- 4. Proyección de Márgenes de Seguridad -->
+                  <div class="bg-slate-50 dark:bg-slate-900/60 p-2 rounded-lg border border-slate-200 dark:border-slate-800 text-[11px] text-slate-600 dark:text-slate-300 leading-snug" id="sit-status-projection">
+                    Calculando márgenes respecto a umbrales oficiales...
+                  </div>
+                </div>
+
+                <!-- CARD 2: MEDIDOR HORIZONTAL PROPORCIONAL (NIVEL-BAR GAUGE) -->
+                <div id="nivel-bar-wrap" class="card-panel p-3 space-y-1.5">
+                  <div class="flex items-center justify-between text-xs">
+                    <span class="font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 text-[10px]">Escala de Seguridad Oficial</span>
+                    <span class="text-[10px] font-mono text-slate-400">Umbrales MOP / EBY</span>
+                  </div>
+                  
+                  <div class="nivel-bar-track relative my-2 h-2.5 bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden">
+                    <div id="nivel-bar-inner" class="nivel-bar-fill h-full bg-emerald-500 rounded-full transition-all duration-500" style="width: 0%;"></div>
+                  </div>
+
+                  <!-- Umbrales en leyenda inferior limpia (Oficiales PNA: Alerta y Evacuación) -->
+                  <div class="flex items-center justify-around text-[10px] sm:text-[11px] text-slate-500 dark:text-slate-400 font-mono pt-1 border-t border-slate-100 dark:border-slate-800/80 gap-2 overflow-x-auto">
+                    <div class="flex items-center gap-1.5 shrink-0 whitespace-nowrap">
+                      <span class="w-2 h-2 rounded-full bg-orange-500"></span>
+                      <span>Alerta Oficial: <strong id="lbl-val-alerta" class="text-orange-600 dark:text-orange-400 font-bold">--</strong></span>
+                    </div>
+                    <div class="flex items-center gap-1.5 shrink-0 whitespace-nowrap">
+                      <span class="w-2 h-2 rounded-full bg-red-600"></span>
+                      <span>Evacuación Oficial: <strong id="lbl-val-evac" class="text-red-600 dark:text-red-400 font-bold">--</strong></span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- CARD 3: EXTREMOS DEL PERÍODO (MÍN, MÁX, PROMEDIO) -->
+                <div class="card-panel p-2.5 sm:p-3 space-y-2">
+                  <div class="text-[10px] uppercase font-bold text-slate-500 tracking-wider">Estadísticas del Período</div>
+                  
+                  <div class="grid grid-cols-2 gap-1.5 sm:gap-2 text-xs">
+                    <div class="bg-slate-50 dark:bg-slate-900/60 p-1.5 sm:p-2 rounded-lg border border-slate-200 dark:border-slate-800">
+                      <div class="text-[9px] sm:text-[10px] text-slate-400 font-medium">Máxima (Pico)</div>
+                      <div class="flex items-baseline space-x-1 mt-0.5">
+                        <span id="kpi-val-max" class="text-sm sm:text-base font-extrabold font-data text-emerald-600 dark:text-emerald-400">--</span>
+                        <span class="kpi-unit-label text-[10px] text-slate-400">m</span>
+                      </div>
+                    </div>
+
+                    <div class="bg-slate-50 dark:bg-slate-900/60 p-1.5 sm:p-2 rounded-lg border border-slate-200 dark:border-slate-800">
+                      <div class="text-[9px] sm:text-[10px] text-slate-400 font-medium">Mínima</div>
+                      <div class="flex items-baseline space-x-1 mt-0.5">
+                        <span id="kpi-val-min" class="text-sm sm:text-base font-extrabold font-data text-amber-600 dark:text-amber-400">--</span>
+                        <span class="kpi-unit-label text-[10px] text-slate-400">m</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="grid grid-cols-2 gap-1.5 sm:gap-2 text-xs">
+                    <div class="bg-slate-50 dark:bg-slate-900/60 p-1.5 sm:p-2 rounded-lg border border-slate-200 dark:border-slate-800">
+                      <div class="text-[9px] sm:text-[10px] text-slate-400 font-medium">Variación 24h</div>
+                      <div id="sit-24h-val" class="text-sm sm:text-base font-extrabold font-data text-slate-800 dark:text-slate-200 mt-0.5">--</div>
+                    </div>
+
+                    <div class="bg-slate-50 dark:bg-slate-900/60 p-1.5 sm:p-2 rounded-lg border border-slate-200 dark:border-slate-800">
+                      <div class="text-[9px] sm:text-[10px] text-slate-400 font-medium">Promedio</div>
+                      <div class="flex items-baseline space-x-1 mt-0.5">
+                        <span id="kpi-val-avg" class="text-sm sm:text-base font-extrabold font-data text-slate-700 dark:text-slate-300">--</span>
+                        <span class="kpi-unit-label text-[10px] text-slate-400">m</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Elementos ocultos pero retenidos para compatibilidad de scripts JS -->
+                <div class="hidden">
+                  <span id="kpi-val-current"></span>
+                  <span id="kpi-time-current"></span>
+                  <span id="sit-24h-range"></span>
+                </div>
+
+              </div>
+            </div>
+
+          </div>
+
+          <!-- MODO MULTI-PLOT: SUBPLOTS (2, 4, 8) -->
+          <div id="multi-plot-view" class="hidden w-full">
+            <div id="subplots-grid" class="grid gap-3.5"></div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- ============================================================
+           VISTA 3: MAPA INTERACTIVO & RADAR DE LLUVIAS EN VIVO
+           ============================================================ -->
+      <div id="view-map-container" class="hidden flex-1 flex flex-col p-2.5 sm:p-4 lg:p-5 space-y-2.5 overflow-hidden">
+        <div class="dashboard-container flex-1 flex flex-col space-y-2.5 min-h-0">
+          
+          <!-- BARRA DE HERRAMIENTAS DEL MAPA -->
+          <div class="card-panel p-2.5 sm:p-3 flex flex-wrap items-center justify-between gap-2 shrink-0">
+            <div class="flex items-center space-x-2">
+              <span class="text-xs font-bold text-slate-800 dark:text-slate-200">Mapa Georreferenciado:</span>
+              <select id="map-station-select" onchange="onMapStationSelectChange(this.value)" class="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-200 text-xs rounded-lg px-2 py-1 focus:outline-none font-medium">
+                <option value="">Ir a una estación...</option>
+              </select>
+            </div>
+
+            <!-- Zonas Rápidas -->
+            <div class="flex items-center space-x-1 text-xs">
+              <span class="text-slate-400 text-[10px] hidden md:inline">Zonas:</span>
+              <button onclick="zoomMapToRegion('alto_parana')" class="bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 px-2 py-0.5 rounded text-[11px] transition font-semibold text-sky-600 dark:text-sky-400">Alto Paraná (Jupiá/Primavera)</button>
+              <button onclick="zoomMapToRegion('iguazu')" class="bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 px-2 py-0.5 rounded text-[11px] transition">Iguazú / Itaipú</button>
+              <button onclick="zoomMapToRegion('represas')" class="bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 px-2 py-0.5 rounded text-[11px] transition font-semibold text-emerald-600 dark:text-emerald-400">Cascada Completa</button>
+              <button onclick="zoomMapToRegion('paraguay')" class="bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 px-2 py-0.5 rounded text-[11px] transition">Río Paraguay</button>
+              <button onclick="zoomMapToRegion('medio')" class="bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 px-2 py-0.5 rounded text-[11px] transition">Paraná Medio</button>
+              <button onclick="zoomMapToRegion('delta')" class="bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 px-2 py-0.5 rounded text-[11px] transition">Delta & Plata</button>
+            </div>
+
+            <!-- Interruptor Radar RainViewer -->
+            <div class="flex items-center space-x-2 border-l border-slate-200 dark:border-slate-800 pl-2.5">
+              <label class="flex items-center space-x-1.5 text-xs cursor-pointer">
+                <input type="checkbox" id="radar-toggle" onchange="toggleRadar(this.checked)" class="rounded text-sky-600 focus:ring-sky-500">
+                <span class="font-bold text-sky-600 dark:text-sky-400 text-xs">Radar Lluvias</span>
+              </label>
+            </div>
+          </div>
+
+          <!-- PANEL DE CONTROLES DEL RADAR (Visible cuando radar está activo) -->
+          <div id="radar-controls-panel" class="hidden card-panel p-2 sm:p-2.5 flex items-center justify-between gap-2.5 text-xs bg-slate-50 dark:bg-slate-900 shrink-0">
+            <div class="flex items-center space-x-2">
+              <button id="radar-play-btn" onclick="toggleRadarPlay()" class="px-2.5 py-1 rounded-md bg-sky-600 text-white font-bold hover:bg-sky-500 transition">
+                ▶ Reproducir
+              </button>
+              <span id="radar-timestamp-label" class="font-mono font-bold text-slate-700 dark:text-slate-300">-- hs</span>
+            </div>
+
+            <div class="flex-1 max-w-xs flex items-center space-x-2">
+              <span class="text-[10px] text-slate-400">Tiempo:</span>
+              <input id="radar-slider" type="range" min="0" max="10" value="0" oninput="stepRadarSlider(this.value)" class="w-full cursor-pointer accent-sky-600">
+            </div>
+
+            <div class="flex items-center space-x-2">
+              <span class="text-[10px] text-slate-400">Opacidad:</span>
+              <input type="range" min="0.1" max="1.0" step="0.05" value="0.70" oninput="setRadarOpacity(this.value)" class="w-20 cursor-pointer accent-sky-600">
+              <span id="radar-opacity-label" class="text-[10px] font-mono font-bold text-slate-500">70%</span>
+            </div>
+          </div>
+
+          <!-- CONTENEDOR DEL MAPA LEAFLET -->
+          <div class="flex-1 w-full rounded-xl overflow-hidden border border-slate-200 dark:border-slate-800 relative shadow-inner min-h-[360px] sm:min-h-[420px]">
+            <div id="map-leaflet" class="w-full h-full"></div>
+            
+            <!-- LEYENDA RADAR -->
+            <div id="radar-legend-panel" class="hidden absolute bottom-3 left-3 z-[600] card-panel p-2.5 text-[10px] shadow-lg max-w-[170px] space-y-1">
+              <div class="font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider text-[9px] mb-1">Radar de Lluvias</div>
+              <div class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded" style="background:#83B8EB"></span><span>Débil</span></div>
+              <div class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded" style="background:#4FAF6F"></span><span>Moderada</span></div>
+              <div class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded" style="background:#E8D820"></span><span>Fuerte</span></div>
+              <div class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded" style="background:#E88420"></span><span>Muy fuerte</span></div>
+              <div class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded" style="background:#C42020"></span><span>Torrencial</span></div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- ============================================================
+           VISTA 4: PRECIPITACIÓN DIARIA SIMEPAR
+           ============================================================ -->
+      <div id="view-simepar-container" class="hidden flex-1 flex flex-col p-2.5 sm:p-4 lg:p-5 space-y-2.5 overflow-hidden">
+        <div class="dashboard-container flex-1 flex flex-col space-y-3 min-h-0">
+          
+          <div class="card-panel p-3 flex flex-wrap items-center justify-between gap-3 shrink-0">
+            <div class="flex items-center space-x-3">
+              <span class="text-xs font-bold text-slate-800 dark:text-slate-200">Precipitación Acumulada Diaria (SIMEPAR):</span>
+              
+              <div class="flex items-center space-x-1.5 relative">
+                <button id="btn-simepar-prev-day" onclick="stepSimeparDate(-1)" title="Día anterior" class="w-8 h-8 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 rounded-lg flex items-center justify-center transition">◀</button>
+
+                <button id="simepar-calendar-btn" onclick="toggleSimeparCalendar()" class="flex items-center space-x-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 rounded-lg px-2.5 py-1.5 text-xs font-bold transition">
+                  <span>📅</span>
+                  <span id="simepar-calendar-display">Cargando fecha...</span>
+                  <span>▼</span>
+                </button>
+
+                <!-- Popover Mini-Calendario -->
+                <div id="simepar-calendar-popover" class="hidden absolute left-0 top-full mt-1.5 z-40 w-64 card-panel shadow-xl p-3">
+                  <div class="flex items-center justify-between mb-2">
+                    <button onclick="changeSimeparMonth(-1); event.stopPropagation();" class="p-1 rounded text-slate-500 hover:text-slate-900">◀</button>
+                    <span id="simepar-month-label" class="text-xs font-semibold capitalize text-slate-800 dark:text-slate-200">--</span>
+                    <button onclick="changeSimeparMonth(1); event.stopPropagation();" class="p-1 rounded text-slate-500 hover:text-slate-900">▶</button>
+                  </div>
+                  <div class="grid grid-cols-7 gap-1 text-center mb-1 text-[10px] font-semibold text-slate-400">
+                    <div>Lu</div><div>Ma</div><div>Mi</div><div>Ju</div><div>Vi</div><div>Sá</div><div>Do</div>
+                  </div>
+                  <div id="simepar-days-grid" class="grid grid-cols-7 gap-1 text-xs"></div>
+                  <div class="mt-2 pt-2 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-[10px]">
+                    <span class="text-slate-400">• Con mapa</span>
+                    <button onclick="goToLatestSimeparDate(); event.stopPropagation();" class="text-sky-600 hover:underline font-bold">Último disponible</button>
+                  </div>
+                </div>
+
+                <button id="btn-simepar-next-day" onclick="stepSimeparDate(1)" title="Día posterior" class="w-8 h-8 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 rounded-lg flex items-center justify-center transition">▶</button>
+              </div>
+            </div>
+
+            <div class="flex items-center space-x-2">
+              <button onclick="syncSimeparMap()" class="bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 px-3 py-1.5 rounded-lg text-xs font-medium transition">
+                Descargar mapa de ayer
+              </button>
+              <a id="btn-download-simepar-img" href="#" target="_blank" download class="bg-sky-600 hover:bg-sky-500 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center space-x-1">
+                <span>Guardar PNG</span>
+              </a>
+            </div>
+          </div>
+
+          <!-- Contenedor Imagen SIMEPAR -->
+          <div class="flex-1 w-full rounded-xl overflow-auto border border-slate-200 dark:border-slate-800 relative bg-white dark:bg-[#0c1a2b] flex items-center justify-center p-3 shadow-inner">
+            <img id="simepar-map-img" src="" alt="Mapa de precipitación SIMEPAR" class="max-h-full max-w-full object-contain rounded-lg shadow" />
           </div>
         </div>
-
-        <!-- Contenedor del Mapa SIMEPAR -->
-        <div class="flex-1 w-full rounded-xl overflow-auto border border-slate-200 dark:border-slate-800 relative bg-white dark:bg-slate-900 flex items-center justify-center p-3 shadow-sm">
-          <img id="simepar-map-img" src="" alt="Mapa de precipitación SIMEPAR" class="max-h-full max-w-full object-contain rounded-lg shadow" />
-          <div id="simepar-loader" class="hidden absolute inset-0 bg-white/80 dark:bg-slate-950/70 backdrop-blur-sm flex flex-col items-center justify-center rounded-xl space-y-2 z-10">
-            <div class="w-6 h-6 border-2 border-sky-500 border-t-transparent rounded-full animate-spin"></div>
-            <span class="text-xs text-slate-700 dark:text-slate-300">Cargando mapa SIMEPAR...</span>
-          </div>
-        </div>
-
       </div>
 
     </main>
   </div>
 
-  <!-- NOTIFICACIÓN TOAST -->
-  <div id="toast" class="fixed bottom-5 right-5 glass-card px-4 py-3 rounded-lg shadow-xl dark:shadow-2xl flex items-center space-x-3 transition-all duration-300 opacity-0 pointer-events-none translate-y-3 z-50 max-w-md">
-    <div id="toast-icon" class="text-emerald-600 dark:text-emerald-400 font-bold shrink-0">✓</div>
+  <!-- ============================================================
+       MODAL DE CONFIGURACIÓN DE UMBRALES HIDROLÓGICOS
+       ============================================================ -->
+  <div id="modal-umbrales" class="fixed inset-0 z-50 bg-slate-950/75 backdrop-blur-sm items-center justify-center p-3 sm:p-4" style="display: none;" onclick="handleModalBackdropClick(event)">
+    <div class="bg-white dark:bg-[#0c1a2b] border border-slate-200 dark:border-[#1a2f47] rounded-2xl shadow-2xl max-w-2xl w-full max-h-[92vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-150" onclick="event.stopPropagation()">
+      
+      <!-- Modal Header -->
+      <div class="p-4 sm:p-5 border-b border-slate-200 dark:border-[#1a2f47] flex items-center justify-between bg-slate-50/70 dark:bg-[#081525]">
+        <div class="flex items-center space-x-3">
+          <div class="w-9 h-9 rounded-xl bg-amber-500/10 dark:bg-amber-400/10 border border-amber-500/20 flex items-center justify-center text-amber-600 dark:text-amber-400">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"/>
+            </svg>
+          </div>
+          <div>
+            <h3 class="text-base font-bold text-slate-900 dark:text-white">Configuración de Umbrales Hidrológicos</h3>
+            <p class="text-xs text-slate-500 dark:text-slate-400">Niveles oficiales de Prefectura Naval Argentina (Alerta y Evacuación)</p>
+          </div>
+        </div>
+        <button onclick="closeThresholdsModal()" class="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
+
+      <!-- Modal Body -->
+      <div class="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4">
+        
+        <!-- BANNER OFICIAL PREFECTURA NAVAL ARGENTINA -->
+        <div class="p-3.5 rounded-xl bg-gradient-to-r from-sky-500/10 via-emerald-500/10 to-transparent border border-sky-300 dark:border-sky-800 flex flex-wrap items-center justify-between gap-2.5 shadow-xs">
+          <div class="flex items-center space-x-2.5">
+            <div class="w-8 h-8 rounded-lg bg-sky-500/15 flex items-center justify-center text-sky-600 dark:text-sky-300 font-bold text-sm">
+              ⚓
+            </div>
+            <div>
+              <span class="font-bold text-xs text-slate-900 dark:text-slate-100 block">Niveles Oficiales Prefectura Naval Argentina</span>
+              <span class="text-[10px] text-slate-500 dark:text-slate-400">Extraídos en vivo de <a href="https://contenidosweb.prefecturanaval.gob.ar/alturas/index.php" target="_blank" class="underline text-sky-600 dark:text-sky-400">contenidosweb.prefecturanaval.gob.ar</a></span>
+            </div>
+          </div>
+          <button type="button" id="btn-sync-pna" onclick="handleSyncPrefecturaClick()" class="px-3 py-1.5 rounded-lg text-xs font-bold bg-[#008348] hover:bg-[#006e3c] active:bg-[#005a31] text-white transition shadow-xs flex items-center space-x-1.5 cursor-pointer" title="Descargar y sincronizar umbrales oficiales PNA">
+            <svg id="sync-pna-icon" class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+            </svg>
+            <span>Sincronizar con Prefectura</span>
+          </button>
+        </div>
+
+        <!-- Selector de Estación -->
+        <div>
+          <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">
+            Estación a Configurar:
+          </label>
+          <select id="threshold-station-select" onchange="onThresholdStationSelected(this.value)" class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg p-2.5 text-xs text-slate-900 dark:text-slate-100 font-semibold focus:outline-none focus:ring-2 focus:ring-sky-500">
+            <option value="">Cargando estaciones...</option>
+          </select>
+        </div>
+
+        <!-- Info de Telemetría Actual -->
+        <div id="threshold-station-preview" class="p-3 bg-slate-50 dark:bg-slate-900/60 rounded-xl border border-slate-200 dark:border-slate-800 flex items-center justify-between">
+          <div>
+            <span id="threshold-preview-name" class="font-bold text-xs text-slate-900 dark:text-white block">Estación seleccionada</span>
+            <span id="threshold-preview-basin" class="text-[10px] text-slate-500">Río / Cuenca</span>
+          </div>
+          <div class="text-right flex items-center gap-3">
+            <div>
+              <div class="text-[10px] text-slate-400 uppercase font-semibold">Cota Actual</div>
+              <span id="threshold-preview-height" class="font-data font-extrabold text-base text-sky-600 dark:text-sky-400">-- m</span>
+            </div>
+            <span id="threshold-preview-status" class="text-[10px] font-bold px-2 py-1 rounded-md uppercase bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">
+              NORMAL
+            </span>
+          </div>
+        </div>
+
+        <!-- Formulario de Umbrales Oficiales -->
+        <form id="form-thresholds" onsubmit="handleThresholdsFormSubmit(event)" class="space-y-4">
+          
+          <!-- Interruptor Activar / Desactivar Alertas de la Estación -->
+          <div class="p-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/40 flex items-center justify-between gap-3">
+            <div class="flex items-start space-x-2.5">
+              <input type="checkbox" id="input-thresh-active" checked onchange="onThresholdActiveToggle(this.checked)" 
+                     class="mt-0.5 w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500 border-slate-300 dark:border-slate-700 cursor-pointer">
+              <div>
+                <label for="input-thresh-active" class="text-xs font-bold text-slate-800 dark:text-slate-100 cursor-pointer block">
+                  Habilitar alertas y semáforo para este hidrómetro
+                </label>
+                <span class="text-[10px] text-slate-500 dark:text-slate-400 block leading-tight">
+                  Al desmarcar, este hidrómetro no generará avisos en la barra de alertas ni semáforos de advertencia.
+                </span>
+              </div>
+            </div>
+            <span id="badge-thresh-active-state" class="text-[10px] font-bold px-2 py-0.5 rounded-full uppercase shrink-0 bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">
+              ACTIVO
+            </span>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            
+            <!-- 1. Alerta -->
+            <div class="p-3.5 rounded-xl border border-orange-300/70 dark:border-orange-900/50 bg-orange-50/50 dark:bg-orange-950/20 space-y-1.5">
+              <div class="flex items-center justify-between">
+                <span class="text-xs font-bold text-orange-800 dark:text-orange-300 flex items-center gap-1.5">
+                  <span class="w-2.5 h-2.5 rounded-full bg-orange-500"></span>
+                  <span>1. Nivel de Alerta Oficial (m)</span>
+                </span>
+                <span class="text-[10px] text-orange-600/80 font-mono font-semibold">Aviso preventivo PNA</span>
+              </div>
+              <input id="input-thresh-alerta" type="number" step="0.01" placeholder="Ej: 12.00" 
+                     class="w-full bg-white dark:bg-slate-900 border border-orange-200 dark:border-orange-800 rounded-lg p-2.5 text-xs font-mono font-bold text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-orange-500">
+            </div>
+
+            <!-- 2. Evacuación -->
+            <div class="p-3.5 rounded-xl border border-rose-300/70 dark:border-rose-900/50 bg-rose-50/50 dark:bg-rose-950/20 space-y-1.5">
+              <div class="flex items-center justify-between">
+                <span class="text-xs font-bold text-rose-800 dark:text-rose-300 flex items-center gap-1.5">
+                  <span class="w-2.5 h-2.5 rounded-full bg-rose-600"></span>
+                  <span>2. Nivel de Evacuación Oficial (m)</span>
+                </span>
+                <span class="text-[10px] text-rose-600/80 font-mono font-semibold">Afectación costera PNA</span>
+              </div>
+              <input id="input-thresh-evacuacion" type="number" step="0.01" placeholder="Ej: 13.50" 
+                     class="w-full bg-white dark:bg-slate-900 border border-rose-200 dark:border-rose-800 rounded-lg p-2.5 text-xs font-mono font-bold text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-rose-500">
+            </div>
+
+          </div>
+
+          <!-- Mensaje de estado -->
+          <div id="threshold-feedback-msg" class="hidden text-xs font-semibold p-2.5 rounded-lg"></div>
+
+          <!-- Botones de Acción -->
+          <div class="flex items-center justify-end space-x-2 pt-1">
+            <button type="button" onclick="handleResetThresholds()" class="px-3 py-2 rounded-lg text-xs font-medium text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 transition">
+              ↺ Restablecer estándar
+            </button>
+            <button type="submit" id="btn-save-thresholds" class="px-4 py-2 rounded-lg text-xs font-bold text-white bg-[#008348] hover:bg-[#006e3c] active:bg-[#005a31] transition shadow-xs flex items-center space-x-1.5">
+              <span>💾 Guardar Umbrales</span>
+            </button>
+          </div>
+        </form>
+
+        <!-- Tabla de referencia y activación/desactivación de alertas por estación -->
+        <div class="pt-3 border-t border-slate-200 dark:border-slate-800">
+          <div class="flex flex-wrap items-center justify-between gap-2 mb-2">
+            <div>
+              <span class="text-xs font-bold uppercase tracking-wider text-slate-800 dark:text-slate-200">
+                Control de Alertas y Umbrales por Estación:
+              </span>
+              <span class="block text-[10px] text-slate-500 dark:text-slate-400">
+                Active o desactive las alertas de cada hidrómetro con 1 clic (ej. estaciones aguas abajo).
+              </span>
+            </div>
+            <div class="relative">
+              <input id="input-thresh-table-search" type="text" placeholder="Filtrar estación..." oninput="window.filterThresholdModalTable(this.value)" class="bg-slate-100 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg px-2.5 py-1 text-xs text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-1 focus:ring-emerald-500">
+            </div>
+          </div>
+          <div class="overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-800 max-h-64 overflow-y-auto">
+            <table class="w-full text-xs text-left">
+              <thead class="bg-slate-50 dark:bg-slate-900/80 text-slate-600 dark:text-slate-400 font-semibold border-b border-slate-200 dark:border-slate-800 sticky top-0 z-10">
+                <tr>
+                  <th class="py-2 px-3">Estación</th>
+                  <th class="py-2 px-2 text-center">Alertas</th>
+                  <th class="py-2 px-2 text-center text-orange-600 dark:text-orange-400">Alerta (m)</th>
+                  <th class="py-2 px-2 text-center text-rose-600 dark:text-rose-400">Evacuación (m)</th>
+                  <th class="py-2 px-2 text-center">Acción</th>
+                </tr>
+              </thead>
+              <tbody id="threshold-modal-quick-list" class="divide-y divide-slate-100 dark:divide-slate-800/60 font-mono text-slate-700 dark:text-slate-300">
+                <!-- Dinámico -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Modal Footer -->
+      <div class="p-3 sm:p-4 border-t border-slate-200 dark:border-[#1a2f47] bg-slate-50/50 dark:bg-[#081525] flex justify-end">
+        <button type="button" onclick="closeThresholdsModal()" class="px-4 py-1.5 rounded-lg text-xs font-medium bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-300 dark:hover:bg-slate-700 transition">
+          Cerrar
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- TOAST FLOTANTE DE NOTIFICACIONES -->
+  <div id="toast" class="fixed bottom-5 right-5 card-panel px-4 py-3 shadow-xl flex items-center space-x-3 transition-all duration-300 opacity-0 pointer-events-none translate-y-3 z-50 max-w-md">
+    <div id="toast-icon" class="text-emerald-500 font-bold shrink-0">✓</div>
     <div class="text-xs">
-      <p id="toast-title" class="font-semibold text-slate-900 dark:text-white">Notificación</p>
+      <p id="toast-title" class="font-bold text-slate-900 dark:text-white">Notificación</p>
       <p id="toast-msg" class="text-slate-600 dark:text-slate-300 leading-normal">Mensaje</p>
     </div>
   </div>
 
-  <!-- ========================================== -->
-  <!-- JAVASCRIPT DE LA APLICACIÓN               -->
-  <!-- ========================================== -->
+  <!-- Control Inmediato de Modal para Interacción Garantizada -->
   <script>
-    // Variables de Estado
-    let allStations = [];
-    let selectedStationId = null;
-    let currentRange = '24h';
-    let currentViewMode = 'charts'; // 'charts' | 'map' | 'simepar'
-    let currentLayout = 1;          // 1, 2, 4, 8
-    let currentTheme = 'light';     // 'light' | 'dark'
-
-    // Arreglo de IDs de estación para hasta 8 subplots simultáneos
-    let subplotStationIds = [null, null, null, null, null, null, null, null];
-    
-    // Instancia de Chart.js para modo 1
-    let singleChartInstance = null;
-    
-    // Instancias de Chart.js para subplots (hasta 8)
-    let multiChartInstances = [];
-
-    // Instancia de Mapa Leaflet
-    let leafletMap = null;
-    let mapMarkers = {};
-    let currentTileLayer = null;
-
-    // PERSISTENCIA DE ESTADO EN LOCALSTORAGE
-    const STATE_STORAGE_KEY = 'hidropanel_app_state';
-
-    function saveAppState() {
-      try {
-        const state = {
-          viewMode: currentViewMode,
-          layout: currentLayout,
-          range: currentRange,
-          selectedStationId: selectedStationId,
-          subplotStationIds: subplotStationIds,
-          simeparDate: document.getElementById('simepar-date-select') ? document.getElementById('simepar-date-select').value : null
-        };
-        localStorage.setItem(STATE_STORAGE_KEY, JSON.stringify(state));
-      } catch (e) {
-        console.warn('No se pudo guardar el estado en localStorage', e);
+    window.openThresholdsModal = window.openThresholdsModal || function(stId) {
+      var m = document.getElementById('modal-umbrales');
+      if (m) {
+        m.style.display = 'flex';
+        m.classList.remove('hidden');
       }
-    }
-
-    function loadSavedAppState() {
-      try {
-        const raw = localStorage.getItem(STATE_STORAGE_KEY);
-        if (!raw) return null;
-        return JSON.parse(raw);
-      } catch (e) {
-        console.warn('No se pudo leer el estado previo de localStorage', e);
-        return null;
-      }
-    }
-
-    // -----------------------------------------------------------------
-    // CALIBRACIÓN Y VISUALIZACIÓN COTA vs NIVEL (ESTACIÓN POSADAS)
-    // -----------------------------------------------------------------
-    let posadasConfig = {
-      mode: 'nivel', // 'nivel' | 'cota'
-      offset: 71.53  // Calibración inicial para que Nivel (~9.97) + Offset (71.53) = Cota ~81.50
     };
-
-    function isPosadasStation(st) {
-      if (!st) return false;
-      const name = (st.nombre || '').toLowerCase();
-      const code = (st.codigo || '').toLowerCase();
-      return name.includes('posadas') || code.includes('posadas');
-    }
-
-    function loadPosadasConfig() {
-      try {
-        const raw = localStorage.getItem('hidropanel_posadas_cota');
-        if (raw) {
-          const parsed = JSON.parse(raw);
-          if (parsed && typeof parsed.offset === 'number' && !isNaN(parsed.offset)) {
-            posadasConfig.offset = parsed.offset;
-          }
-          if (parsed && ['nivel', 'cota'].includes(parsed.mode)) {
-            posadasConfig.mode = parsed.mode;
-          }
-        }
-      } catch (e) {
-        console.warn('Error leyendo posadasConfig', e);
-      }
-    }
-
-    function savePosadasConfig() {
-      try {
-        localStorage.setItem('hidropanel_posadas_cota', JSON.stringify(posadasConfig));
-      } catch (e) {
-        console.warn('Error guardando posadasConfig', e);
-      }
-    }
-
-    function setPosadasMode(mode) {
-      posadasConfig.mode = mode;
-      savePosadasConfig();
-      updatePosadasPanelUI();
-      if (selectedStationId && isPosadasStation(allStations.find(s => s.id === selectedStationId))) {
-        loadSingleStationData(selectedStationId, false);
-      }
-      refreshSubplotsForPosadas();
-      renderStationsList();
-    }
-
-    function setPosadasOffset(val) {
-      const num = parseFloat(val);
-      if (isNaN(num)) return;
-      posadasConfig.offset = num;
-      savePosadasConfig();
-      if (posadasConfig.mode === 'cota') {
-        if (selectedStationId && isPosadasStation(allStations.find(s => s.id === selectedStationId))) {
-          loadSingleStationData(selectedStationId, true);
-        }
-        refreshSubplotsForPosadas();
-        renderStationsList();
-      }
-    }
-
-    function updatePosadasPanelUI() {
-      const btnNivel = document.getElementById('btn-posadas-nivel');
-      const btnCota = document.getElementById('btn-posadas-cota');
-      const offsetInput = document.getElementById('posadas-offset-input');
-      const cotaBadge = document.getElementById('station-cota-badge');
-
-      if (offsetInput && document.activeElement !== offsetInput) {
-        offsetInput.value = posadasConfig.offset;
-      }
-
-      if (posadasConfig.mode === 'cota') {
-        if (btnCota) btnCota.className = 'px-2.5 py-1 rounded-md text-xs font-semibold transition bg-sky-600 dark:bg-sky-500 text-white shadow';
-        if (btnNivel) btnNivel.className = 'px-2.5 py-1 rounded-md text-xs font-medium transition text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white';
-        if (cotaBadge) cotaBadge.classList.remove('hidden');
-      } else {
-        if (btnNivel) btnNivel.className = 'px-2.5 py-1 rounded-md text-xs font-semibold transition bg-sky-600 dark:bg-sky-500 text-white shadow';
-        if (btnCota) btnCota.className = 'px-2.5 py-1 rounded-md text-xs font-medium transition text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white';
-        if (cotaBadge) cotaBadge.classList.add('hidden');
-      }
-    }
-
-    function refreshSubplotsForPosadas() {
-      if (currentLayout > 1) {
-        for (let i = 0; i < currentLayout; i++) {
-          const stId = subplotStationIds[i];
-          if (stId && isPosadasStation(allStations.find(s => s.id === stId))) {
-            loadSubplotData(i, stId, true);
-          }
-        }
-      }
-    }
-
-    // INICIALIZACIÓN
-    document.addEventListener('DOMContentLoaded', async () => {
-      // 0. Cargar configuración de Posadas (Cota vs Nivel)
-      loadPosadasConfig();
-      updatePosadasPanelUI();
-
-      // 1. Cargar tema preferido (por defecto tema claro si no fue seleccionado)
-      const savedTheme = localStorage.getItem('hidropanel_theme') || 'light';
-      applyTheme(savedTheme);
-
-      // 2. Restaurar estado de la aplicación desde localStorage
-      const savedState = loadSavedAppState();
-      if (savedState) {
-        if (savedState.range && ['24h', '7d', '30d', 'todo'].includes(savedState.range)) {
-          currentRange = savedState.range;
-        }
-        if (savedState.layout && [1, 2, 4, 8].includes(savedState.layout)) {
-          currentLayout = savedState.layout;
-        }
-        if (savedState.selectedStationId) {
-          selectedStationId = parseInt(savedState.selectedStationId);
-        }
-        if (Array.isArray(savedState.subplotStationIds)) {
-          for (let i = 0; i < 8; i++) {
-            if (savedState.subplotStationIds[i]) {
-              subplotStationIds[i] = parseInt(savedState.subplotStationIds[i]);
-            }
-          }
-        }
-        if (savedState.viewMode && ['charts', 'map', 'simepar'].includes(savedState.viewMode)) {
-          currentViewMode = savedState.viewMode;
-        }
-      }
-
-      // Sincronizar estilo inicial de botones de rango y subplots
-      document.querySelectorAll('.range-btn').forEach(btn => {
-        if (btn.getAttribute('data-range') === currentRange) {
-          btn.className = 'range-btn px-2.5 py-1 rounded font-medium transition bg-sky-600 dark:bg-sky-500 text-white shadow';
-        } else {
-          btn.className = 'range-btn px-2.5 py-1 rounded font-medium transition text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white';
-        }
-      });
-
-      [1, 2, 4, 8].forEach(n => {
-        const btn = document.getElementById(`btn-layout-${n}`);
-        if (btn) {
-          if (n === currentLayout) {
-            btn.className = 'layout-btn px-2.5 py-1 rounded font-semibold transition bg-sky-600 dark:bg-sky-500 text-white shadow';
-          } else {
-            btn.className = 'layout-btn px-2.5 py-1 rounded font-medium transition text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white';
-          }
-        }
-      });
-
-      initSingleChart();
-      await loadStations(selectedStationId);
-
-      // Cargar la vista según el layout restaurado
-      if (currentLayout === 1) {
-        if (selectedStationId) {
-          selectStation(selectedStationId, true);
-        }
-      } else {
-        setLayout(currentLayout);
-      }
-
-      // Aplicar el modo de vista restaurado (si no es charts)
-      if (currentViewMode !== 'charts') {
-        setViewMode(currentViewMode);
-      }
-
-      // Refresco silencioso cada 30 segundos
-      setInterval(() => {
-        refreshActiveViews(true);
-      }, 30000);
-    });
-
-    // -----------------------------------------------------------------
-    // CONTROL DE TEMA (CLARO / OSCURO)
-    // -----------------------------------------------------------------
-    function applyTheme(theme) {
-      currentTheme = theme;
-      localStorage.setItem('hidropanel_theme', theme);
-      const isDark = (theme === 'dark');
-      const html = document.documentElement;
-
-      if (isDark) {
-        html.classList.add('dark');
-      } else {
-        html.classList.remove('dark');
-      }
-
-      // Actualizar iconos del botón de alternar tema
-      const sunIcon = document.getElementById('theme-icon-sun');
-      const moonIcon = document.getElementById('theme-icon-moon');
-      const toggleBtn = document.getElementById('btn-theme-toggle');
-
-      if (sunIcon && moonIcon) {
-        if (isDark) {
-          sunIcon.classList.remove('hidden');
-          moonIcon.classList.add('hidden');
-          if (toggleBtn) toggleBtn.title = 'Cambiar a tema claro';
-        } else {
-          sunIcon.classList.add('hidden');
-          moonIcon.classList.remove('hidden');
-          if (toggleBtn) toggleBtn.title = 'Cambiar a tema oscuro';
-        }
-      }
-
-      // Actualizar estética de gráficos activos
-      updateAllChartsTheme();
-
-      // Actualizar estética del mapa interactivo
-      updateMapTheme();
-
-      // Re-renderizar lista de estaciones para aplicar contrastes actualizados
-      renderStationsList();
-    }
-
-    function toggleTheme() {
-      const nextTheme = (currentTheme === 'dark') ? 'light' : 'dark';
-      applyTheme(nextTheme);
-    }
-
-    // -----------------------------------------------------------------
-    // CONTROL DE VISTAS (GRÁFICOS vs MAPA vs SIMEPAR)
-    // -----------------------------------------------------------------
-    function setViewMode(mode) {
-      currentViewMode = mode;
-      saveAppState();
-
-      const btnCharts = document.getElementById('btn-view-charts');
-      const btnMap = document.getElementById('btn-view-map');
-      const btnSimepar = document.getElementById('btn-view-simepar');
-      const chartsContainer = document.getElementById('view-charts-container');
-      const mapContainer = document.getElementById('view-map-container');
-      const simeparContainer = document.getElementById('view-simepar-container');
-
-      const activeClass = 'view-btn flex items-center space-x-1.5 px-3 py-1 rounded-md font-medium transition bg-sky-600 dark:bg-sky-500 text-white shadow';
-      const inactiveClass = 'view-btn flex items-center space-x-1.5 px-3 py-1 rounded-md font-medium transition text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white';
-
-      [btnCharts, btnMap, btnSimepar].forEach(b => {
-        if (b) b.className = inactiveClass;
-      });
-
-      chartsContainer.classList.add('hidden');
-      mapContainer.classList.add('hidden');
-      if (simeparContainer) simeparContainer.classList.add('hidden');
-
-      if (mode === 'charts') {
-        btnCharts.className = activeClass;
-        chartsContainer.classList.remove('hidden');
-      } else if (mode === 'map') {
-        btnMap.className = activeClass;
-        mapContainer.classList.remove('hidden');
-
-        // Inicializar o reacomodar mapa Leaflet
-        setTimeout(() => {
-          if (!leafletMap) {
-            initMap();
-          } else {
-            leafletMap.invalidateSize();
-          }
-        }, 50);
-      } else if (mode === 'simepar') {
-        btnSimepar.className = activeClass;
-        if (simeparContainer) simeparContainer.classList.remove('hidden');
-        loadSimeparMap();
-      }
-    }
-
-    // -----------------------------------------------------------------
-    // CONFIGURACIÓN DE CHART.JS (CON ESCALA TEMPORAL Y CORRECCIÓN DE PENDIENTE)
-    // -----------------------------------------------------------------
-    function getChartBaseOptions() {
-      const isDark = document.documentElement.classList.contains('dark');
-      return {
-        responsive: true,
-        maintainAspectRatio: false,
-        interaction: { mode: 'nearest', intersect: false },
-        plugins: {
-          legend: { display: false },
-          tooltip: {
-            backgroundColor: isDark ? '#0f172a' : '#ffffff',
-            titleColor: isDark ? '#e2e8f0' : '#0f172a',
-            bodyColor: isDark ? '#38bdf8' : '#0284c7',
-            borderColor: isDark ? '#1e293b' : '#e2e8f0',
-            borderWidth: 1,
-            padding: 8,
-            boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)',
-            callbacks: {
-              title: (items) => {
-                if (!items || !items.length) return '';
-                const val = items[0].parsed.x;
-                const d = new Date(val);
-                return d.toLocaleString('es-AR', {
-                  day: '2-digit', month: '2-digit', year: 'numeric',
-                  hour: '2-digit', minute: '2-digit'
-                });
-              },
-              label: (ctx) => `Altura: ${ctx.parsed.y !== null ? ctx.parsed.y.toFixed(2) + ' m' : 'Sin dato'}`
-            }
-          },
-          zoom: {
-            pan: { enabled: true, mode: 'x' },
-            zoom: {
-              wheel: { enabled: true },
-              pinch: { enabled: true },
-              mode: 'x'
-            }
-          }
-        },
-        scales: {
-          x: {
-            type: 'time',
-            time: {
-              displayFormats: {
-                minute: 'HH:mm',
-                hour: 'dd/MM HH:mm',
-                day: 'dd/MM',
-                month: 'MM/yyyy',
-                year: 'yyyy'
-              }
-            },
-            grid: { color: isDark ? 'rgba(51, 65, 85, 0.2)' : 'rgba(148, 163, 184, 0.2)' },
-            ticks: {
-              color: '#64748b',
-              font: { size: 9 },
-              maxRotation: 0,
-              autoSkip: true,
-              maxTicksLimit: 6
-            }
-          },
-          y: {
-            grid: { color: isDark ? 'rgba(51, 65, 85, 0.2)' : 'rgba(148, 163, 184, 0.2)' },
-            ticks: { 
-              color: '#64748b', 
-              font: { size: 10 },
-              callback: function(v) { return v.toFixed(2) + ' m'; }
-            },
-            title: { display: false }
-          }
-        }
-      };
-    }
-
-    function initSingleChart() {
-      const ctx = document.getElementById('mainHeightChart').getContext('2d');
-      const opts = getChartBaseOptions();
-      opts.scales.y.title = { display: true, text: 'Altura (m)', color: '#64748b', font: { size: 11 } };
-      singleChartInstance = new Chart(ctx, {
-        type: 'line',
-        data: { datasets: [] },
-        options: opts
-      });
-    }
-
-    function updateAllChartsTheme() {
-      const isDark = document.documentElement.classList.contains('dark');
-      const charts = [singleChartInstance, ...multiChartInstances].filter(Boolean);
-
-      charts.forEach(chart => {
-        if (!chart || !chart.options) return;
-        const opts = chart.options;
-        if (opts.plugins && opts.plugins.tooltip) {
-          opts.plugins.tooltip.backgroundColor = isDark ? '#0f172a' : '#ffffff';
-          opts.plugins.tooltip.titleColor = isDark ? '#e2e8f0' : '#0f172a';
-          opts.plugins.tooltip.bodyColor = isDark ? '#38bdf8' : '#0284c7';
-          opts.plugins.tooltip.borderColor = isDark ? '#1e293b' : '#e2e8f0';
-        }
-
-        if (opts.scales) {
-          if (opts.scales.x && opts.scales.x.grid) {
-            opts.scales.x.grid.color = isDark ? 'rgba(51, 65, 85, 0.2)' : 'rgba(148, 163, 184, 0.2)';
-          }
-          if (opts.scales.y && opts.scales.y.grid) {
-            opts.scales.y.grid.color = isDark ? 'rgba(51, 65, 85, 0.2)' : 'rgba(148, 163, 184, 0.2)';
-          }
-        }
-
-        if (chart.data && chart.data.datasets) {
-          chart.data.datasets.forEach(ds => {
-            ds.borderColor = isDark ? '#38bdf8' : '#0284c7';
-            ds.backgroundColor = isDark ? 'rgba(56, 189, 248, 0.08)' : 'rgba(2, 132, 199, 0.08)';
-          });
-        }
-
-        chart.update('none');
-      });
-    }
-
-    function resetZoomSingle() {
-      if (singleChartInstance && singleChartInstance.resetZoom) {
-        singleChartInstance.resetZoom();
-      }
-    }
-
-    function resetZoomSubplot(slotIdx) {
-      const chart = multiChartInstances[slotIdx];
-      if (chart && chart.resetZoom) {
-        chart.resetZoom();
-      }
-    }
-
-    // Aplica la corrección fiel de escala temporal y límites verticales
-    function applyFlatSlopeScaling(chart, points, label = 'Altura', isCota = false) {
-      if (!points || points.length === 0) {
-        chart.data.datasets = [];
-        chart.update();
-        return;
-      }
-
-      // Convertir a coordenadas cronológicas reales { x: epoch_ms, y: altura }
-      const dataPoints = points.map(p => ({
-        x: new Date(p.t.replace(' ', 'T')).getTime(),
-        y: p.y
-      }));
-
-      const values = points.map(p => p.y);
-      const minY = Math.min(...values);
-      const maxY = Math.max(...values);
-      const span = maxY - minY;
-
-      // PREVENCIÓN DE PENDIENTES CUANDO EL VALOR ES CONSTANTE O CASI CONSTANTE
-      let yMinLimit, yMaxLimit;
-      if (span === 0) {
-        yMinLimit = Number((minY - 0.50).toFixed(2));
-        yMaxLimit = Number((maxY + 0.50).toFixed(2));
-      } else if (span < 0.25) {
-        const pad = (0.50 - span) / 2;
-        yMinLimit = Number((minY - pad).toFixed(2));
-        yMaxLimit = Number((maxY + pad).toFixed(2));
-      } else {
-        const pad = span * 0.10;
-        yMinLimit = Number((minY - pad).toFixed(2));
-        yMaxLimit = Number((maxY + pad).toFixed(2));
-      }
-
-      chart.options.scales.y.min = yMinLimit;
-      chart.options.scales.y.max = yMaxLimit;
-      chart.options.scales.y.ticks.callback = function(v) {
-        return (span < 2 ? v.toFixed(2) : v.toFixed(1)) + (isCota ? '' : ' m');
-      };
-
-      if (chart.options.plugins && chart.options.plugins.tooltip) {
-        chart.options.plugins.tooltip.callbacks.label = function(ctx) {
-          const unit = isCota ? '' : ' m';
-          return `${label}: ${ctx.parsed.y !== null ? ctx.parsed.y.toFixed(2) + unit : 'Sin dato'}`;
-        };
-      }
-
-      // Si el rango es 'todo', limpiar límites forzados para ver el historial íntegro
-      if (currentRange === 'todo') {
-        delete chart.options.scales.x.min;
-        delete chart.options.scales.x.max;
-      }
-
-      const isDark = document.documentElement.classList.contains('dark');
-      const lineColor = isDark ? '#38bdf8' : '#0284c7';
-      const bgColor = isDark ? 'rgba(56, 189, 248, 0.08)' : 'rgba(2, 132, 199, 0.08)';
-
-      chart.data.datasets = [{
-        label: label,
-        data: dataPoints,
-        borderColor: lineColor,
-        backgroundColor: bgColor,
-        borderWidth: 1.75,
-        fill: true,
-        pointRadius: points.length > 200 ? 0 : 2,
-        pointHoverRadius: 4,
-        tension: 0, // Rectas exactas sin artefactos
-        spanGaps: true
-      }];
-
-      chart.update();
-    }
-
-    // -----------------------------------------------------------------
-    // CONTROL DE SUBPLOTS (1, 2, 4, 8)
-    // -----------------------------------------------------------------
-    function setLayout(count) {
-      currentLayout = count;
-      saveAppState();
-
-      // Actualizar botones de layout
-      [1, 2, 4, 8].forEach(n => {
-        const btn = document.getElementById(`btn-layout-${n}`);
-        if (!btn) return;
-        if (n === count) {
-          btn.className = 'layout-btn px-2.5 py-1 rounded font-semibold transition bg-sky-600 dark:bg-sky-500 text-white shadow';
-        } else {
-          btn.className = 'layout-btn px-2.5 py-1 rounded font-medium transition text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white';
-        }
-      });
-
-      const singleView = document.getElementById('single-plot-view');
-      const multiView = document.getElementById('multi-plot-view');
-
-      if (count === 1) {
-        singleView.classList.remove('hidden');
-        multiView.classList.add('hidden');
-        if (selectedStationId) {
-          loadSingleStationData(selectedStationId);
-        }
-      } else {
-        singleView.classList.add('hidden');
-        multiView.classList.remove('hidden');
-        renderSubplotsGrid(count);
-      }
-    }
-
-    // Renderiza la cuadrícula de subplots según 2, 4 u 8
-    function renderSubplotsGrid(count) {
-      const grid = document.getElementById('subplots-grid');
-      grid.innerHTML = '';
-
-      // Destruir instancias de gráficos anteriores
-      multiChartInstances.forEach(inst => {
-        if (inst) inst.destroy();
-      });
-      multiChartInstances = [];
-
-      // Definir clases CSS de cuadrícula
-      if (count === 2) {
-        grid.className = 'grid grid-cols-1 lg:grid-cols-2 gap-4';
-      } else if (count === 4) {
-        grid.className = 'grid grid-cols-1 md:grid-cols-2 gap-4';
-      } else if (count === 8) {
-        grid.className = 'grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3.5';
-      }
-
-      // Altura del canvas según cuadrícula
-      const canvasHeightClass = (count <= 2) ? 'h-[300px]' : ((count <= 4) ? 'h-[240px]' : 'h-[190px]');
-
-      for (let i = 0; i < count; i++) {
-        const stationId = subplotStationIds[i] || (allStations[i] ? allStations[i].id : (allStations[0] ? allStations[0].id : null));
-        subplotStationIds[i] = stationId;
-
-        const card = document.createElement('div');
-        card.className = 'glass-card rounded-xl p-3.5 flex flex-col relative transition';
-        card.innerHTML = `
-          <!-- Encabezado de Subplot -->
-          <div class="flex items-center justify-between gap-2 mb-2">
-            <div class="flex-1 min-w-0">
-              <select onchange="onSubplotStationChange(${i}, this.value)" id="subplot-select-${i}" 
-                      class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-xs font-semibold text-sky-800 dark:text-sky-300 rounded-lg px-2 py-1 focus:outline-none focus:border-sky-500 truncate font-sans">
-                ${allStations.map(s => `
-                  <option value="${s.id}" ${s.id === stationId ? 'selected' : ''}>
-                    ${s.nombre || s.codigo} ${(s.ultima_altura !== null && s.ultima_altura !== undefined) ? `(${s.ultima_altura.toFixed(2)}m)` : ''}
-                  </option>
-                `).join('')}
-              </select>
-            </div>
-            
-            <div class="flex items-center space-x-1.5 shrink-0">
-              <span id="subplot-badge-${i}" class="text-xs font-bold text-sky-600 dark:text-sky-400 bg-slate-100 dark:bg-slate-950 px-2 py-0.5 rounded border border-slate-200 dark:border-slate-800">-- m</span>
-              <button onclick="resetZoomSubplot(${i})" title="Restablecer Zoom" class="text-slate-400 hover:text-slate-800 dark:hover:text-white p-1 rounded hover:bg-slate-100 dark:hover:bg-slate-800 transition">
-                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
-              </button>
-              <button onclick="focusStationInSingleMode(${stationId})" title="Enfocar en pantalla completa" class="text-slate-400 hover:text-slate-800 dark:hover:text-white p-1 rounded hover:bg-slate-100 dark:hover:bg-slate-800 transition">
-                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"/></svg>
-              </button>
-            </div>
-          </div>
-
-          <!-- Canvas del Gráfico -->
-          <div class="relative flex-1 w-full ${canvasHeightClass}">
-            <canvas id="subplot-canvas-${i}"></canvas>
-            
-            <!-- Loader individual -->
-            <div id="subplot-loader-${i}" class="hidden absolute inset-0 bg-white/80 dark:bg-slate-950/70 backdrop-blur-sm flex items-center justify-center rounded-lg z-10">
-              <div class="w-5 h-5 border-2 border-sky-500 border-t-transparent rounded-full animate-spin"></div>
-            </div>
-          </div>
-        `;
-        grid.appendChild(card);
-
-        // Crear instancia del gráfico
-        const ctx = document.getElementById(`subplot-canvas-${i}`).getContext('2d');
-        const chartInst = new Chart(ctx, {
-          type: 'line',
-          data: { labels: [], datasets: [] },
-          options: getChartBaseOptions()
-        });
-        multiChartInstances.push(chartInst);
-
-        // Cargar datos si hay estación asignada
-        if (stationId) {
-          loadSubplotData(i, stationId);
-        }
-      }
-    }
-
-    function onSubplotStationChange(slotIdx, newStationId) {
-      const id = parseInt(newStationId);
-      subplotStationIds[slotIdx] = id;
-      if (slotIdx === 0 && currentLayout === 1) {
-        selectedStationId = id;
-      }
-      saveAppState();
-      loadSubplotData(slotIdx, id);
-    }
-
-    function focusStationInSingleMode(stationId) {
-      selectStation(stationId);
-      setLayout(1);
-    }
-
-    // -----------------------------------------------------------------
-    // CARGA DE DATOS DE API
-    // -----------------------------------------------------------------
-    async function loadStations(preferredId = null) {
-      try {
-        const res = await fetch(`/api/estaciones?_t=${Date.now()}`, { cache: 'no-store' });
-        const data = await res.json();
-        allStations = data.estaciones || [];
-
-        document.getElementById('catalog-count').textContent = allStations.length;
-
-        // Preservar y rellenar las estaciones asignadas a los subplots
-        for (let i = 0; i < 8; i++) {
-          const currentSlotId = subplotStationIds[i];
-          const exists = currentSlotId && allStations.some(s => s.id === currentSlotId);
-          if (!exists) {
-            subplotStationIds[i] = allStations[i] ? allStations[i].id : (allStations[0] ? allStations[0].id : null);
-          }
-        }
-
-        renderStationsList();
-        populateMapSelect();
-
-        // Determinar qué estación seleccionar
-        const targetId = preferredId || selectedStationId;
-        const target = allStations.find(s => s.id === targetId) || allStations[0];
-        if (target) {
-          selectedStationId = target.id;
-          saveAppState();
-        }
-
-        // Si el mapa ya está visible, actualizar marcadores
-        if (leafletMap) {
-          updateMapMarkers();
-        }
-      } catch (err) {
-        showToast('Error', 'No se pudo cargar la lista de estaciones.', 'error');
-      }
-    }
-
-    function renderStationsList() {
-      const container = document.getElementById('stations-list');
-      if (!container) return;
-      const searchInput = document.getElementById('search-station');
-      const query = searchInput ? searchInput.value.toLowerCase().trim() : '';
-      container.innerHTML = '';
-
-      const filtered = allStations.filter(s => 
-        (s.nombre && s.nombre.toLowerCase().includes(query)) ||
-        (s.codigo && s.codigo.toLowerCase().includes(query))
-      );
-
-      filtered.forEach(st => {
-        const isSelected = (st.id === selectedStationId);
-        const item = document.createElement('div');
-        item.setAttribute('data-station-id', st.id);
-        item.className = `p-2.5 rounded-lg cursor-pointer transition flex items-center justify-between group ${
-          isSelected 
-            ? 'bg-sky-50 dark:bg-sky-500/15 border border-sky-300 dark:border-sky-500/40 text-slate-900 dark:text-white shadow-sm' 
-            : 'hover:bg-slate-100 dark:hover:bg-slate-800/60 text-slate-700 dark:text-slate-300'
-        }`;
-
-        const isPosadas = isPosadasStation(st);
-        const isCota = isPosadas && (posadasConfig.mode === 'cota');
-        const displayName = st.nombre || st.codigo;
-        let altText = '--';
-        if (st.ultima_altura !== null && st.ultima_altura !== undefined) {
-          if (isCota) {
-            altText = (st.ultima_altura + posadasConfig.offset).toFixed(2);
-          } else {
-            altText = `${st.ultima_altura.toFixed(2)} m`;
-          }
-        }
-
-        item.innerHTML = `
-          <div class="min-w-0 pr-2 flex-1" onclick="selectStation(${st.id})">
-            <p class="text-xs font-semibold truncate flex items-center gap-1.5 ${isSelected ? 'text-sky-700 dark:text-sky-300' : 'text-slate-800 dark:text-slate-200'}">
-              <span>${displayName}</span>
-              ${isCota ? '<span class="text-[9px] px-1 py-0.2 rounded bg-sky-100 dark:bg-sky-950 text-sky-700 dark:text-sky-400 border border-sky-300 dark:border-sky-800 font-bold uppercase">COTA</span>' : ''}
-            </p>
-            <p class="text-[10px] text-slate-400 dark:text-slate-500 truncate">${st.codigo}</p>
-          </div>
-          <div class="flex items-center space-x-1.5 shrink-0">
-            <button onclick="panMapToStation(${st.id}); event.stopPropagation();" title="Ver en el mapa" class="opacity-0 group-hover:opacity-100 p-1 text-slate-400 hover:text-sky-600 dark:hover:text-sky-400 rounded transition">
-              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
-            </button>
-            <span class="text-xs font-bold ${st.ultima_altura !== null ? 'text-sky-600 dark:text-sky-400' : 'text-slate-400 dark:text-slate-500'}">${altText}</span>
-          </div>
-        `;
-        container.appendChild(item);
-      });
-
-      // Asegurar que la estación seleccionada sea visible en el scroll del sidebar
-      if (selectedStationId) {
-        setTimeout(() => {
-          const selectedElem = document.querySelector(`[data-station-id="${selectedStationId}"]`);
-          if (selectedElem) {
-            selectedElem.scrollIntoView({ block: 'nearest' });
-          }
-        }, 60);
-      }
-    }
-
-    function filterStations() {
-      renderStationsList();
-    }
-
-    function selectStation(id, triggerLoad = true) {
-      selectedStationId = id;
-      if (currentLayout === 1) {
-        subplotStationIds[0] = id;
-      }
-      saveAppState();
-      renderStationsList();
-
-      if (leafletMap) {
-        updateMapMarkers();
-      }
-
-      if (triggerLoad) {
-        if (currentLayout === 1) {
-          loadSingleStationData(id);
-        } else {
-          // En modo multi-plot, actualiza el primer slot
-          subplotStationIds[0] = id;
-          saveAppState();
-          loadSubplotData(0, id);
-          const sel0 = document.getElementById('subplot-select-0');
-          if (sel0) sel0.value = id;
-        }
-      }
-    }
-
-    // Carga de datos para Modo 1
-    async function loadSingleStationData(stationId, silent = false) {
-      const station = allStations.find(s => s.id === stationId);
-      if (!station) return;
-
-      const isPosadas = isPosadasStation(station);
-      const posadasPanel = document.getElementById('posadas-cota-panel');
-      if (isPosadas) {
-        if (posadasPanel) {
-          posadasPanel.classList.remove('hidden');
-          posadasPanel.classList.add('flex');
-        }
-        updatePosadasPanelUI();
-      } else {
-        if (posadasPanel) {
-          posadasPanel.classList.add('hidden');
-          posadasPanel.classList.remove('flex');
-        }
-        const cotaBadge = document.getElementById('station-cota-badge');
-        if (cotaBadge) cotaBadge.classList.add('hidden');
-      }
-
-      const applyCota = isPosadas && (posadasConfig.mode === 'cota');
-      const offset = applyCota ? (Number(posadasConfig.offset) || 0) : 0;
-
-      const displayName = station.nombre || station.codigo;
-      document.getElementById('current-station-title').textContent = displayName;
-      document.getElementById('current-station-meta').textContent = station.ultimo_timestamp ? `Última telemetría: ${station.ultimo_timestamp}` : 'Sin registros';
-
-      const coordsBadge = document.getElementById('station-coords-badge');
-      const coordsText = document.getElementById('station-coords-text');
-      if (station.latitud && station.longitud) {
-        coordsText.textContent = `${station.latitud.toFixed(3)}, ${station.longitud.toFixed(3)}`;
-        coordsBadge.classList.remove('hidden');
-      } else {
-        coordsBadge.classList.add('hidden');
-      }
-
-      if (!silent) showSingleChartLoader(true);
-
-      try {
-        const res = await fetch(`/api/mediciones?estacion_id=${stationId}&rango=${currentRange}&_t=${Date.now()}`, { cache: 'no-store' });
-        const data = await res.json();
-        if (!silent) showSingleChartLoader(false);
-
-        if (!data.success) {
-          if (!silent) showToast('Aviso', data.error || 'Error al obtener datos', 'error');
-          return;
-        }
-
-        let transformedPoints = data.puntos || [];
-        let transformedKpis = data.kpis ? { ...data.kpis } : null;
-        let transformedRecientes = data.recientes ? data.recientes.map(r => ({ ...r })) : [];
-
-        if (applyCota) {
-          transformedPoints = transformedPoints.map(p => ({
-            t: p.t,
-            y: Number((p.y + offset).toFixed(2))
-          }));
-
-          if (transformedKpis) {
-            if (transformedKpis.ultima_altura !== null) transformedKpis.ultima_altura = Number((transformedKpis.ultima_altura + offset).toFixed(2));
-            if (transformedKpis.max_altura !== null) transformedKpis.max_altura = Number((transformedKpis.max_altura + offset).toFixed(2));
-            if (transformedKpis.min_altura !== null) transformedKpis.min_altura = Number((transformedKpis.min_altura + offset).toFixed(2));
-            if (transformedKpis.promedio_altura !== null) transformedKpis.promedio_altura = Number((transformedKpis.promedio_altura + offset).toFixed(2));
-          }
-
-          transformedRecientes = transformedRecientes.map(r => ({
-            timestamp: r.timestamp,
-            altura: r.altura !== null ? Number((r.altura + offset).toFixed(2)) : null
-          }));
-        }
-
-        updateKPIs(transformedKpis, applyCota);
-        const chartLabel = applyCota ? 'Cota' : displayName;
-        applyFlatSlopeScaling(singleChartInstance, transformedPoints, chartLabel, applyCota);
-        renderRecentTable(transformedRecientes, applyCota);
-      } catch (err) {
-        if (!silent) {
-          showSingleChartLoader(false);
-          showToast('Error', 'Fallo al consultar mediciones.', 'error');
-        }
-      }
-    }
-
-    // Carga de datos para un Subplot individual
-    async function loadSubplotData(slotIdx, stationId, silent = false) {
-      const chartInst = multiChartInstances[slotIdx];
-      if (!chartInst) return;
-
-      const station = allStations.find(s => s.id === stationId);
-      const isPosadas = isPosadasStation(station);
-      const applyCota = isPosadas && (posadasConfig.mode === 'cota');
-      const offset = applyCota ? (Number(posadasConfig.offset) || 0) : 0;
-      let displayName = station ? (station.nombre || station.codigo) : 'Estación';
-      if (applyCota) {
-        displayName += ' (Cota)';
-      }
-
-      const loader = document.getElementById(`subplot-loader-${slotIdx}`);
-      if (loader && !silent) loader.classList.remove('hidden');
-
-      try {
-        const res = await fetch(`/api/mediciones?estacion_id=${stationId}&rango=${currentRange}&_t=${Date.now()}`, { cache: 'no-store' });
-        const data = await res.json();
-        if (loader && !silent) loader.classList.add('hidden');
-
-        if (!data.success) return;
-
-        let transformedPoints = data.puntos || [];
-        if (applyCota) {
-          transformedPoints = transformedPoints.map(p => ({
-            t: p.t,
-            y: Number((p.y + offset).toFixed(2))
-          }));
-        }
-
-        // Actualizar badge de altura o cota
-        const badge = document.getElementById(`subplot-badge-${slotIdx}`);
-        if (badge && data.kpis) {
-          if (applyCota) {
-            const val = data.kpis.ultima_altura !== null ? (data.kpis.ultima_altura + offset).toFixed(2) : '--';
-            badge.textContent = `${val} (Cota)`;
-          } else {
-            const val = data.kpis.ultima_altura !== null ? `${data.kpis.ultima_altura.toFixed(2)} m` : '--';
-            badge.textContent = val;
-          }
-        }
-
-        applyFlatSlopeScaling(chartInst, transformedPoints, displayName, applyCota);
-      } catch (err) {
-        if (loader && !silent) loader.classList.add('hidden');
-      }
-    }
-
-    // Refrescar todas las vistas activas
-    function refreshActiveViews(silent = false) {
-      if (currentLayout === 1) {
-        if (selectedStationId) loadSingleStationData(selectedStationId, silent);
-      } else {
-        for (let i = 0; i < currentLayout; i++) {
-          if (subplotStationIds[i]) {
-            loadSubplotData(i, subplotStationIds[i], silent);
-          }
-        }
-      }
-    }
-
-    // KPIs en modo 1
-    function updateKPIs(kpis, isCota = false) {
-      if (!kpis) return;
-      document.getElementById('kpi-current-val').textContent = kpis.ultima_altura !== null ? kpis.ultima_altura.toFixed(2) : '--';
-      document.getElementById('kpi-current-time').textContent = kpis.ultimo_timestamp || 'Sin fecha';
-      
-      const trendPill = document.getElementById('kpi-trend-pill');
-      if (kpis.tendencia === 'sube') {
-        trendPill.textContent = '↗ Sube';
-        trendPill.className = 'text-[10px] px-1.5 py-0.5 rounded font-semibold bg-emerald-50 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800';
-      } else if (kpis.tendencia === 'baja') {
-        trendPill.textContent = '↘ Baja';
-        trendPill.className = 'text-[10px] px-1.5 py-0.5 rounded font-semibold bg-amber-50 dark:bg-amber-950 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-800';
-      } else {
-        trendPill.textContent = '➔ Estable';
-        trendPill.className = 'text-[10px] px-1.5 py-0.5 rounded font-semibold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700';
-      }
-
-      document.getElementById('kpi-max-val').textContent = kpis.max_altura !== null ? kpis.max_altura.toFixed(2) : '--';
-      document.getElementById('kpi-min-val').textContent = kpis.min_altura !== null ? kpis.min_altura.toFixed(2) : '--';
-      document.getElementById('kpi-avg-val').textContent = kpis.promedio_altura !== null ? kpis.promedio_altura.toFixed(2) : '--';
-
-      // Textos y etiquetas en Cota vs Nivel (no se muestran las unidades en cota)
-      const currentTitle = document.getElementById('kpi-current-title');
-      const maxTitle = document.getElementById('kpi-max-title');
-      const minTitle = document.getElementById('kpi-min-title');
-      const avgTitle = document.getElementById('kpi-avg-title');
-      const chartTitle = document.getElementById('main-chart-title');
-      const chartLegend = document.getElementById('main-chart-legend');
-
-      if (isCota) {
-        if (currentTitle) currentTitle.textContent = 'Cota Actual';
-        if (maxTitle) maxTitle.textContent = 'Cota Máxima';
-        if (minTitle) minTitle.textContent = 'Cota Mínima';
-        if (avgTitle) avgTitle.textContent = 'Cota Promedio';
-        if (chartTitle) chartTitle.textContent = 'Evolución Temporal de Cota';
-        if (chartLegend) chartLegend.innerHTML = '<span class="w-3 h-0.5 bg-sky-600 dark:bg-sky-400 rounded"></span> Cota (Rueda del ratón para zoom temporal)';
-        document.querySelectorAll('.kpi-unit').forEach(el => el.classList.add('hidden'));
-      } else {
-        if (currentTitle) currentTitle.textContent = 'Altura Actual';
-        if (maxTitle) maxTitle.textContent = 'Máxima (Período)';
-        if (minTitle) minTitle.textContent = 'Mínima (Período)';
-        if (avgTitle) avgTitle.textContent = 'Promedio (Período)';
-        if (chartTitle) chartTitle.textContent = 'Evolución Temporal de Altura';
-        if (chartLegend) chartLegend.innerHTML = '<span class="w-3 h-0.5 bg-sky-600 dark:bg-sky-400 rounded"></span> Altura en metros (Rueda del ratón para zoom temporal)';
-        document.querySelectorAll('.kpi-unit').forEach(el => el.classList.remove('hidden'));
-      }
-    }
-
-    // Tabla de últimas lecturas
-    function renderRecentTable(rows, isCota = false) {
-      const tbody = document.getElementById('readings-table-body');
-      const thValue = document.getElementById('th-table-value');
-      if (thValue) {
-        thValue.textContent = isCota ? 'Cota' : 'Altura Neta';
-      }
-      tbody.innerHTML = '';
-      if (!rows || rows.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="3" class="py-3 text-center text-slate-400 dark:text-slate-500">No hay lecturas registradas</td></tr>';
-        return;
-      }
-
-      const unit = isCota ? '' : ' m';
-      for (let i = 0; i < rows.length; i++) {
-        const curr = rows[i];
-        const next = rows[i + 1];
-        let diffStr = '--';
-        let diffClass = 'text-slate-400 dark:text-slate-500';
-
-        if (next && curr.altura !== null && next.altura !== null) {
-          const diff = Number((curr.altura - next.altura).toFixed(2));
-          if (Math.abs(diff) >= 0.01) {
-            diffStr = (diff > 0 ? '+' : '') + diff.toFixed(2) + unit;
-            diffClass = diff > 0 ? 'text-emerald-600 dark:text-emerald-400 font-medium' : 'text-amber-600 dark:text-amber-400 font-medium';
-          } else {
-            diffStr = '0.00' + unit;
-          }
-        }
-
-        const tr = document.createElement('tr');
-        tr.className = 'hover:bg-slate-50 dark:hover:bg-slate-900/60 transition';
-        tr.innerHTML = `
-          <td class="py-2 px-3 font-mono text-slate-600 dark:text-slate-300">${curr.timestamp}</td>
-          <td class="py-2 px-3 font-bold text-sky-600 dark:text-sky-400">${curr.altura.toFixed(2)}${unit}</td>
-          <td class="py-2 px-3 ${diffClass}">${diffStr}</td>
-        `;
-        tbody.appendChild(tr);
-      }
-    }
-
-    // Cambiar rango de tiempo
-    function setRange(range) {
-      currentRange = range;
-      saveAppState();
-
-      document.querySelectorAll('.range-btn').forEach(btn => {
-        if (btn.getAttribute('data-range') === range) {
-          btn.className = 'range-btn px-2.5 py-1 rounded font-medium transition bg-sky-600 dark:bg-sky-500 text-white shadow';
-        } else {
-          btn.className = 'range-btn px-2.5 py-1 rounded font-medium transition text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white';
-        }
-      });
-
-      refreshActiveViews(false);
-    }
-
-    function showSingleChartLoader(show) {
-      const loader = document.getElementById('chart-loader');
-      if (show) loader.classList.remove('hidden');
-      else loader.classList.add('hidden');
-    }
-
-    // -----------------------------------------------------------------
-    // MAPA INTERACTIVO DE UBICACIÓN (LEAFLET)
-    // -----------------------------------------------------------------
-    function initMap() {
-      if (leafletMap) return;
-
-      const st = selectedStationId ? allStations.find(s => s.id === selectedStationId) : null;
-      const initialCenter = (st && st.latitud && st.longitud) ? [st.latitud, st.longitud] : [-31.0, -59.5];
-      const initialZoom = (st && st.latitud && st.longitud) ? 10 : 6;
-
-      // Inicializar mapa centrado en estación seleccionada o en la cuenca
-      leafletMap = L.map('stationsMap', {
-        zoomControl: true,
-        attributionControl: false
-      }).setView(initialCenter, initialZoom);
-
-      updateMapTheme();
-
-      if (st && st.latitud && st.longitud && mapMarkers[selectedStationId]) {
-        setTimeout(() => {
-          mapMarkers[selectedStationId].openPopup();
-        }, 150);
-      }
-    }
-
-    function updateMapTheme() {
-      if (!leafletMap) return;
-
-      const isDark = document.documentElement.classList.contains('dark');
-      const CARTO_API_KEY = 'cb1_4cxk_1_8864ef59c9c9dc72a002e72f';
-
-      if (currentTileLayer) {
-        leafletMap.removeLayer(currentTileLayer);
-      }
-
-      // En modo oscuro: dark_all. En modo claro: light_all (Positron)
-      const tileType = isDark ? 'dark_all' : 'light_all';
-      const tileUrl = `https://{s}.basemaps.cartocdn.com/${tileType}/{z}/{x}/{y}{r}.png?key=${CARTO_API_KEY}`;
-      
-      currentTileLayer = L.tileLayer(tileUrl, {
-        maxZoom: 19,
-        subdomains: 'abcd',
-        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>'
-      }).addTo(leafletMap);
-
-      updateMapMarkers();
-    }
-
-    function updateMapMarkers() {
-      if (!leafletMap) return;
-
-      const isDark = document.documentElement.classList.contains('dark');
-
-      // Limpiar marcadores existentes
-      Object.values(mapMarkers).forEach(m => leafletMap.removeLayer(m));
-      mapMarkers = {};
-
-      allStations.forEach(st => {
-        if (st.latitud && st.longitud) {
-          const isSelected = (st.id === selectedStationId);
-          const rawName = st.nombre || st.codigo || 'Estación';
-          const shortName = rawName.replace(/^Puerto\s+/i, 'Pto. ');
-          const hasHeight = (st.ultima_altura !== null && st.ultima_altura !== undefined);
-          const altText = hasHeight ? `${st.ultima_altura.toFixed(2)} m` : '--';
-
-          // Configuración cromática y visual adaptada al tema activo
-          let badgeBg, borderColor, badgeShadow, dotColor, nameColor, valColor, valBg, valBorder;
-
-          if (isDark) {
-            badgeBg = '#0f172a';
-            borderColor = isSelected ? '#38bdf8' : (hasHeight ? '#0284c7' : '#334155');
-            badgeShadow = isSelected 
-              ? '0 0 0 3px rgba(56, 189, 248, 0.45), 0 6px 14px rgba(0,0,0,0.7)' 
-              : '0 3px 8px rgba(0,0,0,0.55)';
-            dotColor = hasHeight ? '#38bdf8' : '#64748b';
-            nameColor = '#f8fafc';
-            valColor = hasHeight ? '#38bdf8' : '#94a3b8';
-            valBg = hasHeight ? '#082f49' : '#1e293b';
-            valBorder = hasHeight ? '#0369a1' : '#334155';
-          } else {
-            badgeBg = '#ffffff';
-            borderColor = isSelected ? '#0284c7' : (hasHeight ? '#0ea5e9' : '#cbd5e1');
-            badgeShadow = isSelected 
-              ? '0 0 0 3px rgba(2, 132, 199, 0.35), 0 6px 14px rgba(0,0,0,0.18)' 
-              : '0 2px 7px rgba(0,0,0,0.12), 0 1px 3px rgba(0,0,0,0.06)';
-            dotColor = hasHeight ? '#0284c7' : '#94a3b8';
-            nameColor = '#0f172a';
-            valColor = hasHeight ? '#0369a1' : '#64748b';
-            valBg = hasHeight ? '#e0f2fe' : '#f1f5f9';
-            valBorder = hasHeight ? '#bae6fd' : '#e2e8f0';
-          }
-
-          // Marcador con etiqueta completa (Nombre + Altura) y puntero hacia la coordenada exacta
-          const customIcon = L.divIcon({
-            className: 'station-pin-leaflet-wrapper',
-            html: `
-              <div class="station-pin-container ${isSelected ? 'is-selected' : ''}">
-                <div style="
-                  display: inline-flex;
-                  align-items: center;
-                  gap: 5px;
-                  padding: 3px 6px 3px 7px;
-                  background: ${badgeBg};
-                  border: 1.5px solid ${borderColor};
-                  border-radius: 9999px;
-                  box-shadow: ${badgeShadow};
-                ">
-                  <span style="
-                    width: 6.5px;
-                    height: 6.5px;
-                    border-radius: 50%;
-                    background: ${dotColor};
-                    box-shadow: 0 0 5px ${dotColor};
-                    flex-shrink: 0;
-                  "></span>
-                  <span style="
-                    font-size: 11px;
-                    font-weight: 600;
-                    color: ${nameColor};
-                    max-width: 115px;
-                    overflow: hidden;
-                    text-overflow: ellipsis;
-                    white-space: nowrap;
-                  ">${shortName}</span>
-                  <span style="
-                    font-size: 11px;
-                    font-weight: 800;
-                    font-family: monospace;
-                    color: ${valColor};
-                    background: ${valBg};
-                    border: 1px solid ${valBorder};
-                    padding: 1px 5px;
-                    border-radius: 9999px;
-                    white-space: nowrap;
-                  ">${altText}</span>
-                </div>
-                <div style="
-                  width: 0;
-                  height: 0;
-                  border-left: 4.5px solid transparent;
-                  border-right: 4.5px solid transparent;
-                  border-top: 5px solid ${borderColor};
-                  margin-top: -1px;
-                "></div>
-              </div>
-            `,
-            iconSize: null,
-            iconAnchor: [0, 0],
-            popupAnchor: [0, -32]
-          });
-
-          const marker = L.marker([st.latitud, st.longitud], { icon: customIcon });
-
-          const displayName = st.nombre || st.codigo;
-          const popupCardBg = isDark ? '#1e293b' : '#f8fafc';
-          const popupTitleColor = isDark ? '#f8fafc' : '#0f172a';
-          const popupSubColor = isDark ? '#94a3b8' : '#64748b';
-          const popupValColor = isDark ? '#38bdf8' : '#0284c7';
-
-          const popupHtml = `
-            <div style="min-width: 200px;">
-              <h4 style="font-weight: 700; color: ${popupTitleColor}; font-size: 13px; margin-bottom: 2px;">${displayName}</h4>
-              <p style="font-size: 10px; color: ${popupSubColor}; margin-bottom: 8px;">Código: ${st.codigo}</p>
-              
-              <div style="background: ${popupCardBg}; padding: 7px 10px; border-radius: 8px; margin-bottom: 8px; border: 1px solid ${isDark ? '#334155' : '#e2e8f0'};">
-                <span style="font-size: 10px; color: ${popupSubColor}; display: block; font-weight: 500;">Altura Neta Actual</span>
-                <span style="font-size: 20px; font-weight: 800; color: ${popupValColor}; letter-spacing: -0.02em;">${altText}</span>
-              </div>
-
-              <div style="font-size: 10px; color: ${popupSubColor}; margin-bottom: 10px; display: flex; align-items: center; justify-content: space-between;">
-                <span>${st.ultimo_timestamp ? 'Último dato: ' + st.ultimo_timestamp : 'Sin datos'}</span>
-                ${st.frecuencia_minutos ? `<span style="font-weight: 600; padding: 1px 4px; border-radius: 4px; background: ${isDark ? '#334155' : '#e2e8f0'};">${st.frecuencia_minutos}m</span>` : ''}
-              </div>
-
-              <button onclick="openChartFromMap(${st.id})" style="
-                width: 100%;
-                background: #0284c7;
-                color: white;
-                font-weight: 600;
-                font-size: 11px;
-                padding: 7px 10px;
-                border-radius: 6px;
-                border: none;
-                cursor: pointer;
-                transition: background 0.15s;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                gap: 5px;
-              " onmouseover="this.style.background='#0369a1'" onmouseout="this.style.background='#0284c7'">
-                <span>📊</span>
-                <span>Ver Gráfico y Métricas</span>
-              </button>
-            </div>
-          `;
-
-          marker.bindPopup(popupHtml);
-          marker.addTo(leafletMap);
-          mapMarkers[st.id] = marker;
-        }
-      });
-    }
-
-    function populateMapSelect() {
-      const select = document.getElementById('map-station-select');
-      if (!select) return;
-      select.innerHTML = '<option value="">Ir a una estación...</option>' + 
-        allStations.map(s => `<option value="${s.id}">${s.nombre || s.codigo}</option>`).join('');
-      if (selectedStationId) {
-        select.value = selectedStationId;
-      }
-    }
-
-    function onMapStationSelectChange(val) {
-      if (!val) return;
-      panMapToStation(parseInt(val));
-    }
-
-    function panMapToStation(stationId) {
-      setViewMode('map');
-      setTimeout(() => {
-        const st = allStations.find(s => s.id === stationId);
-        if (st && st.latitud && st.longitud && leafletMap) {
-          leafletMap.flyTo([st.latitud, st.longitud], 11, { duration: 1.2 });
-          if (mapMarkers[stationId]) {
-            mapMarkers[stationId].openPopup();
-          }
-        }
-      }, 100);
-    }
-
-    function openChartFromMap(stationId) {
-      focusStationInSingleMode(stationId);
-      setViewMode('charts');
-    }
-
-    function zoomMapToRegion(region) {
-      if (!leafletMap) return;
-      if (region === 'iguazu') {
-        leafletMap.flyTo([-25.8, -54.8], 9);
-      } else if (region === 'paraguay') {
-        leafletMap.flyTo([-26.2, -58.0], 8);
-      } else if (region === 'medio') {
-        leafletMap.flyTo([-29.5, -59.5], 7);
-      } else if (region === 'delta') {
-        leafletMap.flyTo([-34.2, -58.8], 8);
-      }
-    }
-
-    // -----------------------------------------------------------------
-    // VISTA DE PRECIPITACIÓN SIMEPAR Y MINI CALENDARIO
-    // -----------------------------------------------------------------
-    let simeparAvailableDates = [];
-    let simeparSelectedDate = null;
-    let simeparViewYear = new Date().getFullYear();
-    let simeparViewMonth = new Date().getMonth();
-
-    function toggleSimeparCalendar() {
-      const popover = document.getElementById('simepar-calendar-popover');
-      const chevron = document.getElementById('simepar-calendar-chevron');
-      if (!popover) return;
-      
-      const isOpen = !popover.classList.contains('hidden');
-      if (isOpen) {
-        closeSimeparCalendar();
-      } else {
-        popover.classList.remove('hidden');
-        if (chevron) chevron.classList.add('rotate-180');
-        renderSimeparCalendar();
-      }
-    }
-
-    function closeSimeparCalendar() {
-      const popover = document.getElementById('simepar-calendar-popover');
-      const chevron = document.getElementById('simepar-calendar-chevron');
-      if (popover) popover.classList.add('hidden');
-      if (chevron) chevron.classList.remove('rotate-180');
-    }
-
-    function changeSimeparMonth(delta) {
-      simeparViewMonth += delta;
-      if (simeparViewMonth < 0) {
-        simeparViewMonth = 11;
-        simeparViewYear -= 1;
-      } else if (simeparViewMonth > 11) {
-        simeparViewMonth = 0;
-        simeparViewYear += 1;
-      }
-      renderSimeparCalendar();
-    }
-
-    function goToLatestSimeparDate() {
-      if (simeparAvailableDates && simeparAvailableDates.length > 0) {
-        selectSimeparDate(simeparAvailableDates[0]);
-      }
-    }
-
-    function stepSimeparDate(delta) {
-      if (!simeparAvailableDates || simeparAvailableDates.length === 0) return;
-      const sortedDates = [...simeparAvailableDates].sort();
-      let idx = sortedDates.indexOf(simeparSelectedDate);
-      if (idx === -1) {
-        if (delta < 0) {
-          for (let i = sortedDates.length - 1; i >= 0; i--) {
-            if (sortedDates[i] < simeparSelectedDate) {
-              idx = i + 1;
-              break;
-            }
-          }
-        } else {
-          for (let i = 0; i < sortedDates.length; i++) {
-            if (sortedDates[i] > simeparSelectedDate) {
-              idx = i - 1;
-              break;
-            }
-          }
-        }
-      }
-
-      const targetIdx = idx + delta;
-      if (targetIdx >= 0 && targetIdx < sortedDates.length) {
-        selectSimeparDate(sortedDates[targetIdx]);
-      }
-    }
-
-    function updateSimeparNavButtons() {
-      const prevBtn = document.getElementById('btn-simepar-prev-day');
-      const nextBtn = document.getElementById('btn-simepar-next-day');
-      if (!prevBtn || !nextBtn) return;
-
-      if (!simeparAvailableDates || simeparAvailableDates.length === 0 || !simeparSelectedDate) {
-        prevBtn.disabled = true;
-        nextBtn.disabled = true;
-        prevBtn.title = 'No hay mapas disponibles';
-        nextBtn.title = 'No hay mapas disponibles';
-        return;
-      }
-
-      const sortedDates = [...simeparAvailableDates].sort();
-      const idx = sortedDates.indexOf(simeparSelectedDate);
-
-      // Día anterior (hacia el pasado)
-      if (idx > 0) {
-        prevBtn.disabled = false;
-        const prevDate = sortedDates[idx - 1];
-        const [y, m, d] = prevDate.split('-');
-        prevBtn.title = `Día anterior (${d}/${m}/${y})`;
-      } else {
-        prevBtn.disabled = true;
-        prevBtn.title = 'No hay mapas anteriores disponibles';
-      }
-
-      // Día posterior (hacia el futuro)
-      if (idx !== -1 && idx < sortedDates.length - 1) {
-        nextBtn.disabled = false;
-        const nextDate = sortedDates[idx + 1];
-        const [y, m, d] = nextDate.split('-');
-        nextBtn.title = `Día posterior (${d}/${m}/${y})`;
-      } else {
-        nextBtn.disabled = true;
-        nextBtn.title = 'No hay mapas posteriores disponibles';
-      }
-    }
-
-    function selectSimeparDate(dateStr) {
-      if (!dateStr || !simeparAvailableDates.includes(dateStr)) return;
-      setSimeparDate(dateStr, true);
-      closeSimeparCalendar();
-    }
-
-    function setSimeparDate(dateStr, triggerSave = true) {
-      if (!dateStr) return;
-      simeparSelectedDate = dateStr;
-
-      const hiddenInput = document.getElementById('simepar-date-select');
-      if (hiddenInput) hiddenInput.value = dateStr;
-
-      // Actualizar botón con fecha legible DD/MM/AAAA
-      const displaySpan = document.getElementById('simepar-calendar-display');
-      if (displaySpan) {
-        const parts = dateStr.split('-');
-        if (parts.length === 3) {
-          displaySpan.textContent = `${parts[2]}/${parts[1]}/${parts[0]}`;
-        } else {
-          displaySpan.textContent = dateStr;
-        }
-      }
-
-      // Sincronizar año y mes del visor con la fecha activa
-      const [y, m] = dateStr.split('-').map(Number);
-      if (!isNaN(y) && !isNaN(m)) {
-        simeparViewYear = y;
-        simeparViewMonth = m - 1;
-      }
-
-      renderSimeparCalendar();
-      updateSimeparNavButtons();
-
-      // Cargar imagen correspondiente
-      const img = document.getElementById('simepar-map-img');
-      const downloadLink = document.getElementById('btn-download-simepar-img');
-      const url = `/api/mapa_simepar/${dateStr}.png`;
-      if (img) img.src = url;
-      if (downloadLink) {
-        downloadLink.href = url;
-        downloadLink.download = `simepar_${dateStr}.png`;
-      }
-
-      if (triggerSave) {
-        saveAppState();
-      }
-    }
-
-    function onSimeparDateChange(date) {
-      if (!date) return;
-      setSimeparDate(date, true);
-    }
-
-    function renderSimeparCalendar() {
-      const monthLabel = document.getElementById('simepar-month-label');
-      const grid = document.getElementById('simepar-days-grid');
-      if (!grid) return;
-
-      const monthNames = [
-        'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
-        'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
-      ];
-
-      if (monthLabel) {
-        monthLabel.textContent = `${monthNames[simeparViewMonth]} ${simeparViewYear}`;
-      }
-
-      grid.innerHTML = '';
-
-      // Día de la semana del 1er día del mes (0=Lunes, 6=Domingo)
-      const firstDayOfMonth = new Date(simeparViewYear, simeparViewMonth, 1);
-      const startDay = (firstDayOfMonth.getDay() + 6) % 7;
-
-      const daysInMonth = new Date(simeparViewYear, simeparViewMonth + 1, 0).getDate();
-      const prevMonthDays = new Date(simeparViewYear, simeparViewMonth, 0).getDate();
-
-      // Días del mes anterior (relleno)
-      for (let i = startDay - 1; i >= 0; i--) {
-        const d = prevMonthDays - i;
-        const cell = document.createElement('div');
-        cell.className = 'h-7 w-7 flex items-center justify-center text-xs text-slate-300 dark:text-slate-700 select-none';
-        cell.textContent = d;
-        grid.appendChild(cell);
-      }
-
-      // Días del mes actual
-      for (let day = 1; day <= daysInMonth; day++) {
-        const dStr = String(day).padStart(2, '0');
-        const mStr = String(simeparViewMonth + 1).padStart(2, '0');
-        const dateStr = `${simeparViewYear}-${mStr}-${dStr}`;
-
-        const isAvailable = simeparAvailableDates.includes(dateStr);
-        const isSelected = dateStr === simeparSelectedDate;
-
-        const cell = document.createElement('button');
-        cell.type = 'button';
-        cell.className = 'h-7 w-7 text-xs flex flex-col items-center justify-center rounded-lg transition-all relative font-medium ';
-
-        if (isSelected) {
-          cell.className += 'bg-sky-600 text-white font-bold shadow-sm shadow-sky-600/30 hover:bg-sky-500 scale-105';
-          cell.innerHTML = `<span>${day}</span><span class="w-1 h-1 rounded-full bg-white mt-[-2px]"></span>`;
-          cell.onclick = (e) => {
-            e.stopPropagation();
-            closeSimeparCalendar();
-          };
-        } else if (isAvailable) {
-          cell.className += 'text-sky-700 dark:text-sky-300 bg-sky-50 dark:bg-sky-950/60 hover:bg-sky-100 dark:hover:bg-sky-900/60 font-semibold cursor-pointer border border-sky-200 dark:border-sky-800/80';
-          cell.innerHTML = `<span>${day}</span><span class="w-1 h-1 rounded-full bg-sky-500 dark:bg-sky-400 mt-[-2px]"></span>`;
-          const parts = dateStr.split('-');
-          cell.title = `Ver mapa del ${parts[2]}/${parts[1]}/${parts[0]}`;
-          cell.onclick = (e) => {
-            e.stopPropagation();
-            selectSimeparDate(dateStr);
-          };
-        } else {
-          cell.className += 'text-slate-400/40 dark:text-slate-600/40 cursor-not-allowed hover:bg-transparent';
-          cell.innerHTML = `<span>${day}</span>`;
-          cell.disabled = true;
-        }
-
-        grid.appendChild(cell);
-      }
-
-      // Relleno posterior para completar la última fila semanal
-      const totalCells = startDay + daysInMonth;
-      const remaining = (7 - (totalCells % 7)) % 7;
-      for (let nextDay = 1; nextDay <= remaining; nextDay++) {
-        const cell = document.createElement('div');
-        cell.className = 'h-7 w-7 flex items-center justify-center text-xs text-slate-300 dark:text-slate-700 select-none';
-        cell.textContent = nextDay;
-        grid.appendChild(cell);
-      }
-    }
-
-    async function loadSimeparMap() {
-      const loader = document.getElementById('simepar-loader');
-      if (loader) loader.classList.remove('hidden');
-
-      try {
-        const res = await fetch(`/api/mapa_simepar?_t=${Date.now()}`);
-        const data = await res.json();
-        if (loader) loader.classList.add('hidden');
-
-        if (data.success && data.fechas && data.fechas.length > 0) {
-          simeparAvailableDates = data.fechas;
-          
-          const savedState = loadSavedAppState();
-          const targetDate = (savedState && savedState.simeparDate && data.fechas.includes(savedState.simeparDate))
-            ? savedState.simeparDate
-            : data.fechas[0];
-          
-          setSimeparDate(targetDate, false);
-        } else {
-          simeparAvailableDates = [];
-          const displaySpan = document.getElementById('simepar-calendar-display');
-          if (displaySpan) displaySpan.textContent = 'Sin mapas';
-          renderSimeparCalendar();
-          updateSimeparNavButtons();
-        }
-      } catch (err) {
-        if (loader) loader.classList.add('hidden');
-        showToast('Aviso', 'No se pudieron consultar los mapas de SIMEPAR.', 'error');
-      }
-    }
-
-    async function syncSimeparMap() {
-      const btn = document.getElementById('btn-sync-simepar');
-      const icon = document.getElementById('sync-simepar-icon');
-      const label = document.getElementById('sync-simepar-label');
-      
-      btn.disabled = true;
-      icon.classList.add('animate-spin');
-      label.textContent = 'Descargando...';
-
-      try {
-        const res = await fetch('/api/sync_mapa_simepar', { method: 'POST' });
-        const data = await res.json();
-        btn.disabled = false;
-        icon.classList.remove('animate-spin');
-        label.textContent = 'Descargar mapa de ayer';
-
-        if (data.success) {
-          showToast('SIMEPAR', `Mapa del ${data.fecha} obtenido correctamente.`, 'success');
-          loadSimeparMap();
-        } else {
-          showToast('Error', data.error || 'No se pudo descargar el mapa.', 'error');
-        }
-      } catch (err) {
-        btn.disabled = false;
-        icon.classList.remove('animate-spin');
-        label.textContent = 'Descargar mapa de ayer';
-        showToast('Error', 'Fallo al conectar con el servidor.', 'error');
-      }
-    }
-
-    // Cerrar mini calendario al hacer clic fuera o presionar Esc
-    document.addEventListener('click', (e) => {
-      const container = document.getElementById('simepar-datepicker-container');
-      if (container && !container.contains(e.target)) {
-        closeSimeparCalendar();
-      }
-    });
-
-    document.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape') {
-        closeSimeparCalendar();
-      }
-      if (currentViewMode === 'simepar') {
-        const activeTag = document.activeElement ? document.activeElement.tagName.toLowerCase() : '';
-        if (activeTag !== 'input' && activeTag !== 'textarea') {
-          if (e.key === 'ArrowLeft') {
-            e.preventDefault();
-            stepSimeparDate(-1);
-          } else if (e.key === 'ArrowRight') {
-            e.preventDefault();
-            stepSimeparDate(1);
-          }
-        }
-      }
-    });
-
-    // -----------------------------------------------------------------
-    // SINCRONIZACIÓN MANUAL Y EXPORTACIÓN
-    // -----------------------------------------------------------------
-    async function syncCurrentStation() {
-      if (!selectedStationId) return;
-      setSyncLoading(true);
-
-      try {
-        const res = await fetch('/api/sync', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ estacion_id: selectedStationId })
-        });
-        const data = await res.json();
-        setSyncLoading(false);
-
-        if (data.success) {
-          const syncInfo = data.results && data.results[0] ? data.results[0] : null;
-          const added = syncInfo ? syncInfo.new_records : 0;
-          const lastTs = syncInfo ? syncInfo.last_timestamp : '';
-          const lastAlt = (syncInfo && syncInfo.latest_height !== null) ? syncInfo.latest_height.toFixed(2) + ' m' : '';
-
-          if (added > 0) {
-            showToast('Actualización Exitosa', `Se agregaron ${added} nuevas mediciones. Última: ${lastTs} (${lastAlt}).`, 'success');
-          } else {
-            showToast('Datos al Día', `Sin nuevas lecturas (último registro: ${lastTs}).`, 'info');
-          }
-
-          await loadStations(selectedStationId);
-          refreshActiveViews(false);
-        } else {
-          showToast('Error', data.error || 'Error al actualizar.', 'error');
-        }
-      } catch (err) {
-        setSyncLoading(false);
-        showToast('Error', 'Fallo de conexión al servidor.', 'error');
-      }
-    }
-
-    async function syncAllStations() {
-      if (!confirm('¿Desea actualizar todas las estaciones ahora?')) return;
-      setSyncLoading(true);
-
-      try {
-        const res = await fetch('/api/sync', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ all: true })
-        });
-        const data = await res.json();
-        setSyncLoading(false);
-
-        if (data.success) {
-          const added = data.total_new_records || 0;
-          showToast('Actualizado', `Todas las estaciones verificadas (+${added} mediciones nuevas).`, 'success');
-          await loadStations(selectedStationId);
-          refreshActiveViews(false);
-        } else {
-          showToast('Error', data.error || 'Error al sincronizar todas.', 'error');
-        }
-      } catch (err) {
-        setSyncLoading(false);
-        showToast('Error', 'Fallo de conexión.', 'error');
-      }
-    }
-
-    function setSyncLoading(loading) {
-      const btn = document.getElementById('btn-sync-current');
-      const icon = document.getElementById('sync-icon');
-      const label = document.getElementById('sync-label');
-
-      if (loading) {
-        btn.disabled = true;
-        btn.classList.add('opacity-75');
-        icon.classList.add('animate-spin');
-        label.textContent = 'Actualizando...';
-      } else {
-        btn.disabled = false;
-        btn.classList.remove('opacity-75');
-        icon.classList.remove('animate-spin');
-        label.textContent = 'Actualizar';
-      }
-    }
-
-    function downloadCSV() {
-      if (!selectedStationId) return;
-      const st = allStations.find(s => s.id === selectedStationId);
-      const isPos = isPosadasStation(st);
-      const isCota = isPos && (posadasConfig.mode === 'cota');
-      let url = `/api/export?estacion_id=${selectedStationId}&rango=${currentRange}`;
-      if (isCota) {
-        url += `&cota=1&offset=${posadasConfig.offset}`;
-      }
-      window.open(url, '_blank');
-    }
-
-    function showToast(title, msg, type = 'success') {
-      const toast = document.getElementById('toast');
-      const tTitle = document.getElementById('toast-title');
-      const tMsg = document.getElementById('toast-msg');
-      const tIcon = document.getElementById('toast-icon');
-
-      tTitle.textContent = title;
-      tMsg.textContent = msg;
-
-      if (type === 'success') {
-        tIcon.textContent = '✓';
-        tIcon.className = 'text-emerald-600 dark:text-emerald-400 font-bold shrink-0';
-      } else if (type === 'error') {
-        tIcon.textContent = '✕';
-        tIcon.className = 'text-rose-600 dark:text-rose-400 font-bold shrink-0';
-      } else {
-        tIcon.textContent = 'ℹ';
-        tIcon.className = 'text-sky-600 dark:text-sky-400 font-bold shrink-0';
-      }
-
-      toast.classList.remove('opacity-0', 'pointer-events-none', 'translate-y-3');
-      setTimeout(() => {
-        toast.classList.add('opacity-0', 'pointer-events-none', 'translate-y-3');
-      }, 4500);
-    }
+    window.closeThresholdsModal = window.closeThresholdsModal || function() {
+      var m = document.getElementById('modal-umbrales');
+      if (m) {
+        m.style.display = 'none';
+        m.classList.add('hidden');
+      }
+    };
+    window.handleModalBackdropClick = window.handleModalBackdropClick || function(e) {
+      if (e && e.target && e.target.id === 'modal-umbrales') window.closeThresholdsModal();
+    };
   </script>
+
+  <!-- SCRIPTS MODULARES -->
+  <script src="js/api.js?v=9"></script>
+  <script src="js/state.js?v=9"></script>
+  <script src="js/components.js?v=9"></script>
+  <script src="js/charts.js?v=9"></script>
+  <script src="js/represas.js?v=9"></script>
+  <script src="js/map.js?v=9"></script>
+  <script src="js/simepar.js?v=9"></script>
+  <script src="js/app.js?v=9"></script>
 </body>
 </html>

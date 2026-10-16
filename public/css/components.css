@@ -1,0 +1,654 @@
+/* ============================================================
+   public/css/components.css
+   Componentes Visuales HidroPanel 2.0
+   Situación, Nivel-Bar, KPIs, Gráficos, Radar y Calendario SIMEPAR
+   ============================================================ */
+
+/* Tarjetas Estilo Glass/Card */
+.glass-card {
+  background: var(--surface-card);
+  border: 1px solid var(--line-200);
+  border-radius: var(--radius-xl);
+  padding: 1.25rem;
+  box-shadow: var(--shadow-xs);
+  transition: all var(--dur-med) var(--ease);
+  position: relative;
+}
+.glass-card:hover {
+  box-shadow: var(--shadow-sm);
+  border-color: var(--line-100);
+}
+
+/* ============================================================
+   TIRA DE SITUACIÓN ACTUAL (3 Tarjetas Resumen)
+   ============================================================ */
+.situation-strip {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+
+.situation-card {
+  background: var(--surface-card);
+  border: 1px solid var(--line-200);
+  border-radius: var(--radius-lg);
+  padding: 1.1rem 1.25rem;
+  box-shadow: var(--shadow-xs);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  position: relative;
+  overflow: hidden;
+  transition: transform var(--dur-med) var(--ease), box-shadow var(--dur-med) var(--ease);
+}
+.situation-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-sm);
+}
+
+.situation-card.primary {
+  background: linear-gradient(140deg, var(--navy-900) 0%, var(--blue-600) 120%);
+  color: #ffffff;
+  border-color: rgba(255, 255, 255, 0.15);
+}
+.situation-card.primary .situation-label {
+  color: rgba(255, 255, 255, 0.75);
+}
+.situation-card.primary .situation-small {
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.situation-label {
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-weight: 700;
+  color: var(--ink-500);
+  margin-bottom: 4px;
+}
+
+.situation-big {
+  font-family: var(--font-value);
+  font-weight: 700;
+  font-size: 2.1rem;
+  letter-spacing: -0.03em;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+  margin: 4px 0 6px;
+}
+
+.situation-small {
+  font-size: 0.78rem;
+  line-height: 1.4;
+  color: var(--ink-500);
+}
+
+.trend-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 0.2rem 0.55rem;
+  border-radius: var(--radius-full);
+}
+.trend-up {
+  color: #ef4444;
+  background: rgba(239, 68, 68, 0.12);
+}
+.trend-down {
+  color: #22c55e;
+  background: rgba(34, 197, 94, 0.12);
+}
+.trend-stable {
+  color: var(--ink-500);
+  background: var(--surface-100);
+}
+
+/* ============================================================
+   MEDIDOR DE NIVEL (NIVEL-BAR GAUGE)
+   ============================================================ */
+.nivel-bar-wrap {
+  background: var(--surface-card);
+  border: 1px solid var(--line-200);
+  border-radius: var(--radius-lg);
+  padding: 1.1rem 1.4rem;
+  margin-bottom: 1.25rem;
+  box-shadow: var(--shadow-xs);
+}
+
+.nivel-bar-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.75rem;
+}
+.nivel-bar-title {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-weight: 700;
+  color: var(--ink-500);
+}
+
+.nivel-bar-outer {
+  position: relative;
+  background: var(--surface-100);
+  border-radius: var(--radius-full);
+  height: 22px;
+  border: 1px solid var(--line-200);
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.08);
+  margin: 1.8rem 0 0.8rem;
+}
+
+.nivel-bar-inner {
+  height: 100%;
+  border-radius: var(--radius-full);
+  background: linear-gradient(90deg, #22c55e, #16a34a);
+  transition: width 0.8s var(--ease), background 0.4s var(--ease);
+  position: relative;
+}
+.nivel-bar-inner.lvl-vigilancia { background: linear-gradient(90deg, #22c55e, #f59e0b); }
+.nivel-bar-inner.lvl-alerta     { background: linear-gradient(90deg, #f59e0b, #ea580c); }
+.nivel-bar-inner.lvl-evacuacion { background: linear-gradient(90deg, #ea580c, #dc2626); }
+.nivel-bar-inner.lvl-emergencia { background: linear-gradient(90deg, #dc2626, #881337); }
+
+.nivel-marker-line {
+  position: absolute;
+  top: -10px;
+  bottom: -10px;
+  width: 2px;
+  border-left: 2px dashed;
+  z-index: 5;
+}
+.nivel-marker-line.m-vigilancia { border-color: var(--nivel-vigilancia); }
+.nivel-marker-line.m-alerta     { border-color: var(--nivel-alerta); }
+.nivel-marker-line.m-evacuacion { border-color: var(--nivel-evacuacion); }
+
+.nivel-marker-label {
+  position: absolute;
+  top: -24px;
+  font-size: 0.65rem;
+  font-family: var(--font-mono);
+  font-weight: 700;
+  white-space: nowrap;
+  transform: translateX(-50%);
+}
+.nivel-marker-line.m-vigilancia .nivel-marker-label { color: var(--nivel-vigilancia); }
+.nivel-marker-line.m-alerta .nivel-marker-label     { color: var(--nivel-alerta); }
+.nivel-marker-line.m-evacuacion .nivel-marker-label { color: var(--nivel-evacuacion); }
+
+/* ============================================================
+   GRID DE KPIS ANALÍTICOS
+   ============================================================ */
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+
+.kpi-card {
+  background: var(--surface-card);
+  border: 1px solid var(--line-200);
+  border-radius: var(--radius-lg);
+  padding: 1.1rem 1.25rem;
+  position: relative;
+  overflow: hidden;
+  box-shadow: var(--shadow-xs);
+  transition: transform var(--dur-med) var(--ease), box-shadow var(--dur-med) var(--ease), border-color var(--dur-med) var(--ease);
+}
+.kpi-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+  background: var(--kpi-accent, var(--accent));
+}
+.kpi-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-sm);
+  border-color: var(--kpi-accent, var(--accent));
+}
+
+.kpi-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+.kpi-label {
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-weight: 700;
+  color: var(--ink-500);
+}
+.kpi-value-row {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+}
+.kpi-value {
+  font-family: var(--font-value);
+  font-weight: 700;
+  font-size: 2.1rem;
+  letter-spacing: -0.02em;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink-900);
+}
+.kpi-unit {
+  font-size: 0.75rem;
+  color: var(--ink-500);
+  font-weight: 600;
+}
+.kpi-sub {
+  font-size: 0.72rem;
+  color: var(--ink-500);
+  margin-top: 6px;
+  font-family: var(--font-mono);
+}
+
+/* ============================================================
+   BARRA DE CONTROLES (RANGOS, SUBPLOTS, CSV, COTA)
+   ============================================================ */
+.controls-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  background: var(--surface-card);
+  border: 1px solid var(--line-200);
+  padding: 0.65rem 1rem;
+  border-radius: var(--radius-lg);
+  margin-bottom: 1.25rem;
+  box-shadow: var(--shadow-xs);
+}
+
+.segmented-control {
+  display: inline-flex;
+  align-items: center;
+  background: var(--surface-100);
+  border: 1px solid var(--line-200);
+  padding: 2px;
+  border-radius: var(--radius-md);
+  gap: 2px;
+}
+.segmented-btn {
+  background: transparent;
+  border: none;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--ink-500);
+  padding: 0.35rem 0.75rem;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all var(--dur-fast) var(--ease);
+}
+.segmented-btn:hover {
+  color: var(--ink-900);
+}
+.segmented-btn.active {
+  background: var(--surface-0);
+  color: var(--accent);
+  box-shadow: var(--shadow-xs);
+}
+
+/* Panel de Cota Posadas */
+.cota-control-panel {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: var(--surface-100);
+  border: 1px solid var(--line-200);
+  padding: 3px 8px;
+  border-radius: var(--radius-md);
+  font-size: 0.75rem;
+}
+.cota-offset-input {
+  width: 60px;
+  background: var(--surface-0);
+  border: 1px solid var(--line-200);
+  border-radius: var(--radius-sm);
+  padding: 2px 4px;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--accent);
+  text-align: center;
+}
+
+/* ============================================================
+   CONTENEDOR DE GRÁFICO PRINCIPAL
+   ============================================================ */
+.chart-card {
+  background: var(--surface-card);
+  border: 1px solid var(--line-200);
+  border-radius: var(--radius-xl);
+  padding: 1.25rem;
+  margin-bottom: 1.25rem;
+  box-shadow: var(--shadow-xs);
+  display: flex;
+  flex-direction: column;
+}
+.chart-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+.chart-card-title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--ink-900);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.chart-canvas-container {
+  width: 100%;
+  height: 380px;
+  position: relative;
+}
+
+/* Cuadrícula de Subplots (Modo 2, 4, 8) */
+.subplots-grid-container {
+  display: grid;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+.subplots-grid-container.cols-2 { grid-template-columns: repeat(2, 1fr); }
+.subplots-grid-container.cols-4 { grid-template-columns: repeat(2, 1fr); }
+.subplots-grid-container.cols-8 { grid-template-columns: repeat(4, 1fr); }
+
+@media (max-width: 1024px) {
+  .subplots-grid-container.cols-2,
+  .subplots-grid-container.cols-4,
+  .subplots-grid-container.cols-8 {
+    grid-template-columns: 1fr;
+  }
+}
+
+.subplot-card {
+  background: var(--surface-card);
+  border: 1px solid var(--line-200);
+  border-radius: var(--radius-lg);
+  padding: 0.85rem;
+  box-shadow: var(--shadow-xs);
+  display: flex;
+  flex-direction: column;
+}
+.subplot-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
+  gap: 0.5rem;
+}
+.subplot-select {
+  background: var(--surface-50);
+  border: 1px solid var(--line-200);
+  border-radius: var(--radius-sm);
+  padding: 0.25rem 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--ink-800);
+  outline: none;
+  max-width: 200px;
+}
+.subplot-canvas-wrap {
+  width: 100%;
+  height: 200px;
+  position: relative;
+}
+
+/* ============================================================
+   RADAR DE PRECIPITACIONES Y MAPA LEAFLET
+   ============================================================ */
+.map-view-wrapper {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 1.25rem;
+  overflow: hidden;
+}
+.map-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  background: var(--surface-card);
+  border: 1px solid var(--line-200);
+  padding: 0.65rem 1rem;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-xs);
+  flex-shrink: 0;
+}
+.map-container-frame {
+  flex: 1;
+  width: 100%;
+  border-radius: var(--radius-xl);
+  overflow: hidden;
+  border: 1px solid var(--line-200);
+  position: relative;
+  box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.08);
+}
+#map-leaflet {
+  width: 100%;
+  height: 100%;
+}
+
+/* Controles Flotantes del Radar RainViewer */
+.radar-controls-overlay {
+  position: absolute;
+  bottom: 20px;
+  left: 20px;
+  right: 20px;
+  max-width: 540px;
+  background: rgba(255, 255, 255, 0.94);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--line-200);
+  border-radius: var(--radius-lg);
+  padding: 0.85rem 1.1rem;
+  box-shadow: var(--shadow-lg);
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+[data-theme="dark"] .radar-controls-overlay {
+  background: rgba(10, 20, 32, 0.94);
+  border-color: var(--line-200);
+}
+.radar-timeline-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+.radar-play-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-full);
+  background: var(--accent);
+  color: #ffffff;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: transform var(--dur-fast) var(--ease);
+}
+.radar-play-btn:hover {
+  transform: scale(1.08);
+}
+.radar-slider {
+  flex: 1;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+.radar-timestamp-label {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--ink-700);
+  white-space: nowrap;
+}
+
+/* Leyenda del Radar */
+.radar-legend-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.65rem;
+  color: var(--ink-500);
+  font-weight: 600;
+  padding-top: 4px;
+  border-top: 1px solid var(--line-200);
+}
+.radar-color-scale {
+  display: flex;
+  height: 6px;
+  flex: 1;
+  margin: 0 8px;
+  border-radius: 3px;
+  background: linear-gradient(90deg, #70a1ff, #2ed573, #ffa502, #ff4757, #9b59b6);
+}
+
+/* ============================================================
+   SIMEPAR VIEWER Y CALENDARIO DESPLEGABLE
+   ============================================================ */
+.simepar-view-wrapper {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 1.25rem;
+  overflow: hidden;
+}
+.simepar-image-container {
+  flex: 1;
+  width: 100%;
+  background: var(--surface-card);
+  border: 1px solid var(--line-200);
+  border-radius: var(--radius-xl);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  position: relative;
+  overflow: auto;
+}
+.simepar-image-container img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md);
+}
+
+/* Popover Calendario SIMEPAR */
+.calendar-popover {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  z-index: 1050;
+  width: 270px;
+  background: var(--surface-card);
+  border: 1px solid var(--line-200);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  padding: 0.85rem;
+  display: none;
+}
+.calendar-popover.active {
+  display: block;
+  animation: slide-in 0.2s var(--ease);
+}
+.cal-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+  text-align: center;
+}
+.cal-day-cell {
+  aspect-ratio: 1;
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.72rem;
+  font-weight: 500;
+  cursor: pointer;
+  position: relative;
+  transition: all var(--dur-fast) var(--ease);
+  color: var(--ink-700);
+}
+.cal-day-cell:hover:not(.disabled) {
+  background: var(--surface-100);
+}
+.cal-day-cell.selected {
+  background: var(--accent);
+  color: #ffffff;
+  font-weight: 700;
+}
+.cal-day-cell.has-map::after {
+  content: '';
+  position: absolute;
+  bottom: 2px;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--gold-500);
+}
+.cal-day-cell.disabled {
+  opacity: 0.25;
+  cursor: not-allowed;
+}
+
+/* ============================================================
+   TOAST NOTIFICACIONES
+   ============================================================ */
+.toast-box {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  background: var(--surface-card);
+  border: 1px solid var(--line-200);
+  border-radius: var(--radius-lg);
+  padding: 0.85rem 1.25rem;
+  box-shadow: var(--shadow-lg);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  z-index: 9999;
+  opacity: 0;
+  transform: translateY(12px);
+  transition: all 0.25s var(--ease);
+  pointer-events: none;
+}
+.toast-box.show {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+.toast-icon {
+  font-size: 1.25rem;
+}
+.toast-text h4 {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--ink-900);
+}
+.toast-text p {
+  font-size: 0.72rem;
+  color: var(--ink-500);
+}

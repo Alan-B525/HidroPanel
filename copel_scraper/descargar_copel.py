@@ -106,24 +106,23 @@ def escribir_archivo_txt(lineas, ruta_archivo):
         for linea in lineas:
             f.write(linea + '\r\n')
 
-def ejecutar_extraccion(directorio_salida=None):
+def ejecutar_extraccion(directorio_salida=None, solo_cataratas=True):
     if not directorio_salida:
-        if getattr(sys, 'frozen', False):
+        # Si existe carpeta data/ en la raíz del proyecto, usarla preferentemente para no ensuciar la raíz
+        parent_dir = os.path.dirname(current_dir) if os.path.basename(current_dir).lower() == "copel_scraper" else current_dir
+        data_candidate = os.path.join(parent_dir, "data")
+        if os.path.isdir(data_candidate):
+            directorio_salida = data_candidate
+        elif getattr(sys, 'frozen', False):
             directorio_salida = os.path.dirname(sys.executable)
         else:
-            # Si corre desde copel_scraper, guardar en la carpeta padre (raíz del proyecto)
-            # o en la misma carpeta si está en la raíz
-            parent_dir = os.path.dirname(current_dir)
-            if os.path.basename(current_dir).lower() == "copel_scraper":
-                directorio_salida = parent_dir
-            else:
-                directorio_salida = current_dir
+            directorio_salida = parent_dir
 
     os.makedirs(directorio_salida, exist_ok=True)
 
+    modo_desc = "Estaciones Cataratas y Capanema" if solo_cataratas else "Completo (COPEL + ENGIE)"
     print("=" * 80)
-    print(" EXTRACCIÓN DE TELEMETRÍA HIDROLÓGICA (COPEL MHB + ENGIE)")
-    print(" Generación de archivos TXT para macro Excel")
+    print(f" EXTRACCIÓN DE TELEMETRÍA HIDROLÓGICA ({modo_desc})")
     print("=" * 80)
 
     now = datetime.now()
@@ -139,10 +138,12 @@ def ejecutar_extraccion(directorio_salida=None):
     # -------------------------------------------------------------
     # 1. CONSULTAR ESTACIONES DE COPEL
     # -------------------------------------------------------------
+    estaciones_a_consultar = [e for e in COPEL_ESTACIONES if any(k in e["query"].lower() for k in ["cataratas", "capanema"])] if solo_cataratas else COPEL_ESTACIONES
+
     print("[1/2] Consultando portal COPEL MHB...")
     client_copel = CopelClient()
 
-    for item in COPEL_ESTACIONES:
+    for item in estaciones_a_consultar:
         q = item["query"]
         nombre = item["nombre"]
         print(f"  -> {nombre:<18} ...", end=" ", flush=True)
@@ -187,37 +188,38 @@ def ejecutar_extraccion(directorio_salida=None):
             print(f"[ERROR] {e}")
 
     # -------------------------------------------------------------
-    # 2. CONSULTAR CENTRALES DE ENGIE (Salto Osório y Salto Santiago)
+    # 2. CONSULTAR CENTRALES DE ENGIE (Solo si no es solo_cataratas)
     # -------------------------------------------------------------
-    print("\n[2/2] Consultando portal ENGIE Brasil...")
-    client_engie = EngieClient()
+    if not solo_cataratas:
+        print("\n[2/2] Consultando portal ENGIE Brasil...")
+        client_engie = EngieClient()
 
-    for item in ENGIE_CENTRALES:
-        code = item["code"]
-        nombre = item["nombre"]
-        print(f"  -> {nombre:<18} ({code}) ...", end=" ", flush=True)
+        for item in ENGIE_CENTRALES:
+            code = item["code"]
+            nombre = item["nombre"]
+            print(f"  -> {nombre:<18} ({code}) ...", end=" ", flush=True)
 
-        try:
-            rows = client_engie.fetch_plant_data(code, fecha_inicio)
-            lineas_finales = ["\t".join(r) for r in rows]
+            try:
+                rows = client_engie.fetch_plant_data(code, fecha_inicio)
+                lineas_finales = ["\t".join(r) for r in rows]
 
-            for fname in item["filenames"]:
-                ruta = os.path.join(directorio_salida, fname)
-                escribir_archivo_txt(lineas_finales, ruta)
+                for fname in item["filenames"]:
+                    ruta = os.path.join(directorio_salida, fname)
+                    escribir_archivo_txt(lineas_finales, ruta)
 
-            n_regs = len(lineas_finales)
-            print(f"[OK] {n_regs} registros -> {', '.join(item['filenames'])}")
+                n_regs = len(lineas_finales)
+                print(f"[OK] {n_regs} registros -> {', '.join(item['filenames'])}")
 
-            resumen.append({
-                "fuente": "ENGIE",
-                "nombre": nombre,
-                "archivos": ", ".join(item["filenames"]),
-                "registros": n_regs,
-                "ultima": rows[0][0] if rows else "N/A"
-            })
+                resumen.append({
+                    "fuente": "ENGIE",
+                    "nombre": nombre,
+                    "archivos": ", ".join(item["filenames"]),
+                    "registros": n_regs,
+                    "ultima": rows[0][0] if rows else "N/A"
+                })
 
-        except Exception as e:
-            print(f"[ERROR] {e}")
+            except Exception as e:
+                print(f"[ERROR] {e}")
 
     # -------------------------------------------------------------
     # RESUMEN EN PANTALLA
@@ -235,6 +237,10 @@ def ejecutar_extraccion(directorio_salida=None):
 
 if __name__ == "__main__":
     dir_arg = None
-    if len(sys.argv) > 1 and not sys.argv[1].startswith("-"):
-        dir_arg = sys.argv[1]
-    ejecutar_extraccion(dir_arg)
+    solo_cataratas_arg = True
+    for arg in sys.argv[1:]:
+        if arg == "--all":
+            solo_cataratas_arg = False
+        elif not arg.startswith("-"):
+            dir_arg = arg
+    ejecutar_extraccion(dir_arg, solo_cataratas=solo_cataratas_arg)

@@ -1,0 +1,1254 @@
+openapi: 3.0.1
+info:
+  title: Hidrologia
+  description: API que fornece dados hidrológicos
+  version: 1.0.0
+servers:
+- url: https://integra.ons.org.br/api
+tags:
+- name: Autenticação
+  description: Token de autenticação para utilizar na API
+- name: Grandezas Hidrológicas
+  description: Consultas de Grandezas Hidrológicas
+- name: Precipitação Observada
+  description: Consultas de Precipitação Observada
+- name: Reservatório
+  description: Consultas de Reservatórios
+- name: Grandezas Previstas
+  description: Consultas de Grandezas Previstas
+- name: Grandezas Verificadas
+  description: Consultas de Grandezas Verificadas
+paths:
+  /autenticar:
+    post:
+      tags:
+      - Autenticação
+      description: "Obter o token de autenticacao para utilizacao da API.\n\nO usuá\
+        rio e senha devem ser os mesmos utilizados para se autenticar no SINTEGRE,\
+        \ mas para obter acesso aos dados da API, a permissão deve ser solicitada\
+        \ em: https://sintegre.ons.org.br/paginas/meu-perfil/meus-sistemas.aspx\n\n\
+        \tProcesso: Operação Hidráulica\n\tSistema: IntegracaoHidrologia - API que\
+        \ fornece dados hidrológicos\n\nO acesso será concedido após a aprovação do\
+        \ gestor do processo."
+      operationId: postAutenticar
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Autenticacao'
+        required: true
+      responses:
+        200:
+          description: Ok
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResultadoAutenticacao'
+        default:
+          description: Erro
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Erro'
+      x-codegen-request-body-name: Body
+  /renovar:
+    post:
+      tags:
+      - Autenticação
+      description: Renovar o token de autenticacao para utilizacao da API
+      operationId: postRenovar
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RenovarAutenticaco'
+        required: true
+      responses:
+        200:
+          description: Ok
+          content: {}
+        default:
+          description: Erro
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Erro'
+      x-codegen-request-body-name: Body
+  /hidrologia/reservatorios:
+    get:
+      tags:
+      - Reservatório
+      description: Obter a lista de reservatorios
+      operationId: getReservatorios
+      parameters:
+      - name: Pagina
+        in: header
+        description: Pagina corrente
+        required: true
+        schema:
+          type: integer
+          default: 1
+      - name: Quantidade
+        in: header
+        description: Quantidade de resultados por pagina
+        required: true
+        schema:
+          type: integer
+          default: 240
+      responses:
+        200:
+          description: Ok
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResultadoConsultaReservatoriosPaginada'
+        default:
+          description: Erro
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Erro'
+      security:
+      - Bearer: []
+  /hidrologia/reservatorios/{Identificador}:
+    get:
+      tags:
+      - Reservatório
+      description: Obter as informacoes detalhadas de um reservatorio
+      operationId: getReservatoriosById
+      parameters:
+      - name: Identificador
+        in: path
+        description: Identificador do Reservatorio
+        required: true
+        schema:
+          type: string
+      responses:
+        200:
+          description: Ok
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Reservatorio'
+        default:
+          description: Erro
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Erro'
+      security:
+      - Bearer: []
+  /hidrologia/reservatorios/{Identificador}/afluencia:
+    get:
+      tags:
+      - Grandezas Verificadas
+      description: Obter os valores de vazao afluente () do reservatorio no periodo (máx 7 dias)
+        e intervalo definidos
+      operationId: getAfluenciaReservatorio
+      parameters:
+      - name: Pagina
+        in: header
+        description: Pagina corrente
+        required: true
+        schema:
+          type: integer
+          default: 1
+      - name: Quantidade
+        in: header
+        description: Quantidade de resultados por pagina (limitado a 240 itens por
+          página)
+        required: true
+        schema:
+          type: integer
+          default: 240
+      - name: Identificador
+        in: path
+        description: Identificador do Reservatorio
+        required: true
+        schema:
+          type: string
+      - name: Inicio
+        in: query
+        description: Data de inicio do periodo (AAAA-MM-DD HH:mm:ss)
+        required: true
+        schema:
+          type: string
+      - name: Fim
+        in: query
+        description: Data de fim do periodo (AAAA-MM-DD HH:mm:ss)
+        required: true
+        schema:
+          type: string
+      - name: Intervalo
+        in: query
+        description: Intervalo de consolidacao dos dados (HO ou DI)
+        required: true
+        schema:
+          type: string
+      - name: Origem
+        in: query
+        description: "Origem dos dados (TRL, SSC, FTP ou ATR)
+        <li>TRL – Tempo Real
+        <li>SSC – Tempo Real Lido do Sistema de Supervisão
+        <li>FTP – Tempo Real Lido do Servidor FTP
+        <li>ATR – Valor atribuído."
+        schema:
+          type: string
+      responses:
+        200:
+          description: Ok
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResultadoConsultaGrandezaPaginada'
+        default:
+          description: Erro
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Erro'
+      security:
+      - Bearer: []
+  /hidrologia/reservatorios/{Identificador}/defluencia:
+    get:
+      tags:
+      - Grandezas Verificadas
+      description: Obter os valores de defluencia (m3/s) do reservatorio no periodo (máx 7 dias)
+        e intervalo definidos
+      operationId: getDefluenciaReservatorio
+      parameters:
+      - name: Pagina
+        in: header
+        description: Pagina corrente
+        required: true
+        schema:
+          type: integer
+          default: 1
+      - name: Quantidade
+        in: header
+        description: Quantidade de resultados por pagina (limitado a 240 itens por
+          página)
+        required: true
+        schema:
+          type: integer
+          default: 240
+      - name: Identificador
+        in: path
+        description: Identificador do Reservatorio
+        required: true
+        schema:
+          type: string
+      - name: Inicio
+        in: query
+        description: Data de inicio do periodo (AAAA-MM-DD HH:mm:ss)
+        required: true
+        schema:
+          type: string
+      - name: Fim
+        in: query
+        description: Data de fim do periodo (AAAA-MM-DD HH:mm:ss)
+        required: true
+        schema:
+          type: string
+      - name: Intervalo
+        in: query
+        description: Intervalo de consolidacao dos dados (HO ou DI)
+        required: true
+        schema:
+          type: string
+      - name: Origem
+        in: query
+        description: "Origem dos dados (TRL, SSC, FTP ou ATR)
+        <li>TRL – Tempo Real
+        <li>SSC – Tempo Real Lido do Sistema de Supervisão
+        <li>FTP – Tempo Real Lido do Servidor FTP
+        <li>ATR – Valor atribuído."
+        schema:
+          type: string
+      responses:
+        200:
+          description: Ok
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResultadoConsultaGrandezaPaginada'
+        default:
+          description: Erro
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Erro'
+      security:
+      - Bearer: []
+  /hidrologia/reservatorios/{Identificador}/energiaTurbinavel:
+    get:
+      tags:
+      - Grandezas Verificadas
+      description: Obter os valores de vazao transferida () do reservatorio no periodo (máx 7 dias)
+        e intervalo definidos
+      operationId: getEnergiaTurbinavelReservatorio
+      parameters:
+      - name: Pagina
+        in: header
+        description: Pagina corrente
+        required: true
+        schema:
+          type: integer
+          default: 1
+      - name: Quantidade
+        in: header
+        description: Quantidade de resultados por pagina (limitado a 240 itens por
+          página)
+        required: true
+        schema:
+          type: integer
+          default: 240
+      - name: Identificador
+        in: path
+        description: Identificador do Reservatorio
+        required: true
+        schema:
+          type: string
+      - name: Inicio
+        in: query
+        description: Data de inicio do periodo (AAAA-MM-DD HH:mm:ss)
+        required: true
+        schema:
+          type: string
+      - name: Fim
+        in: query
+        description: Data de fim do periodo (AAAA-MM-DD HH:mm:ss)
+        required: true
+        schema:
+          type: string
+      - name: Intervalo
+        in: query
+        description: Intervalo de consolidacao dos dados (HO ou DI)
+        required: true
+        schema:
+          type: string
+      - name: Origem
+        in: query
+        description:  "Origem dos dados (TRL, SSC, FTP ou ATR)
+        <li>TRL – Tempo Real
+        <li>SSC – Tempo Real Lido do Sistema de Supervisão
+        <li>FTP – Tempo Real Lido do Servidor FTP
+        <li>ATR – Valor atribuído."
+        schema:
+          type: string
+      responses:
+        200:
+          description: Ok
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResultadoConsultaGrandezaPaginada'
+        default:
+          description: Erro
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Erro'
+      security:
+      - Bearer: []
+  /hidrologia/reservatorios/{Identificador}/nivelJusante:
+    get:
+      tags:
+      - Grandezas Verificadas
+      description: Obter os valores de nivel de jusante () do reservatorio no periodo (máx 7 dias)
+        e intervalo definidos
+      operationId: getNivelJusanteReservatorio
+      parameters:
+      - name: Pagina
+        in: header
+        description: Pagina corrente
+        required: true
+        schema:
+          type: integer
+          default: 1
+      - name: Quantidade
+        in: header
+        description: Quantidade de resultados por pagina (limitado a 240 itens por
+          página)
+        required: true
+        schema:
+          type: integer
+          default: 240
+      - name: Identificador
+        in: path
+        description: Identificador do Reservatorio
+        required: true
+        schema:
+          type: string
+      - name: Inicio
+        in: query
+        description: Data de inicio do periodo (AAAA-MM-DD HH:mm:ss)
+        required: true
+        schema:
+          type: string
+      - name: Fim
+        in: query
+        description: Data de fim do periodo (AAAA-MM-DD HH:mm:ss)
+        required: true
+        schema:
+          type: string
+      - name: Intervalo
+        in: query
+        description: Intervalo de consolidacao dos dados (HO ou DI)
+        required: true
+        schema:
+          type: string
+      - name: Origem
+        in: query
+        description:  "Origem dos dados (TRL, SSC, FTP ou ATR)
+        <li>TRL – Tempo Real
+        <li>SSC – Tempo Real Lido do Sistema de Supervisão
+        <li>FTP – Tempo Real Lido do Servidor FTP
+        <li>ATR – Valor atribuído."
+        schema:
+          type: string
+      responses:
+        200:
+          description: Ok
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResultadoConsultaGrandezaPaginada'
+        default:
+          description: Erro
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Erro'
+      security:
+      - Bearer: []
+  /hidrologia/reservatorios/{Identificador}/nivelMontante:
+    get:
+      tags:
+      - Grandezas Verificadas
+      description: Obter os valores de nivel de montante () do reservatorio no periodo (máx 7 dias)
+        e intervalo definidos
+      operationId: getNivelMontanteReservatorio
+      parameters:
+      - name: Pagina
+        in: header
+        description: Pagina corrente
+        required: true
+        schema:
+          type: integer
+          default: 1
+      - name: Quantidade
+        in: header
+        description: Quantidade de resultados por pagina (limitado a 240 itens por
+          página)
+        required: true
+        schema:
+          type: integer
+          default: 240
+      - name: Identificador
+        in: path
+        description: Identificador do Reservatorio
+        required: true
+        schema:
+          type: string
+      - name: Inicio
+        in: query
+        description: Data de inicio do periodo (AAAA-MM-DD HH:mm:ss)
+        required: true
+        schema:
+          type: string
+      - name: Fim
+        in: query
+        description: Data de fim do periodo (AAAA-MM-DD HH:mm:ss)
+        required: true
+        schema:
+          type: string
+      - name: Intervalo
+        in: query
+        description: Intervalo de consolidacao dos dados (HO ou DI)
+        required: true
+        schema:
+          type: string
+      - name: Origem
+        in: query
+        description:  "Origem dos dados (TRL, SSC, FTP ou ATR)
+        <li>TRL – Tempo Real
+        <li>SSC – Tempo Real Lido do Sistema de Supervisão
+        <li>FTP – Tempo Real Lido do Servidor FTP
+        <li>ATR – Valor atribuído."
+        schema:
+          type: string
+      responses:
+        200:
+          description: Ok
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResultadoConsultaGrandezaPaginada'
+        default:
+          description: Erro
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Erro'
+      security:
+      - Bearer: []
+  /hidrologia/reservatorios/{Identificador}/vazaoOutrasEstruturas:
+    get:
+      tags:
+      - Grandezas Verificadas
+      description: Obter os valores de vazao de outras estruturas () do reservatorio (máx 7 dias)
+        no periodo e intervalo definidos
+      operationId: getVazaoOutrasEstruturasReservatorio
+      parameters:
+      - name: Pagina
+        in: header
+        description: Pagina corrente
+        required: true
+        schema:
+          type: integer
+          default: 1
+      - name: Quantidade
+        in: header
+        description: Quantidade de resultados por pagina (limitado a 240 itens por
+          página)
+        required: true
+        schema:
+          type: integer
+          default: 240
+      - name: Identificador
+        in: path
+        description: Identificador do Reservatorio
+        required: true
+        schema:
+          type: string
+      - name: Inicio
+        in: query
+        description: Data de inicio do periodo (AAAA-MM-DD HH:mm:ss)
+        required: true
+        schema:
+          type: string
+      - name: Fim
+        in: query
+        description: Data de fim do periodo (AAAA-MM-DD HH:mm:ss)
+        required: true
+        schema:
+          type: string
+      - name: Intervalo
+        in: query
+        description: Intervalo de consolidacao dos dados (HO ou DI)
+        required: true
+        schema:
+          type: string
+      - name: Origem
+        in: query
+        description:  "Origem dos dados (TRL, SSC, FTP ou ATR)
+        <li>TRL – Tempo Real
+        <li>SSC – Tempo Real Lido do Sistema de Supervisão
+        <li>FTP – Tempo Real Lido do Servidor FTP
+        <li>ATR – Valor atribuído."
+        schema:
+          type: string
+      responses:
+        200:
+          description: Ok
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResultadoConsultaGrandezaPaginada'
+        default:
+          description: Erro
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Erro'
+      security:
+      - Bearer: []
+  /hidrologia/reservatorios/{Identificador}/vazaoTurbinada:
+    get:
+      tags:
+      - Grandezas Verificadas
+      description: Obter os valores de vazao turbinada () do reservatorio no periodo (máx 7 dias)
+        e intervalo definidos
+      operationId: getVazaoTurbinadaReservatorio
+      parameters:
+      - name: Pagina
+        in: header
+        description: Pagina corrente
+        required: true
+        schema:
+          type: integer
+          default: 1
+      - name: Quantidade
+        in: header
+        description: Quantidade de resultados por pagina (limitado a 240 itens por
+          página)
+        required: true
+        schema:
+          type: integer
+          default: 240
+      - name: Identificador
+        in: path
+        description: Identificador do Reservatorio
+        required: true
+        schema:
+          type: string
+      - name: Inicio
+        in: query
+        description: Data de inicio do periodo (AAAA-MM-DD HH:mm:ss)
+        required: true
+        schema:
+          type: string
+      - name: Fim
+        in: query
+        description: Data de fim do periodo (AAAA-MM-DD HH:mm:ss)
+        required: true
+        schema:
+          type: string
+      - name: Intervalo
+        in: query
+        description: Intervalo de consolidacao dos dados (HO ou DI)
+        required: true
+        schema:
+          type: string
+      - name: Origem
+        in: query
+        description:  "Origem dos dados (TRL, SSC, FTP ou ATR)
+        <li>TRL – Tempo Real
+        <li>SSC – Tempo Real Lido do Sistema de Supervisão
+        <li>FTP – Tempo Real Lido do Servidor FTP
+        <li>ATR – Valor atribuído."
+        schema:
+          type: string
+      responses:
+        200:
+          description: Ok
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResultadoConsultaGrandezaPaginada'
+        default:
+          description: Erro
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Erro'
+      security:
+      - Bearer: []
+  /hidrologia/reservatorios/{Identificador}/vazaoVertida:
+    get:
+      tags:
+      - Grandezas Verificadas
+      description: Obter os valores de vazao vertida () do reservatorio no periodo (máx 7 dias)
+        e intervalo definidos
+      operationId: getVazaoVertidaReservatorio
+      parameters:
+      - name: Pagina
+        in: header
+        description: Pagina corrente
+        required: true
+        schema:
+          type: integer
+          default: 1
+      - name: Quantidade
+        in: header
+        description: Quantidade de resultados por pagina (limitado a 240 itens por
+          página)
+        required: true
+        schema:
+          type: integer
+          default: 240
+      - name: Identificador
+        in: path
+        description: Identificador do Reservatorio
+        required: true
+        schema:
+          type: string
+      - name: Inicio
+        in: query
+        description: Data de inicio do periodo (AAAA-MM-DD HH:mm:ss)
+        required: true
+        schema:
+          type: string
+      - name: Fim
+        in: query
+        description: Data de fim do periodo (AAAA-MM-DD HH:mm:ss)
+        required: true
+        schema:
+          type: string
+      - name: Intervalo
+        in: query
+        description: Intervalo de consolidacao dos dados (HO ou DI)
+        required: true
+        schema:
+          type: string
+      - name: Origem
+        in: query
+        description:  "Origem dos dados (TRL, SSC, FTP ou ATR)
+        <li>TRL – Tempo Real
+        <li>SSC – Tempo Real Lido do Sistema de Supervisão
+        <li>FTP – Tempo Real Lido do Servidor FTP
+        <li>ATR – Valor atribuído."
+        schema:
+          type: string
+      responses:
+        200:
+          description: Ok
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResultadoConsultaGrandezaPaginada'
+        default:
+          description: Erro
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Erro'
+      security:
+      - Bearer: []
+  /hidrologia/reservatorios/{Identificador}/volumeUtil:
+    get:
+      tags:
+      - Grandezas Verificadas
+      description: Obter os valores de volume util () do reservatorio no periodo e
+        intervalo definidos (máx 7 dias)
+      operationId: getVolumeUtilReservatorio
+      parameters:
+      - name: Pagina
+        in: header
+        description: Pagina corrente
+        required: true
+        schema:
+          type: integer
+          default: 1
+      - name: Quantidade
+        in: header
+        description: Quantidade de resultados por pagina (limitado a 240 itens por
+          página)
+        required: true
+        schema:
+          type: integer
+          default: 240
+      - name: Identificador
+        in: path
+        description: Identificador do Reservatorio
+        required: true
+        schema:
+          type: string
+      - name: Inicio
+        in: query
+        description: Data de inicio do periodo (AAAA-MM-DD HH:mm:ss)
+        required: true
+        schema:
+          type: string
+      - name: Fim
+        in: query
+        description: Data de fim do periodo (AAAA-MM-DD HH:mm:ss)
+        required: true
+        schema:
+          type: string
+      - name: Intervalo
+        in: query
+        description: Intervalo de consolidacao dos dados (HO ou DI)
+        required: true
+        schema:
+          type: string
+      - name: Origem
+        in: query
+        description:  "Origem dos dados (TRL, SSC, FTP ou ATR)
+        <li>TRL – Tempo Real
+        <li>SSC – Tempo Real Lido do Sistema de Supervisão
+        <li>FTP – Tempo Real Lido do Servidor FTP
+        <li>ATR – Valor atribuído."
+        schema:
+          type: string
+      responses:
+        200:
+          description: Ok
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResultadoConsultaGrandezaPaginada'
+        default:
+          description: Erro
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Erro'
+      security:
+      - Bearer: []
+  /hidrologia/PrecipitacaoObservada:
+    get:
+      tags:
+      - Precipitação Observada
+      description: Obter lista de precipitações observadas
+      operationId: getPrecipitacaoObservada
+      parameters:
+      - name: Pagina
+        in: header
+        description: Página corrente
+        required: true
+        schema:
+          type: integer
+          default: 0
+      - name: Quantidade
+        in: header
+        description: Quantidade de resultados por página
+        required: true
+        schema:
+          type: integer
+          default: 10
+      - name: IDEstacaoMeteo
+        in: query
+        description: Lista de IDs das Estações Meteorológica, é necessário informar
+          no mínimo um ID
+        required: true
+        schema:
+          type: string
+      - name: DataInicialMedicao
+        in: query
+        description: Data inicial do período de Medição no formato dd/mm/aaaa
+        required: true
+        schema:
+          type: string
+          format: date
+      - name: DataFinalMedicao
+        in: query
+        description: Data final do período de Medição no formato dd/mm/aaaa
+        required: true
+        schema:
+          type: string
+          format: date
+      - name: QualidadeDado
+        in: query
+        description: Informar a Qualidade do Dado, se deseja dados Consistidos e/ou
+          Consolidados.
+        required: true
+        style: form
+        explode: false
+        schema:
+          type: array
+          items:
+            type: string
+            enum:
+            - CD
+            - CT
+      - name: AgregacaoTemporal
+        in: query
+        description: Informar a Agregação Temporal, se deseja Diária ou Horária.
+        required: true
+        style: form
+        explode: false
+        schema:
+          type: array
+          items:
+            type: string
+            enum:
+            - DI
+            - HO
+      - name: FuroTemporal
+        in: query
+        description: Informar se deseja retornar Furo Temporal.
+        required: true
+        style: form
+        explode: false
+        schema:
+          type: array
+          items:
+            type: string
+            enum:
+            - S
+            - N
+      responses:
+        200:
+          description: The operation was successful.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PrecipacaoObservadaResult'
+      security:
+      - Bearer: []
+  /hidrologia/GrandezasHidrologicas:
+    get:
+      tags:
+      - Grandezas Hidrológicas
+      description: Obter lista de grandezas hidrológicas
+      operationId: getGrandezasHidrologicas
+      parameters:
+      - name: Pagina
+        in: header
+        description: Página corrente
+        required: true
+        schema:
+          type: integer
+          default: 0
+      - name: Quantidade
+        in: header
+        description: Quantidade de resultados por página
+        required: true
+        schema:
+          type: integer
+          default: 10
+      - name: IDPostoReservatorio
+        in: query
+        description: Lista de IDs dos Postos ou Reservatórios, é necessário informar no mínimo um ID
+        required: true
+        schema:
+          type: array
+          items:
+            type: string
+      - name: Grandeza
+        in: query
+        description: "Informar apenas uma das Grandezas
+        <li>VMD - Vazão média do posto fluviométrico
+<li>AFL - Afluência de Reservatório
+<li>DFL - Descarga média total de Reservatório
+<li>TUR - Vazão turbinada
+<li>VER - Vazão Média Vertida de Reservatório
+<li>VTR - Indicador de Energia Turbinável por Região
+<li>VOE - Vazão de Outras estruturas
+<li>NIV - Nível de Reservatório as 24h
+<li>NIS - Geração Nuclear Instantânea do Sistema Interligado
+<li>VNA - Vazão Natural Total
+<li>VNM - Vazão Natural Incrementalde Mádia Móvel
+<li>VNS - Vazão Incremental da sub-bacia modelada. Vazão utilizada nos modelos de previsão, considerando os postos fluviométricos
+<li>VIA - Vazão incremental agrupada. VAzão incremental entre dois reservatórios, considerando a existência de outro(s) reservatório(s) no trecho incremental"
+        required: true
+        style: form
+        explode: false
+        schema:
+          type: array
+          items:
+            type: string
+            enum:
+            - VMD
+            - AFL
+            - DFL
+            - TUR
+            - VER
+            - VTR
+            - VOE
+            - NIV
+            - NIS
+            - VNA
+            - VNM
+            - VNS
+            - VIA
+      - name: DataInicialMedicao
+        in: query
+        description: Data inicial do período de Medição no formato dd/mm/aaaa
+        required: true
+        schema:
+          type: string
+          format: date
+      - name: DataFinalMedicao
+        in: query
+        description: Data final do período de Medição no formato dd/mm/aaaa
+        required: true
+        schema:
+          type: string
+          format: date
+      - name: QualidadeDado
+        in: query
+        description: Informar a Qualidade do Dado, se deseja dados Consistidos (CON) e/ou
+          Consolidados (COO).
+        required: true
+        style: form
+        explode: false
+        schema:
+          type: array
+          items:
+            type: string
+            enum:
+            - COO
+            - CON
+      - name: AgregacaoTemporal
+        in: query
+        description: Informar a Agregação Temporal, se deseja Diária ou Horária.
+        required: true
+        style: form
+        explode: false
+        schema:
+          type: array
+          items:
+            type: string
+            enum:
+            - DI
+            - HO
+      responses:
+        200:
+          description: The operation was successful.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GrandezasHidrologicasResult'
+      security:
+      - Bearer: []
+  /hidrologia/previsoes/{reservatorio}/vazao-diaria:
+    get:
+      tags:
+      - Grandezas Previstas
+      summary: Realiza a consulta das previsões das vazões diárias por reservatório.
+      description: Realiza a consulta das previsões das vazões diárias por reservatório.
+      operationId: ConsultarPrevisoes
+      parameters:
+      - name: reservatorio
+        in: path
+        description: identificador do reservatório.
+        required: true
+        schema:
+          type: string
+      - name: dataInicioPrevisao
+        in: query
+        description: data de início da previsão  (AAAA-MM-DD).
+        required: true
+        schema:
+          type: string
+          format: date-time
+      - name: dataValidadePrevisao
+        in: query
+        description: datas de validade da previsão (AAAA-MM-DD).
+        required: true
+        style: form
+        explode: true
+        schema:
+          type: array
+          items:
+            type: string
+            format: date
+      - name: pagina
+        in: query
+        description: página para recuperação das previsões.
+        schema:
+          type: integer
+          format: int32
+      - name: quantidade
+        in: query
+        description: quantidade por página.
+        schema:
+          type: integer
+          format: int32
+      responses:
+        200:
+          description: Operação realizada com sucesso.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResultadoPrevisaoReservatorio'
+            application/xml:
+              schema:
+                $ref: '#/components/schemas/ResultadoPrevisaoReservatorio'
+            text/xml:
+              schema:
+                $ref: '#/components/schemas/ResultadoPrevisaoReservatorio'
+        500:
+          description: Aconteceu um erro inesperado. Por favor tente mais tarde.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResultadoErroPadrao'
+            application/xml:
+              schema:
+                $ref: '#/components/schemas/ResultadoErroPadrao'
+            text/xml:
+              schema:
+                $ref: '#/components/schemas/ResultadoErroPadrao'
+      security:
+      - Bearer: []
+components:
+  schemas:
+    Erro:
+      type: object
+      properties:
+        Tipo:
+          type: string
+          description: Tipo do Erro
+        Mensagens:
+          type: array
+          items:
+            type: object
+            properties:
+              Severidade:
+                type: string
+                description: Severidade do Erro
+              Mensagem:
+                type: string
+                description: Mensagem do Erro
+              Detalhes:
+                type: string
+                description: Detalhes do Erro
+    Paginacao:
+      type: object
+      properties:
+        PaginaCorrente:
+          type: integer
+          description: Pagina atual da consulta
+        QuantidadeTotalItens:
+          type: integer
+          description: Quantidade total de itens da consulta
+    Reservatorio:
+      type: object
+      properties:
+        Identificador:
+          type: string
+          description: Identificador da Reservatorio
+        NomeCurto:
+          type: string
+          description: Nome curto do Reservatorio
+    Resultado:
+      type: object
+      properties:
+        Instante:
+          type: string
+          description: Instante da medida
+          format: date-time
+        Valor:
+          type: number
+          description: Valor da medida
+          format: float
+    ResultadoConsultaGrandezaPaginada:
+      allOf:
+      - $ref: '#/components/schemas/Paginacao'
+      - type: object
+        properties:
+          Reservatorio:
+            $ref: '#/components/schemas/Reservatorio'
+      - type: object
+        properties:
+          Resultados:
+            type: array
+            items:
+              $ref: '#/components/schemas/Resultado'
+    ResultadoConsultaReservatoriosPaginada:
+      allOf:
+      - $ref: '#/components/schemas/Paginacao'
+      - type: object
+        properties:
+          Resultados:
+            type: array
+            items:
+              $ref: '#/components/schemas/Reservatorio'
+    Autenticacao:
+      type: object
+      properties:
+        usuario:
+          type: string
+        senha:
+          type: string
+    ResultadoAutenticacao:
+      type: object
+      properties:
+        access_token:
+          type: string
+        token_type:
+          type: string
+        expires_in:
+          type: string
+        refresh_token:
+          type: string
+    RenovarAutenticaco:
+      type: object
+      properties:
+        refresh_token:
+          type: string
+    PrecipacaoObservadaResult:
+      type: object
+      properties:
+        Pagina:
+          type: integer
+        Quantidade:
+          type: integer
+        Resultados:
+          type: array
+          items:
+            $ref: '#/components/schemas/Precipitacao'
+    Precipitacao:
+      type: object
+      properties:
+        IdentificadorEstacaoMeteo:
+          type: string
+        DataHoraMedicao:
+          type: string
+        ValorMedicao:
+          type: string
+        StatusMedicao:
+          type: string
+        FuroTemporal:
+          type: string
+        Estimado:
+          type: string
+    GrandezasHidrologicasResult:
+      type: object
+      properties:
+        Pagina:
+          type: integer
+        Quantidade:
+          type: integer
+        Resultados:
+          type: array
+          items:
+            $ref: '#/components/schemas/GrandezaHidrologica'
+    GrandezaHidrologica:
+      type: object
+      properties:
+        Identificador:
+          type: string
+        DataHoraMedicao:
+          type: string
+        ValorMedicao:
+          type: string
+        StatusMedicao:
+          type: string
+    ResultadoErroPadrao:
+      type: object
+      properties:
+        Mensagem:
+          type: string
+    ResultadoPrevisaoReservatorio:
+      type: object
+      properties:
+        Pagina:
+          type: integer
+          format: int32
+        Quantidade:
+          type: integer
+          format: int32
+        Resultados:
+          type: array
+          items:
+            $ref: '#/components/schemas/PrevisaoReservatorio'
+    PrevisaoReservatorio:
+      type: object
+      properties:
+        Bacia:
+          type: string
+        Agente:
+          type: string
+        Origem:
+          type: string
+        Periodo:
+          type: string
+        SiglaPMO:
+          type: string
+        TipoGrandeza:
+          type: string
+        TipoPrevisao:
+          type: string
+        ValorPrevisao:
+          type: number
+          format: double
+        DataInicioPrevisao:
+          type: string
+          format: date-time
+        DataValidadePrevisao:
+          type: string
+          format: date-time
+        PrevisaoOficial:
+          type: boolean
+        IdentificadorReservatorio:
+          type: string
+  securitySchemes:
+    Bearer:
+      type: apiKey
+      name: Authorization
+      in: header

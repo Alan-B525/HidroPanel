@@ -1,0 +1,287 @@
+/* ============================================================
+   public/css/tokens.css
+   Variables de Diseño y Tokens de Color HidroPanel 2.0
+   Estética Institucional: Entidad Binacional Yacyretá (EBY)
+   (https://www.eby.org.ar/)
+   ============================================================ */
+
+:root {
+  /* Paleta Oficial EBY (Entidad Binacional Yacyretá) */
+  --eby-navy-950: #061324;
+  --eby-navy-900: #0f294a;
+  --eby-navy-800: #1b3a63;
+  --eby-navy-700: #244b7d;
+  --eby-navy-600: #32629b;
+
+  /* Verde Hidroeléctrico Institucional EBY */
+  --eby-green-900: #004d2a;
+  --eby-green-800: #006b3a;
+  --eby-green:     #008348;
+  --eby-green-600: #00a359;
+  --eby-green-light: #e6f6ee;
+
+  /* Azul Agua / Energía */
+  --eby-cyan:       #0080c8;
+  --eby-cyan-hover: #006ba8;
+  --eby-cyan-light: #e0f2fe;
+
+  /* Superficies y Neutros Corporativos */
+  --eby-bg-light: #f4f6f9;
+  --surface-0:    #ffffff;
+  --surface-50:   #f8fafc;
+  --surface-100:  #f1f5f9;
+  --surface-200:  #e2e8f0;
+  --surface-card: #ffffff;
+  --line-200:     #e2e8f0;
+  --line-100:     #f1f5f9;
+
+  /* Tipografía & Textos */
+  --ink-900: #0f172a;
+  --ink-800: #1e293b;
+  --ink-700: #334155;
+  --ink-500: #64748b;
+  --ink-400: #94a3b8;
+  --ink-300: #cbd5e1;
+
+  /* Semáforo Hidrológico Oficial */
+  --nivel-normal:     #008348;
+  --nivel-vigilancia: #b45309;
+  --nivel-alerta:     #c2410c;
+  --nivel-evacuacion: #991b1b;
+  --nivel-emergencia: #4c0519;
+
+  --nivel-normal-bg:     #e6f6ee;
+  --nivel-vigilancia-bg: #fef3c7;
+  --nivel-alerta-bg:     #ffedd5;
+  --nivel-evacuacion-bg: #fee2e2;
+  --nivel-emergencia-bg: #ffe4e6;
+
+  /* Tipografías */
+  --font-body: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+  --font-data: 'Space Grotesk', -apple-system, sans-serif;
+
+  /* Sombras y Bordes */
+  --radius-full: 9999px;
+  --radius-xl: 1rem;
+  --radius-lg: 0.75rem;
+  --radius-md: 0.5rem;
+  --radius-sm: 0.25rem;
+
+  --shadow-xs: 0 1px 2px rgba(15, 23, 42, 0.04);
+  --shadow-sm: 0 1px 3px rgba(15, 23, 42, 0.08);
+  --shadow-md: 0 4px 14px rgba(15, 23, 42, 0.08);
+  --shadow-lg: 0 12px 28px -6px rgba(15, 41, 74, 0.15);
+}
+
+/* Modo Oscuro Corporativo */
+[data-theme="dark"] {
+  --surface-0:    #0a1626;
+  --surface-50:   #060f1b;
+  --surface-100:  #0d1d31;
+  --surface-200:  #162a44;
+  --surface-card: #0c1a2d;
+  --line-200:     #1a324f;
+  --line-100:     #102237;
+
+  --ink-900: #f8fafc;
+  --ink-800: #f1f5f9;
+  --ink-700: #e2e8f0;
+  --ink-500: #94a3b8;
+  --ink-400: #64748b;
+  --ink-300: #334155;
+
+  --nivel-normal:     #34d399;
+  --nivel-vigilancia: #fbbf24;
+  --nivel-alerta:     #fb923c;
+  --nivel-evacuacion: #f87171;
+  --nivel-emergencia: #fda4af;
+
+  --nivel-normal-bg:     #062d1c;
+  --nivel-vigilancia-bg: #3b1c05;
+  --nivel-alerta-bg:     #381608;
+  --nivel-evacuacion-bg: #3f0e0e;
+  --nivel-emergencia-bg: #420a17;
+
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.35);
+  --shadow-md: 0 6px 18px rgba(0, 0, 0, 0.45);
+}
+
+/* ============================================================
+   Optimizaciones Responsivas de Densidad (Laptops & Pantallas 1366x768)
+   ============================================================ */
+@media (max-width: 1400px) {
+  .dashboard-container {
+    max-width: 100% !important;
+  }
+}
+
+@media (max-height: 820px) {
+  /* En pantallas de 768px de alto, optimizar el ritmo vertical para que el cockpit quepa */
+  header {
+    height: 3.25rem !important; /* 52px */
+  }
+  .card-panel {
+    border-radius: 0.75rem !important;
+  }
+}
+
+/* ============================================================
+   TICKER CARRUSEL CONTINUO (ESTILO NOTICIAS / COTIZACIONES FINANCIERAS)
+   ============================================================ */
+.ticker-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  height: 34px;
+  background: #091a30;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+  color: #f1f5f9;
+  font-size: 11px;
+  overflow: hidden;
+  user-select: none;
+  z-index: 20;
+}
+
+[data-theme="dark"] .ticker-wrapper {
+  background: #06111e;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.ticker-badge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 12px;
+  height: 100%;
+  background: #061426;
+  border-right: 1px solid rgba(255, 255, 255, 0.12);
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  font-size: 10px;
+  color: #fca5a5;
+  white-space: nowrap;
+  flex-shrink: 0;
+  z-index: 10;
+  box-shadow: 2px 0 8px rgba(0, 0, 0, 0.3);
+}
+
+.ticker-track-container {
+  flex: 1;
+  overflow: hidden;
+  position: relative;
+  display: flex;
+  align-items: center;
+  height: 100%;
+  mask-image: linear-gradient(90deg, transparent 0, #000 20px, #000 calc(100% - 20px), transparent 100%);
+  -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 20px, #000 calc(100% - 20px), transparent 100%);
+}
+
+.ticker-track {
+  display: inline-flex;
+  align-items: center;
+  white-space: nowrap;
+  will-change: transform;
+  animation: ticker-slide 95s linear infinite;
+}
+
+.ticker-wrapper:hover .ticker-track {
+  animation-play-state: paused;
+}
+
+@keyframes ticker-slide {
+  0% {
+    transform: translate3d(0, 0, 0);
+  }
+  100% {
+    transform: translate3d(-50%, 0, 0);
+  }
+}
+
+.ticker-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 10px;
+  margin-right: 10px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: #e2e8f0;
+  font-size: 11px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.ticker-item:hover {
+  background: rgba(255, 255, 255, 0.14);
+  border-color: rgba(56, 189, 248, 0.5);
+  color: #ffffff;
+  transform: translateY(-1px);
+}
+
+.ticker-item.item-emergencia {
+  border-color: rgba(244, 63, 94, 0.4);
+  background: rgba(244, 63, 94, 0.12);
+  color: #fecdd3;
+}
+
+.ticker-item.item-evacuacion {
+  border-color: rgba(249, 115, 22, 0.4);
+  background: rgba(249, 115, 22, 0.12);
+  color: #fed7aa;
+}
+
+.ticker-item.item-alerta {
+  border-color: rgba(245, 158, 11, 0.4);
+  background: rgba(245, 158, 11, 0.10);
+  color: #fef08a;
+}
+
+.ticker-item.item-vigilancia {
+  border-color: rgba(234, 179, 8, 0.3);
+  background: rgba(234, 179, 8, 0.08);
+  color: #fef9c3;
+}
+
+.ticker-controls {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 10px;
+  height: 100%;
+  background: #061426;
+  border-left: 1px solid rgba(255, 255, 255, 0.12);
+  flex-shrink: 0;
+  z-index: 10;
+  box-shadow: -2px 0 8px rgba(0, 0, 0, 0.3);
+}
+
+/* Panel Desplegable de Detalle de Alertas */
+#alerts-dropdown-panel {
+  position: absolute;
+  top: 36px;
+  right: 8px;
+  width: 440px;
+  max-width: calc(100vw - 16px);
+  max-height: 80vh;
+  z-index: 1000;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.4), 0 10px 10px -5px rgba(0, 0, 0, 0.3);
+}
+
+@keyframes dropdownFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-6px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.animate-dropdown {
+  animation: dropdownFadeIn 0.18s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
