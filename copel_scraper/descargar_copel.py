@@ -120,7 +120,7 @@ def ejecutar_extraccion(directorio_salida=None, solo_cataratas=True):
 
     os.makedirs(directorio_salida, exist_ok=True)
 
-    modo_desc = "Estaciones Cataratas y Capanema" if solo_cataratas else "Completo (COPEL + ENGIE)"
+    modo_desc = "Estaciones Cataratas, Capanema y Segredo" if solo_cataratas else "Completo (COPEL + ENGIE)"
     print("=" * 80)
     print(f" EXTRACCIÓN DE TELEMETRÍA HIDROLÓGICA ({modo_desc})")
     print("=" * 80)
@@ -138,7 +138,7 @@ def ejecutar_extraccion(directorio_salida=None, solo_cataratas=True):
     # -------------------------------------------------------------
     # 1. CONSULTAR ESTACIONES DE COPEL
     # -------------------------------------------------------------
-    estaciones_a_consultar = [e for e in COPEL_ESTACIONES if any(k in e["query"].lower() for k in ["cataratas", "capanema"])] if solo_cataratas else COPEL_ESTACIONES
+    estaciones_a_consultar = [e for e in COPEL_ESTACIONES if any(k in e["query"].lower() for k in ["cataratas", "capanema", "segredo"])] if solo_cataratas else COPEL_ESTACIONES
 
     print("[1/2] Consultando portal COPEL MHB...")
     client_copel = CopelClient()

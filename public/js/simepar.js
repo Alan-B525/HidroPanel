@@ -164,3 +164,5 @@ const SimeparView = {
     }
   }
 };
+
+window.SimeparView = SimeparView;

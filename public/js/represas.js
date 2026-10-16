@@ -80,7 +80,9 @@ const RepresasView = {
       }
     }
 
-    // 3. Tarjeta Itaipú
+    const formatDt = (val) => (window.Components && typeof Components.formatDateTime === 'function' ? Components.formatDateTime(val, true) : (val || '--'));
+
+    // 3. Tarjeta Itaipú (ONS)
     const itDeflEl = document.getElementById('rep-it-defl');
     const itTurbEl = document.getElementById('rep-it-turb');
     const itVertEl = document.getElementById('rep-it-vert');
@@ -93,42 +95,52 @@ const RepresasView = {
     if (itVertEl) itVertEl.textContent = `${fmt(it.vertida)} m³/s`;
     if (itAfluEl) itAfluEl.textContent = `${fmt(it.afluente)} m³/s`;
     if (itCotaEl) itCotaEl.textContent = `${fmt(it.cota)} msnm`;
-    if (itTimeEl) itTimeEl.textContent = it.fecha || '--';
+    if (itTimeEl) itTimeEl.textContent = formatDt(it.fecha);
 
-    // 6. Tarjetas Baixo Iguaçu, Porto Capanema & Cataratas
+    // 4. Tarjeta Baixo Iguaçu (ONS) - Datos directos de la central sin mezclar
     const bxDeflEl = document.getElementById('rep-bx-defl');
     const bxTurbEl = document.getElementById('rep-bx-turb');
     const bxVertEl = document.getElementById('rep-bx-vert');
+    const bxAfluEl = document.getElementById('rep-bx-aflu');
+    const bxCotaEl = document.getElementById('rep-bx-cota');
     const bxTimeEl = document.getElementById('rep-bx-time');
-
-    const capCaudalEl = document.getElementById('rep-cap-caudal');
-    const capReglaEl = document.getElementById('rep-cap-regla');
-    const capTimeEl = document.getElementById('rep-cap-time');
-
-    const catCaudalEl = document.getElementById('rep-cat-caudal');
-    const catReglaEl = document.getElementById('rep-cat-regla');
-    const catTimeEl = document.getElementById('rep-cat-time');
 
     if (bxDeflEl) bxDeflEl.textContent = fmt(ig.baixo_iguazu_defluente);
     if (bxTurbEl) bxTurbEl.textContent = `${fmt(ig.baixo_iguazu_turbinada)} m³/s`;
     if (bxVertEl) bxVertEl.textContent = `${fmt(ig.baixo_iguazu_vertida)} m³/s`;
-    if (bxTimeEl) bxTimeEl.textContent = ig.fecha || '--';
+    if (bxAfluEl) bxAfluEl.textContent = `${fmt(ig.baixo_iguazu_afluente)} m³/s`;
+    if (bxCotaEl) bxCotaEl.textContent = `${fmt(ig.baixo_iguazu_cota)} msnm`;
+    if (bxTimeEl) bxTimeEl.textContent = formatDt(ig.fecha);
+
+    // 5. Tarjeta Porto Capanema (COPEL / ANA) - Solo fuente propia de Capanema
+    const capCaudalEl = document.getElementById('rep-cap-caudal');
+    const capReglaEl = document.getElementById('rep-cap-regla');
+    const capTimeEl = document.getElementById('rep-cap-time');
 
     const cap = data.capanema || {};
-    if (capCaudalEl) capCaudalEl.textContent = fmt(cap.caudal || ig.capanema_caudal);
-    if (capReglaEl) capReglaEl.textContent = cap.regla ? `${Number(cap.regla).toFixed(2)} m` : (ig.capanema_regla ? `${Number(ig.capanema_regla).toFixed(2)} m` : '-- m');
-    if (capTimeEl) capTimeEl.textContent = cap.fecha || ig.fecha || '--';
+    if (capCaudalEl) capCaudalEl.textContent = fmt(cap.caudal);
+    if (capReglaEl) capReglaEl.textContent = cap.regla ? `${Number(cap.regla).toFixed(2)} m` : '-- m';
+    if (capTimeEl) capTimeEl.textContent = formatDt(cap.fecha);
+
+    // 6. Tarjeta Cataratas (COPEL / Parques) - Solo fuente propia de Cataratas
+    const catCaudalEl = document.getElementById('rep-cat-caudal');
+    const catReglaEl = document.getElementById('rep-cat-regla');
+    const catTimeEl = document.getElementById('rep-cat-time');
 
     const cat = data.centrales_lista ? data.centrales_lista.find(c => c.codigo === 'CATARATAS') : null;
-    if (catCaudalEl) catCaudalEl.textContent = fmt(ig.cataratas_caudal || cat?.caudal);
-    if (catReglaEl) catReglaEl.textContent = (cat && cat.regla) ? `${Number(cat.regla).toFixed(2)} m` : (ig.cataratas_regla ? `${Number(ig.cataratas_regla).toFixed(2)} m` : '-- m');
-    if (catTimeEl) catTimeEl.textContent = (cat && cat.fecha) || ig.fecha || '--';
+    const catCaudal = (cat && cat.caudal) ? cat.caudal : (data.cataratas ? data.cataratas.caudal : null);
+    const catRegla = (cat && cat.regla) ? cat.regla : (data.cataratas ? data.cataratas.regla : null);
+    const catFecha = (cat && cat.fecha) ? cat.fecha : (data.cataratas ? data.cataratas.fecha : null);
+
+    if (catCaudalEl) catCaudalEl.textContent = fmt(catCaudal);
+    if (catReglaEl) catReglaEl.textContent = catRegla ? `${Number(catRegla).toFixed(2)} m` : '-- m';
+    if (catTimeEl) catTimeEl.textContent = formatDt(catFecha);
 
     // 7. Etiqueta de actualización ONS
     const syncLabel = document.getElementById('rep-sync-label');
     if (syncLabel) {
       syncLabel.textContent = data.ultima_actualizacion_ons
-        ? `Sincronizado ONS: ${data.ultima_actualizacion_ons.slice(11, 16)} hs`
+        ? `Sincronizado ONS: ${formatDt(data.ultima_actualizacion_ons)}`
         : 'Sincronizado ONS';
     }
   },
@@ -147,7 +159,7 @@ const RepresasView = {
     const norm = (str) => (str || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
     const getFlow = (claveSubstr) => {
       const target = norm(claveSubstr);
-      const match = centrales.find(c => norm(c.nombre).includes(target));
+      const match = centrales.find(c => norm(c.nombre).includes(target) || norm(c.clave || '').includes(target) || norm(c.codigo || '').includes(target));
       return match ? fmt(match.defluente || match.caudal) : '--';
     };
 
@@ -332,7 +344,7 @@ const RepresasView = {
               <span>${c.nombre}</span>
               ${damBadge}
             </div>
-            <div class="text-[10px] text-slate-400">${c.operador} • ${c.rio}</div>
+            <div class="text-[10px] text-slate-400">${c.operador} • ${c.rio}${c.fuente ? ` • <span class="text-sky-600 dark:text-sky-400 font-medium">${c.fuente}</span>` : ''}</div>
           </td>
           <td class="py-2.5 px-3 font-mono">${cotaStr}</td>
           <td class="py-2.5 px-3 font-mono text-slate-500">${volStr}</td>
@@ -340,7 +352,7 @@ const RepresasView = {
           <td class="py-2.5 px-3 font-mono text-sky-600 dark:text-sky-400 font-semibold">${turbStr}</td>
           <td class="py-2.5 px-3 font-mono">${vertBadge}</td>
           <td class="py-2.5 px-3 font-mono text-emerald-600 dark:text-emerald-400 font-bold">${deflStr}</td>
-          <td class="py-2.5 px-3 font-mono text-[11px] text-slate-400">${c.fecha || '--'}</td>
+          <td class="py-2.5 px-3 font-mono text-[11px] text-slate-400">${(window.Components && typeof Components.formatDateTime === 'function' ? Components.formatDateTime(c.fecha) : c.fecha) || '--'}</td>
         </tr>
       `;
     }).join('');
@@ -392,7 +404,13 @@ const RepresasView = {
 
     timeline.forEach(p => {
       const raw = p.t || '';
-      const displayLabel = raw.length >= 16 ? raw.slice(5, 16) : raw;
+      let displayLabel = raw;
+      if (window.Components && typeof Components.formatDateTime === 'function') {
+        const full = Components.formatDateTime(raw);
+        displayLabel = full.length >= 16 ? full.slice(0, 5) + ' ' + full.slice(11, 16) : full;
+      } else if (raw.length >= 16) {
+        displayLabel = raw.slice(5, 16);
+      }
       labels.push(displayLabel);
       const isoT = raw.replace(' ', 'T');
 

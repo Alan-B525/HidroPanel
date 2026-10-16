@@ -15,6 +15,7 @@ import os
 import sys
 import csv
 import io
+import re
 import ssl
 import time
 import logging
@@ -381,15 +382,27 @@ def parse_ons_data(files: List[str]) -> Dict[str, Dict[str, Any]]:
                         instante = str(pydict["din_instante"][i] or "").strip()
                         if not instante:
                             continue
+                        aflu = clean_num(pydict["val_vazaoafluente"][i])
+                        turb = clean_num(pydict["val_vazaoturbinada"][i])
+                        vert = clean_num(pydict["val_vazaovertida"][i])
+                        defl = clean_num(pydict["val_vazaodefluente"][i])
+                        cota = clean_num(pydict["val_nivelmontante"][i])
+                        jusante = clean_num(pydict["val_niveljusante"][i])
+                        vol_pct = clean_num(pydict["val_volumeutil"][i])
+
+                        # En hidráulica de presas: Defluente = Turbinada + Vertida
+                        if defl == 0.0 and (turb > 0.0 or vert > 0.0):
+                            defl = round(turb + vert, 2)
+
                         parsed_dams[res_id]["records"][instante] = {
                             "t": instante,
-                            "afluente": clean_num(pydict["val_vazaoafluente"][i]),
-                            "turbinada": clean_num(pydict["val_vazaoturbinada"][i]),
-                            "vertida": clean_num(pydict["val_vazaovertida"][i]),
-                            "defluente": clean_num(pydict["val_vazaodefluente"][i]),
-                            "cota": clean_num(pydict["val_nivelmontante"][i]),
-                            "jusante": clean_num(pydict["val_niveljusante"][i]),
-                            "vol_pct": clean_num(pydict["val_volumeutil"][i])
+                            "afluente": aflu,
+                            "turbinada": turb,
+                            "vertida": vert,
+                            "defluente": defl,
+                            "cota": cota,
+                            "jusante": jusante,
+                            "vol_pct": vol_pct
                         }
 
                 logger.info(f"[ONS] Dataset Parquet {os.path.basename(path)} procesado ({num_rows} registros filtrados).")
@@ -407,15 +420,26 @@ def parse_ons_data(files: List[str]) -> Dict[str, Dict[str, Any]]:
                         instante = (row.get("din_instante") or "").strip()
                         if not instante:
                             continue
+                        aflu = clean_num(row.get("val_vazaoafluente"))
+                        turb = clean_num(row.get("val_vazaoturbinada"))
+                        vert = clean_num(row.get("val_vazaovertida"))
+                        defl = clean_num(row.get("val_vazaodefluente"))
+                        cota = clean_num(row.get("val_nivelmontante"))
+                        jusante = clean_num(row.get("val_niveljusante"))
+                        vol_pct = clean_num(row.get("val_volumeutil"))
+
+                        if defl == 0.0 and (turb > 0.0 or vert > 0.0):
+                            defl = round(turb + vert, 2)
+
                         parsed_dams[res_id]["records"][instante] = {
                             "t": instante,
-                            "afluente": clean_num(row.get("val_vazaoafluente")),
-                            "turbinada": clean_num(row.get("val_vazaoturbinada")),
-                            "vertida": clean_num(row.get("val_vazaovertida")),
-                            "defluente": clean_num(row.get("val_vazaodefluente")),
-                            "cota": clean_num(row.get("val_nivelmontante")),
-                            "jusante": clean_num(row.get("val_niveljusante")),
-                            "vol_pct": clean_num(row.get("val_volumeutil"))
+                            "afluente": aflu,
+                            "turbinada": turb,
+                            "vertida": vert,
+                            "defluente": defl,
+                            "cota": cota,
+                            "jusante": jusante,
+                            "vol_pct": vol_pct
                         }
         except Exception as e:
             logger.error(f"[ONS] Error parseando archivo CSV {path}: {e}")
@@ -425,10 +449,40 @@ def parse_ons_data(files: List[str]) -> Dict[str, Dict[str, Any]]:
     for code, dam in parsed_dams.items():
         sorted_instantes = sorted(dam["records"].keys())
         history = [dam["records"][t] for t in sorted_instantes]
-        latest = history[-1] if history else {
+        latest = history[-1].copy() if history else {
             "t": "--", "afluente": 0.0, "turbinada": 0.0, "vertida": 0.0,
             "defluente": 0.0, "cota": 0.0, "jusante": 0.0, "vol_pct": 0.0
         }
+
+        # Continuidad hidráulica: Si el registro más reciente de ONS tiene campos nulos
+        # (ej. afluente pendiente de consolidar por balance volumétrico o defluente sin consolidar),
+        # buscar hacia atrás en el historial reciente el último valor medido válido > 0.
+        if history:
+            if latest.get("defluente", 0.0) == 0.0:
+                for h in reversed(history):
+                    if h.get("defluente", 0.0) > 0.0:
+                        latest["defluente"] = h["defluente"]
+                        break
+            if latest.get("afluente", 0.0) == 0.0:
+                for h in reversed(history):
+                    if h.get("afluente", 0.0) > 0.0:
+                        latest["afluente"] = h["afluente"]
+                        break
+            if latest.get("cota", 0.0) == 0.0:
+                for h in reversed(history):
+                    if h.get("cota", 0.0) > 0.0:
+                        latest["cota"] = h["cota"]
+                        break
+            if latest.get("jusante", 0.0) == 0.0:
+                for h in reversed(history):
+                    if h.get("jusante", 0.0) > 0.0:
+                        latest["jusante"] = h["jusante"]
+                        break
+            if latest.get("vol_pct", 0.0) == 0.0:
+                for h in reversed(history):
+                    if h.get("vol_pct", 0.0) > 0.0:
+                        latest["vol_pct"] = h["vol_pct"]
+                        break
 
         result[code] = {
             "codigo": code,
@@ -440,6 +494,7 @@ def parse_ons_data(files: List[str]) -> Dict[str, Dict[str, Any]]:
             "es_iguazu": dam["es_iguazu"],
             "principal": dam["principal"],
             "orden": dam["orden"],
+            "fuente": "ONS Brasil",
             "fecha": latest["t"],
             "cota": latest["cota"],
             "jusante": latest["jusante"],
@@ -458,6 +513,21 @@ def parse_ons_data(files: List[str]) -> Dict[str, Dict[str, Any]]:
 # DATOS COMPLEMENTARIOS: ESTACIONES CATARATAS Y CAPANEMA (COPEL)
 # =========================================================================
 
+def parse_copel_dt(dt_str: str) -> str:
+    """Parsea fechas tipo '16/10/26 08h' o '16/10/2026 08:00' o '16/10/2026 08' a 'YYYY-MM-DD HH:00:00'."""
+    s = str(dt_str).strip()
+    m = re.match(r'^(\d{1,2})/(\d{1,2})/(\d{2,4})(?:[T\s](\d{1,2})(?::(\d{2}))?(?::\d{2})?)?h?$', s)
+    if m:
+        d, mth, y, h, mi = m.groups()
+        year = int(y)
+        if year < 100:
+            year += 2000
+        hour = int(h) if h is not None else 0
+        minute = int(mi) if mi is not None else 0
+        return f"{year:04d}-{int(mth):02d}-{int(d):02d} {hour:02d}:{minute:02d}:00"
+    return s
+
+
 def get_capanema_copel() -> Dict[str, Any]:
     """Obtiene la lectura de regla y caudal de la estación fluviométrica Porto Capanema."""
     search_dirs = [DATA_DIR, BASE_DIR, os.path.join(BASE_DIR, "test"), os.path.join(BASE_DIR, "copel_scraper")]
@@ -469,6 +539,19 @@ def get_capanema_copel() -> Dict[str, Any]:
                     lines = [l.strip().split("\t") for l in f if l.strip()]
                     if lines and len(lines[0]) >= 3:
                         latest = lines[0]
+                        history = []
+                        for row in reversed(lines[:72]):
+                            if len(row) >= 3:
+                                t_fmt = parse_copel_dt(row[0])
+                                r_val = clean_num(row[1])
+                                q_val = clean_num(row[2])
+                                history.append({
+                                    "t": t_fmt,
+                                    "regla": r_val,
+                                    "caudal": q_val,
+                                    "cota": r_val
+                                })
+
                         return {
                             "codigo": "CAPANEMA",
                             "clave": "capanema",
@@ -476,15 +559,17 @@ def get_capanema_copel() -> Dict[str, Any]:
                             "operador": "COPEL / ANA",
                             "rio": "Río Iguazú",
                             "tipo": "Punto de Medición Fluviométrica",
+                            "fuente": "COPEL / ANA",
                             "lat": -25.5808,
                             "lon": -53.9219,
-                            "fecha": latest[0],
+                            "fecha": parse_copel_dt(latest[0]),
                             "regla": clean_num(latest[1]),
                             "caudal": clean_num(latest[2]),
                             "es_parana": False,
                             "es_iguazu": True,
                             "principal": True,
-                            "orden": 7.5
+                            "orden": 7.5,
+                            "history": history
                         }
             except Exception as e:
                 logger.warning(f"Error leyendo Capanema.txt: {e}")
@@ -502,6 +587,19 @@ def get_cataratas_copel() -> Dict[str, Any]:
                     lines = [l.strip().split("\t") for l in f if l.strip()]
                     if lines and len(lines[0]) >= 3:
                         latest = lines[0]
+                        history = []
+                        for row in reversed(lines[:72]):
+                            if len(row) >= 3:
+                                t_fmt = parse_copel_dt(row[0])
+                                r_val = clean_num(row[1])
+                                q_val = clean_num(row[2])
+                                history.append({
+                                    "t": t_fmt,
+                                    "regla": r_val,
+                                    "caudal": q_val,
+                                    "cota": r_val
+                                })
+
                         return {
                             "codigo": "CATARATAS",
                             "clave": "cataratas",
@@ -509,34 +607,148 @@ def get_cataratas_copel() -> Dict[str, Any]:
                             "operador": "COPEL / Parques",
                             "rio": "Río Iguazú",
                             "tipo": "Punto de Medición Fluviométrica",
+                            "fuente": "COPEL / Parques",
                             "lat": -25.6831,
                             "lon": -54.4406,
-                            "fecha": latest[0],
+                            "fecha": parse_copel_dt(latest[0]),
                             "regla": clean_num(latest[1]),
                             "caudal": clean_num(latest[2]),
                             "es_parana": False,
                             "es_iguazu": True,
                             "principal": True,
-                            "orden": 8
+                            "orden": 8,
+                            "history": history
                         }
             except Exception as e:
                 logger.warning(f"Error leyendo Cataratas.txt: {e}")
     return {}
 
 
+def get_segredo_copel() -> Dict[str, Any]:
+    """
+    Obtiene la telemetría de la Central Hidroeléctrica Segredo (Gov. Ney Braga)
+    extraída directamente del portal oficial de COPEL MHB.
+    Columnas en segredo.txt:
+    0: Fecha/hora (ej. '16/10/26 08h')
+    1: Cota montante (Nivel de agua montante msnm)
+    2: Volumen útil (%)
+    3: Nivel jusante (msnm)
+    4: Vazão afluente (m³/s)
+    5: Vazão turbinada (m³/s)
+    6: Vazão vertida (m³/s)
+    7: Vazão defluente (m³/s)
+    8: Precipitación horaria (mm)
+    9: Precipitación acumulada (mm)
+    """
+    search_dirs = [DATA_DIR, BASE_DIR, os.path.join(BASE_DIR, "test"), os.path.join(BASE_DIR, "copel_scraper"), os.path.join(BASE_DIR, "copel_scraper", "ejemplos")]
+    for folder in search_dirs:
+        p = os.path.join(folder, "segredo.txt")
+        if os.path.exists(p) and os.path.getsize(p) > 10:
+            try:
+                with open(p, "r", encoding="utf-8", errors="ignore") as f:
+                    lines = [l.strip().split("\t") for l in f if l.strip()]
+                    if not lines:
+                        continue
+
+                    def parse_dt(dt_str: str) -> str:
+                        m = re.match(r'^(\d{2})/(\d{2})/(\d{2,4})\s+(\d{1,2})h?$', dt_str.strip())
+                        if m:
+                            d, mth, y, h = m.groups()
+                            year = int(y)
+                            if year < 100:
+                                year += 2000
+                            return f"{year:04d}-{int(mth):02d}-{int(d):02d} {int(h):02d}:00:00"
+                        return dt_str.strip()
+
+                    # Buscar la fila más reciente que tenga datos reales (ignorar filas 's/l' preliminares)
+                    latest_valid = None
+                    for row in lines:
+                        if len(row) >= 8:
+                            cota = clean_num(row[1])
+                            defl = clean_num(row[7])
+                            turb = clean_num(row[5])
+                            aflu = clean_num(row[4])
+                            if cota > 0 or defl > 0 or turb > 0 or aflu > 0:
+                                latest_valid = row
+                                break
+
+                    if not latest_valid:
+                        continue
+
+                    fmt_fecha = parse_dt(latest_valid[0])
+
+                    # Construir historial (hasta 72 horas) en orden cronológico
+                    history_copel = []
+                    for row in reversed(lines[:72]):
+                        if len(row) >= 8:
+                            cota_h = clean_num(row[1])
+                            defl_h = clean_num(row[7])
+                            turb_h = clean_num(row[5])
+                            vert_h = clean_num(row[6])
+                            aflu_h = clean_num(row[4])
+                            if defl_h == 0.0 and (turb_h > 0.0 or vert_h > 0.0):
+                                defl_h = round(turb_h + vert_h, 2)
+
+                            if cota_h > 0 or defl_h > 0 or aflu_h > 0:
+                                history_copel.append({
+                                    "t": parse_dt(row[0]),
+                                    "cota": cota_h,
+                                    "vol_pct": clean_num(row[2]),
+                                    "jusante": clean_num(row[3]),
+                                    "afluente": aflu_h,
+                                    "turbinada": turb_h,
+                                    "vertida": vert_h,
+                                    "defluente": defl_h
+                                })
+
+                    aflu_val = clean_num(latest_valid[4])
+                    turb_val = clean_num(latest_valid[5])
+                    vert_val = clean_num(latest_valid[6])
+                    defl_val = clean_num(latest_valid[7])
+                    if defl_val == 0.0 and (turb_val > 0.0 or vert_val > 0.0):
+                        defl_val = round(turb_val + vert_val, 2)
+
+                    return {
+                        "codigo": "IGSEGR",
+                        "clave": "segredo",
+                        "nombre": "Segredo",
+                        "operador": "COPEL",
+                        "rio": "Río Iguazú",
+                        "tipo": "Central Hidroeléctrica",
+                        "lat": -25.7903,
+                        "lon": -52.1125,
+                        "es_parana": False,
+                        "es_iguazu": True,
+                        "principal": True,
+                        "orden": 3,
+                        "fuente": "COPEL MHB",
+                        "fecha": fmt_fecha,
+                        "cota": clean_num(latest_valid[1]),
+                        "vol_pct": clean_num(latest_valid[2]),
+                        "jusante": clean_num(latest_valid[3]),
+                        "afluente": aflu_val,
+                        "turbinada": turb_val,
+                        "vertida": vert_val,
+                        "defluente": defl_val,
+                        "history": history_copel
+                    }
+            except Exception as e:
+                logger.warning(f"Error leyendo segredo.txt: {e}")
+    return {}
+
+
 def persist_ons_stations_to_db(dams_data: Dict[str, Dict[str, Any]]):
     """
-    Registra y mantiene actualizadas las presas principales de ONS (Jupiá, Porto Primavera, Itaipú)
-    en las tablas 'estaciones' y 'mediciones' de SQLite para que aparezcan en todos los selectores y mapas.
+    Registra y mantiene actualizadas las presas de ONS (Río Paraná y Cuenca del Río Iguazú)
+    en las tablas 'estaciones' y 'mediciones' de SQLite para que aparezcan en todos los selectores, gráficos y mapas.
     """
     try:
         conn = sqlite3.connect(DB_PATH)
         c = conn.cursor()
 
         target_dams = [
-            ("PNJUPI", "Jupiá", "ONS:PNJUPI", -20.7758, -51.6267),
-            ("PNPPRI", "Porto Primavera", "ONS:PNPPRI", -22.4757, -52.9587),
-            ("PNITAI", "Itaipú Binacional", "ONS:PNITAI", -25.4081, -54.5887)
+            (code, meta["nombre"], f"ONS:{code}", meta.get("lat", 0.0), meta.get("lon", 0.0))
+            for code, meta in REPRESAS_CATALOGO.items()
         ]
 
         for code, nombre, url, lat, lon in target_dams:
@@ -586,6 +798,71 @@ def persist_ons_stations_to_db(dams_data: Dict[str, Dict[str, Any]]):
                     WHERE id = ?
                 """, (last_t, cnt, st_id))
 
+        # 3. Asegurar registro y telemetría de Capanema y Cataratas
+        capanema = get_capanema_copel()
+        if capanema and capanema.get("fecha"):
+            c.execute("""
+                INSERT INTO estaciones (codigo, nombre, url, latitud, longitud, frecuencia_minutos, estado)
+                VALUES (?, ?, ?, ?, ?, 60, 'ACTIVA')
+                ON CONFLICT(codigo) DO UPDATE SET
+                    nombre = excluded.nombre,
+                    latitud = excluded.latitud,
+                    longitud = excluded.longitud,
+                    estado = 'ACTIVA'
+            """, ("CAPANEMA", "Porto Capanema", "COPEL:CAPANEMA", -25.5808, -53.9219))
+            c.execute("SELECT id FROM estaciones WHERE codigo = 'CAPANEMA'")
+            row_cap = c.fetchone()
+            if row_cap:
+                st_cap_id = row_cap[0]
+                history_cap = capanema.get("history", [])
+                to_insert = []
+                for item in history_cap:
+                    t = item.get("t")
+                    val = item.get("regla") or item.get("caudal")
+                    if t and val is not None and val > 0:
+                        to_insert.append((st_cap_id, t, round(float(val), 2)))
+                if to_insert:
+                    c.executemany("INSERT OR IGNORE INTO mediciones (estacion_id, timestamp, altura) VALUES (?, ?, ?)", to_insert)
+                elif capanema.get("regla"):
+                    c.execute("INSERT OR IGNORE INTO mediciones (estacion_id, timestamp, altura) VALUES (?, ?, ?)",
+                              (st_cap_id, capanema["fecha"], round(float(capanema["regla"]), 2)))
+                c.execute("SELECT COUNT(*) FROM mediciones WHERE estacion_id = ?", (st_cap_id,))
+                cnt_cap = c.fetchone()[0]
+                c.execute("UPDATE estaciones SET ultimo_timestamp = ?, total_registros = ? WHERE id = ?",
+                          (capanema["fecha"], cnt_cap, st_cap_id))
+
+        cataratas = get_cataratas_copel()
+        if cataratas and cataratas.get("fecha"):
+            c.execute("""
+                INSERT INTO estaciones (codigo, nombre, url, latitud, longitud, frecuencia_minutos, estado)
+                VALUES (?, ?, ?, ?, ?, 60, 'ACTIVA')
+                ON CONFLICT(codigo) DO UPDATE SET
+                    nombre = excluded.nombre,
+                    latitud = excluded.latitud,
+                    longitud = excluded.longitud,
+                    estado = 'ACTIVA'
+            """, ("CATARATAS", "Cataratas", "COPEL:CATARATAS", -25.6831, -54.4406))
+            c.execute("SELECT id FROM estaciones WHERE codigo = 'CATARATAS'")
+            row_cat = c.fetchone()
+            if row_cat:
+                st_cat_id = row_cat[0]
+                history_cat = cataratas.get("history", [])
+                to_insert = []
+                for item in history_cat:
+                    t = item.get("t")
+                    val = item.get("regla") or item.get("caudal")
+                    if t and val is not None and val > 0:
+                        to_insert.append((st_cat_id, t, round(float(val), 2)))
+                if to_insert:
+                    c.executemany("INSERT OR IGNORE INTO mediciones (estacion_id, timestamp, altura) VALUES (?, ?, ?)", to_insert)
+                elif cataratas.get("regla"):
+                    c.execute("INSERT OR IGNORE INTO mediciones (estacion_id, timestamp, altura) VALUES (?, ?, ?)",
+                              (st_cat_id, cataratas["fecha"], round(float(cataratas["regla"]), 2)))
+                c.execute("SELECT COUNT(*) FROM mediciones WHERE estacion_id = ?", (st_cat_id,))
+                cnt_cat = c.fetchone()[0]
+                c.execute("UPDATE estaciones SET ultimo_timestamp = ?, total_registros = ? WHERE id = ?",
+                          (cataratas["fecha"], cnt_cat, st_cat_id))
+
         conn.commit()
         conn.close()
     except Exception as e:
@@ -616,14 +893,72 @@ def build_hydraulic_summary(force_refresh: bool = False) -> Dict[str, Any]:
         if not dams_data or "PNITAI" not in dams_data or not dams_data["PNITAI"].get("history"):
             logger.warning("[ONS] Datos no disponibles en S3; usando fallback local si existe.")
 
-        # Persistir presas de ONS en la base de datos para sincronización con mapas y listas
+        # Cargar datos de apoyo y estaciones fluviométricas de COPEL
+        copel_segredo = get_segredo_copel()
+        capanema = get_capanema_copel()
+        cataratas = get_cataratas_copel()
+
+        # Arquitectura de Alta Disponibilidad y Redundancia Dual para SEGREDO (ONS <-> COPEL)
+        segredo_ons = dams_data.get("IGSEGR")
+        if not segredo_ons or not segredo_ons.get("history"):
+            # Si ONS falló o no contiene a Segredo, cargar directamente desde COPEL
+            if copel_segredo:
+                dams_data["IGSEGR"] = copel_segredo
+                logger.info("[REPRESAS] Segredo activado desde COPEL MHB (ONS no disponible o vacío).")
+        else:
+            # Si ONS está activo, evaluar si COPEL tiene lectura más reciente o si complementa datos pendientes
+            if copel_segredo:
+                ons_fecha = segredo_ons.get("fecha", "")
+                copel_fecha = copel_segredo.get("fecha", "")
+                copel_defl = copel_segredo.get("defluente", 0.0)
+                copel_aflu = copel_segredo.get("afluente", 0.0)
+                ons_defl = segredo_ons.get("defluente", 0.0)
+                ons_aflu = segredo_ons.get("afluente", 0.0)
+
+                # Si COPEL tiene telemetría de hora más reciente con defluente medido
+                if copel_fecha and copel_fecha > ons_fecha and copel_defl > 0:
+                    segredo_ons["fecha"] = copel_fecha
+                    segredo_ons["afluente"] = copel_aflu if copel_aflu > 0 else ons_aflu
+                    segredo_ons["defluente"] = copel_defl
+                    segredo_ons["turbinada"] = copel_segredo.get("turbinada", segredo_ons.get("turbinada", 0.0))
+                    segredo_ons["vertida"] = copel_segredo.get("vertida", segredo_ons.get("vertida", 0.0))
+                    segredo_ons["cota"] = copel_segredo.get("cota") or segredo_ons.get("cota", 0.0)
+                    segredo_ons["jusante"] = copel_segredo.get("jusante") or segredo_ons.get("jusante", 0.0)
+                    segredo_ons["vol_pct"] = copel_segredo.get("vol_pct") or segredo_ons.get("vol_pct", 0.0)
+                    segredo_ons["fuente"] = "COPEL MHB (Operador Directo)"
+                else:
+                    # Si ONS aún no consolidó afluente o defluente en su despacho preliminar
+                    if ons_defl == 0.0 and copel_defl > 0:
+                        segredo_ons["defluente"] = copel_defl
+                        segredo_ons["turbinada"] = copel_segredo.get("turbinada", segredo_ons.get("turbinada", 0.0))
+                        segredo_ons["vertida"] = copel_segredo.get("vertida", segredo_ons.get("vertida", 0.0))
+                        segredo_ons["fuente"] = "Híbrido ONS / COPEL"
+
+                    if ons_aflu == 0.0 and copel_aflu > 0:
+                        segredo_ons["afluente"] = copel_aflu
+                        segredo_ons["fuente"] = "Híbrido ONS / COPEL"
+
+                if not segredo_ons.get("fuente"):
+                    segredo_ons["fuente"] = "ONS Brasil (Validado con COPEL)"
+                segredo_ons["fuente_redundante"] = "COPEL MHB Disponible"
+
+                # Incorporar marcas horarias adicionales de COPEL al historial si no existen
+                s_hist = segredo_ons.setdefault("history", [])
+                existing_ts = {h["t"] for h in s_hist}
+                for ch in copel_segredo.get("history", []):
+                    if ch["t"] not in existing_ts and (ch.get("defluente", 0) > 0 or ch.get("afluente", 0) > 0):
+                        s_hist.append(ch)
+                s_hist.sort(key=lambda x: x["t"])
+                segredo_ons["history"] = s_hist[-72:]
+
+        # Persistir presas consolidadas en la base de datos para sincronización con mapas y listas
         if dams_data:
             persist_ons_stations_to_db(dams_data)
 
         itaipu = dams_data.get("PNITAI", {})
         baixo_iguazu = dams_data.get("IGUHBI", {})
-        capanema = get_capanema_copel()
-        cataratas = get_cataratas_copel()
+        capanema = capanema
+        cataratas = cataratas
 
         # Caudales clave
         q_itaipu_defl = itaipu.get("defluente", 0.0)
@@ -742,13 +1077,16 @@ def build_hydraulic_summary(force_refresh: bool = False) -> Dict[str, Any]:
                 "baixo_iguazu_defluente": q_iguazu_defl,
                 "baixo_iguazu_turbinada": q_iguazu_turb,
                 "baixo_iguazu_vertida": q_iguazu_vert,
+                "baixo_iguazu_afluente": baixo_iguazu.get("afluente", 0.0),
+                "baixo_iguazu_cota": baixo_iguazu.get("cota", 0.0),
                 "capanema_caudal": q_capanema,
                 "capanema_regla": capanema.get("regla", 0.0),
                 "cataratas_caudal": q_cataratas,
                 "cataratas_regla": cataratas.get("regla", 0.0),
-                "fecha": baixo_iguazu.get("fecha") or capanema.get("fecha") or cataratas.get("fecha") or "--"
+                "fecha": baixo_iguazu.get("fecha", "--")
             },
             "capanema": capanema,
+            "segredo_copel": copel_segredo,
             "centrales_lista": centrales_ordenadas,
             "timeline": combined_timeline,
             "ultima_actualizacion_ons": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -771,11 +1109,11 @@ def sync_ons_represas() -> Dict[str, Any]:
     """
     logger.info("[ONS-SYNC] Iniciando sincronización programada de ONS (Itaipú + Cuenca del Iguazú)...")
     try:
-        # Ejecutar primero el extractor de Cataratas y Capanema si existe (guardando en DATA_DIR)
+        # Ejecutar primero el extractor de Cataratas, Capanema y Segredo si existe (guardando en DATA_DIR)
         script_path = os.path.join(BASE_DIR, "copel_scraper", "descargar_copel.py")
         if os.path.exists(script_path):
             try:
-                subprocess.run([sys.executable, script_path, DATA_DIR], cwd=BASE_DIR, capture_output=True, timeout=30)
+                subprocess.run([sys.executable, script_path, DATA_DIR], cwd=BASE_DIR, capture_output=True, timeout=45)
             except Exception as ex:
                 logger.warning(f"[ONS-SYNC] Aviso ejecutando descargar_copel.py: {ex}")
 

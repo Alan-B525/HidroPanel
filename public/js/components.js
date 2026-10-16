@@ -6,8 +6,40 @@
 
 const Components = {
   /**
-   * Renderiza la barra superior de alertas estilo Ticker / Carrusel Financiero Continuo
+   * Formateador unificado de fechas y horas para toda la plataforma
+   * Normaliza formatos heterogéneos ('2026-10-16 11:00:00', '16/10/26 08h', '16/10/2026 08:00', ISO)
+   * a un formato estándar argentino: DD/MM/YYYY HH:mm (con opción 'hs')
    */
+  formatDateTime(val, showHs = false) {
+    if (!val || val === '--' || val === 'Sin datos' || val === 'None' || val === 'null') return '--';
+    const s = String(val).trim();
+
+    // 1. Caso '16/10/26 08h', '16/10/2026 08h', '16/10/2026 08:00'
+    let m = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})(?:[T\s](\d{1,2})(?::(\d{2}))?(?::\d{2})?)?h?$/);
+    if (m) {
+      const d = m[1].padStart(2, '0');
+      const mo = m[2].padStart(2, '0');
+      let y = m[3];
+      if (y.length === 2) y = '20' + y;
+      const h = (m[4] !== undefined ? m[4] : '00').padStart(2, '0');
+      const mi = (m[5] !== undefined ? m[5] : '00').padStart(2, '0');
+      return `${d}/${mo}/${y} ${h}:${mi}${showHs ? ' hs' : ''}`;
+    }
+
+    // 2. Caso ISO '2026-10-16 11:00:00' o '2026-10-16T11:00:00'
+    m = s.match(/^(\d{4})-(\d{2})-(\d{2})(?:[T\s](\d{2}):(\d{2})(?::\d{2})?)?/);
+    if (m) {
+      const y = m[1];
+      const mo = m[2];
+      const d = m[3];
+      const h = m[4] || '00';
+      const mi = m[5] || '00';
+      return `${d}/${mo}/${y} ${h}:${mi}${showHs ? ' hs' : ''}`;
+    }
+
+    return s;
+  },
+
   /**
    * Renderiza la barra superior de alertas estilo Ticker / Carrusel Continuo
    * y el botón desplegable con el detalle completo de alertas y fallas de telemetría.
@@ -94,7 +126,7 @@ const Components = {
           </div>
         </div>
 
-        <!-- Botón Desplegable de Detalle de Alertas (reemplazo de Umbrales PNA) -->
+        <!-- Botón Desplegable de Detalle de Alertas -->
         <div class="ticker-controls">
           <button id="btn-ticker-alerts-toggle" type="button" onclick="window.toggleAlertsDropdown(event)" 
                   class="flex items-center space-x-1.5 px-2.5 sm:px-3 py-1 rounded ${hasAlerts ? 'bg-rose-600 hover:bg-rose-700 active:bg-rose-800' : 'bg-[#008348] hover:bg-[#006e3c] active:bg-[#005a31]'} text-white font-bold text-[10px] tracking-wide uppercase transition shadow-xs cursor-pointer" 
@@ -103,7 +135,7 @@ const Components = {
               <span class="${hasAlerts ? 'animate-ping' : ''} absolute inline-flex h-full w-full rounded-full ${hasAlerts ? 'bg-rose-300' : 'bg-emerald-300'} opacity-75"></span>
               <span class="relative inline-flex rounded-full h-2 w-2 ${hasAlerts ? 'bg-rose-100' : 'bg-emerald-100'}"></span>
             </span>
-            <span id="btn-ticker-alerts-label">Detalle Alertas (${sorted.length})</span>
+            <span id="btn-ticker-alerts-label">DETALLE</span>
             <svg id="icon-alerts-dropdown-arrow" class="w-3 h-3 text-white/90 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
             </svg>
@@ -112,7 +144,7 @@ const Components = {
       </div>
 
       <!-- Menú Desplegable Flotante con el Detalle de Alertas y Fallas de Transmisión -->
-      <div id="alerts-dropdown-panel" class="${wasOpen ? '' : 'hidden'} absolute right-2 top-[36px] w-[460px] max-w-[95vw] bg-white dark:bg-[#0b1c32] border border-slate-200 dark:border-slate-700/80 rounded-xl shadow-2xl z-50 overflow-hidden flex flex-col max-h-[78vh] animate-dropdown" onclick="event.stopPropagation()">
+      <div id="alerts-dropdown-panel" class="${wasOpen ? '' : 'hidden'} absolute right-2 top-[36px] w-[460px] max-w-[95vw] bg-white dark:bg-[#0b1c32] border border-slate-200 dark:border-slate-700/80 rounded-xl shadow-2xl z-50 overflow-hidden flex flex-col max-h-[78vh] animate-dropdown" style="display: ${wasOpen ? 'flex' : 'none'};" onclick="event.stopPropagation()">
         
         <!-- Header del Desplegable -->
         <div class="p-3 border-b border-slate-100 dark:border-slate-800/80 bg-slate-50 dark:bg-slate-900/60 flex items-center justify-between">
@@ -123,9 +155,6 @@ const Components = {
             </span>
           </div>
           <div class="flex items-center space-x-1.5">
-            <button type="button" onclick="window.openThresholdsModal(); window.closeAlertsDropdown();" class="text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 hover:underline px-2 py-0.5 rounded hover:bg-emerald-50 dark:hover:bg-emerald-950/40 transition" title="Configurar umbrales de estaciones">
-              ⚙ Configurar Umbrales
-            </button>
             <button type="button" onclick="window.closeAlertsDropdown()" class="p-1 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-200/50 dark:hover:bg-slate-800 transition" title="Cerrar">
               <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
             </button>
@@ -160,9 +189,6 @@ const Components = {
         <!-- Footer Informativo -->
         <div class="p-2.5 border-t border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/60 flex items-center justify-between text-[11px]">
           <span class="text-slate-500 dark:text-slate-400">Clic en una estación para ver su hidrograma</span>
-          <button type="button" onclick="window.openThresholdsModal(); window.closeAlertsDropdown();" class="px-2.5 py-1 rounded bg-[#008348] hover:bg-[#006e3c] text-white font-bold transition">
-            Configurar Umbrales
-          </button>
         </div>
       </div>
     `;
@@ -258,19 +284,14 @@ const Components = {
         return `
           <div class="p-2.5 hover:bg-slate-50 dark:hover:bg-slate-800/60 transition cursor-pointer flex items-center justify-between gap-3 group" onclick="window.selectStation(${f.id}, true); window.closeAlertsDropdown();">
             <div class="flex items-start space-x-2.5 min-w-0">
-              <span class="w-2.5 h-2.5 rounded-full mt-1 shrink-0 bg-amber-500 animate-pulse"></span>
+              <span class="w-2.5 h-2.5 rounded-full mt-1 shrink-0 bg-amber-500"></span>
               <div class="min-w-0">
                 <div class="flex items-center space-x-1.5 flex-wrap gap-y-1">
                   <span class="font-bold text-xs text-slate-900 dark:text-slate-100 group-hover:text-amber-600 dark:group-hover:text-amber-400 transition">${f.nombre}</span>
-                  <span class="text-[9px] font-bold px-1.5 py-0.2 rounded uppercase bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300 border border-amber-300 dark:border-amber-800">SIN REPORTE</span>
+                  <span class="text-xs text-amber-500" title="Retraso en reporte">⚠️</span>
                 </div>
-                <div class="text-[10px] text-amber-600 dark:text-amber-400 font-medium flex items-center space-x-1.5 mt-0.5">
-                  <span class="font-bold">⚠️ ${f.tiempo_sin_reportar_str || 'Retraso de horas'} sin transmitir</span>
-                  <span>•</span>
-                  <span class="text-slate-500 font-normal">Frecuencia habitual: cada ${f.frecuencia_minutos || 60}m</span>
-                </div>
-                <div class="text-[9px] text-slate-400 font-mono mt-0.5">
-                  Última lectura: ${timeStr}
+                <div class="text-[10px] text-slate-500 dark:text-slate-400 font-mono mt-0.5">
+                  Última actualización: ${timeStr}
                 </div>
               </div>
             </div>
@@ -285,18 +306,23 @@ const Components = {
   },
 
   toggleAlertsDropdown(event) {
-    if (event) event.stopPropagation();
+    if (event) {
+      if (typeof event.stopPropagation === 'function') event.stopPropagation();
+      if (typeof event.preventDefault === 'function') event.preventDefault();
+    }
     const panel = document.getElementById('alerts-dropdown-panel');
     const arrow = document.getElementById('icon-alerts-dropdown-arrow');
     if (!panel) return;
 
-    const isHidden = panel.classList.contains('hidden');
+    const isHidden = panel.classList.contains('hidden') || panel.style.display === 'none';
     if (isHidden) {
       panel.classList.remove('hidden');
+      panel.style.display = 'flex';
       if (arrow) arrow.classList.add('rotate-180');
       Components.renderAlertsDropdownList();
     } else {
       panel.classList.add('hidden');
+      panel.style.display = 'none';
       if (arrow) arrow.classList.remove('rotate-180');
     }
   },
@@ -304,7 +330,10 @@ const Components = {
   closeAlertsDropdown() {
     const panel = document.getElementById('alerts-dropdown-panel');
     const arrow = document.getElementById('icon-alerts-dropdown-arrow');
-    if (panel) panel.classList.add('hidden');
+    if (panel) {
+      panel.classList.add('hidden');
+      panel.style.display = 'none';
+    }
     if (arrow) arrow.classList.remove('rotate-180');
   },
 
@@ -358,7 +387,6 @@ const Components = {
 
     const statusBadgeElem = document.getElementById('sit-status-badge');
     const statusTextElem = document.getElementById('sit-status-text');
-    const statusProjectionElem = document.getElementById('sit-status-projection');
 
     // 1. Valor actual AGP
     let val = kpis.ultima_altura;
@@ -397,22 +425,17 @@ const Components = {
     }
 
     if (currentTimeElem) {
+      const formattedAgpTime = Components.formatDateTime(kpis.ultimo_timestamp, true);
       if (kpis.falla_reporte) {
-        currentTimeElem.innerHTML = `<span class="text-amber-600 dark:text-amber-400 font-bold" title="Última lectura: ${kpis.ultimo_timestamp || 'Sin datos'}">⚠️ Sin reporte (${kpis.tiempo_sin_reportar_str || 'falla'})</span>`;
+        currentTimeElem.innerHTML = `<span class="text-slate-500 dark:text-slate-400 font-mono" title="Última actualización">${formattedAgpTime}</span> <span class="text-amber-500 font-bold ml-1" title="Retraso en actualización">⚠️</span>`;
       } else {
-        currentTimeElem.textContent = kpis.ultimo_timestamp ? `Lectura: ${kpis.ultimo_timestamp}` : 'Sin datos recientes';
+        currentTimeElem.textContent = kpis.ultimo_timestamp ? `Lectura: ${formattedAgpTime}` : 'Sin datos';
       }
     }
 
     const warnBox = document.getElementById('sit-transmission-warning');
-    const warnText = document.getElementById('sit-transmission-warning-text');
-    if (warnBox && warnText) {
-      if (kpis.falla_reporte) {
-        warnBox.classList.remove('hidden');
-        warnText.textContent = `Sin reporte reciente desde ${kpis.tiempo_sin_reportar_str || 'varias horas'}.`;
-      } else {
-        warnBox.classList.add('hidden');
-      }
+    if (warnBox) {
+      warnBox.classList.add('hidden');
     }
 
     // 4. Medición Oficial Prefectura Naval Argentina (PNA)
@@ -454,7 +477,7 @@ const Components = {
     }
 
     if (pnaTimeElem) {
-      pnaTimeElem.textContent = kpis.pna_timestamp ? `Guardia: ${kpis.pna_timestamp}` : 'Sin reporte PNA';
+      pnaTimeElem.textContent = kpis.pna_timestamp ? Components.formatDateTime(kpis.pna_timestamp, true) : 'Sin reporte PNA';
     }
 
     // 5. Diferencia Delta (AGP − PNA)
@@ -508,9 +531,6 @@ const Components = {
         statusTextElem.textContent = 'SILENCIADO';
         statusTextElem.className = 'text-xs font-extrabold font-data text-slate-500 uppercase';
       }
-      if (statusProjectionElem) {
-        statusProjectionElem.innerHTML = '<span class="text-amber-600 dark:text-amber-400 font-semibold">⚠️ Alertas automáticas silenciadas para esta estación.</span>';
-      }
       return;
     }
 
@@ -528,30 +548,12 @@ const Components = {
       statusTextElem.textContent = st.toUpperCase();
       statusTextElem.className = 'text-xs font-extrabold font-data text-slate-900 dark:text-white uppercase';
     }
-
-    if (statusProjectionElem) {
-      const umbrales = kpis.umbrales || {};
-      const alerta = umbrales.alerta;
-      const evalAlt = (kpis.pna_altura !== null && kpis.pna_altura !== undefined) ? kpis.pna_altura : kpis.ultima_altura;
-      const evalSource = (kpis.pna_altura !== null && kpis.pna_altura !== undefined) ? 'Prefectura PNA' : 'Medición AGP';
-
-      if (alerta !== null && evalAlt !== null) {
-        const diffAlerta = alerta - evalAlt;
-        if (diffAlerta > 0) {
-          statusProjectionElem.innerHTML = `Margen a alerta (${alerta.toFixed(2)} m): <strong class="font-bold text-slate-900 dark:text-white">${diffAlerta.toFixed(2)} m</strong> <span class="text-[10px] text-slate-400 font-mono">(${evalSource})</span>`;
-        } else {
-          statusProjectionElem.innerHTML = `<strong class="text-orange-600 dark:text-orange-400">Nivel sobre umbral oficial de alerta (${alerta.toFixed(2)} m)</strong> <span class="text-[10px] text-slate-400 font-mono">(${evalSource})</span>`;
-        }
-      } else {
-        statusProjectionElem.textContent = 'Sin umbrales oficiales reportados para esta estación';
-      }
-    }
   },
 
   /**
    * Renderiza el indicador de nivel horizontal (Nivel-Bar Gauge)
    */
-  renderNivelBar(kpis, station) {
+  renderNivelBar(kpis, station, activeSource = null) {
     const wrap = document.getElementById('nivel-bar-wrap');
     const bar = document.getElementById('nivel-bar-inner');
     const markerAlerta = document.getElementById('marker-alerta');
@@ -559,7 +561,14 @@ const Components = {
 
     if (!wrap || !bar || !kpis) return;
 
-    const alt = kpis.ultima_altura;
+    const source = activeSource || (window.State && State.chartSource) || 'agp';
+    let alt = null;
+    if (source === 'pna') {
+      alt = (kpis.pna_altura !== null && kpis.pna_altura !== undefined) ? kpis.pna_altura : kpis.ultima_altura;
+    } else {
+      alt = (kpis.ultima_altura !== null && kpis.ultima_altura !== undefined) ? kpis.ultima_altura : kpis.pna_altura;
+    }
+
     const umbrales = kpis.umbrales || {};
     const evac = umbrales.evacuacion;
     const alerta = umbrales.alerta;
@@ -595,22 +604,116 @@ const Components = {
   },
 
   /**
-   * Renderiza las tarjetas de KPIs
+   * Renderiza las tarjetas de Estadísticas del Período basándose en la fuente activa (AGP, PNA o Ambas)
    */
-  renderKpiCards(kpis, isCota, offset) {
-    if (!kpis) return;
+  renderKpiCards(kpis, isCota, offset, activeSource = 'agp', puntosAgp = [], puntosPna = []) {
+    if (!kpis && (!puntosAgp || puntosAgp.length === 0) && (!puntosPna || puntosPna.length === 0)) return;
 
-    let current = kpis.ultima_altura;
-    let max = kpis.max_altura;
-    let min = kpis.min_altura;
-    let avg = kpis.promedio_altura;
+    const source = activeSource || (window.State && State.chartSource) || 'agp';
+
+    const agpList = (puntosAgp || []).filter(p => p && p.y !== null && p.y !== undefined && !isNaN(p.y));
+    const pnaList = (puntosPna || []).filter(p => p && p.y !== null && p.y !== undefined && !isNaN(p.y));
+
+    let targetPoints = [];
+    let sourceLabel = 'AGP';
+    let badgeClass = 'bg-sky-100 text-sky-800 dark:bg-sky-950 dark:text-sky-300 border-sky-300 dark:border-sky-800';
+
+    if (source === 'pna') {
+      if (pnaList.length > 0) {
+        targetPoints = pnaList;
+        sourceLabel = 'Prefectura PNA';
+        badgeClass = 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300 border-amber-300 dark:border-amber-800';
+      } else if (agpList.length > 0) {
+        targetPoints = agpList;
+        sourceLabel = 'AGP (Sin PNA)';
+        badgeClass = 'bg-sky-100 text-sky-800 dark:bg-sky-950 dark:text-sky-300 border-sky-300 dark:border-sky-800';
+      }
+    } else if (source === 'ambas') {
+      if (agpList.length > 0 && pnaList.length > 0) {
+        targetPoints = [...agpList, ...pnaList];
+        sourceLabel = 'Unificada (AGP + PNA)';
+        badgeClass = 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 border-emerald-300 dark:border-emerald-800';
+      } else if (pnaList.length > 0) {
+        targetPoints = pnaList;
+        sourceLabel = 'Prefectura PNA';
+        badgeClass = 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300 border-amber-300 dark:border-amber-800';
+      } else {
+        targetPoints = agpList;
+        sourceLabel = 'AGP';
+        badgeClass = 'bg-sky-100 text-sky-800 dark:bg-sky-950 dark:text-sky-300 border-sky-300 dark:border-sky-800';
+      }
+    } else {
+      // Por defecto 'agp'
+      if (agpList.length > 0) {
+        targetPoints = agpList;
+        sourceLabel = 'AGP';
+        badgeClass = 'bg-sky-100 text-sky-800 dark:bg-sky-950 dark:text-sky-300 border-sky-300 dark:border-sky-800';
+      } else if (pnaList.length > 0) {
+        targetPoints = pnaList;
+        sourceLabel = 'Prefectura PNA (Sin AGP)';
+        badgeClass = 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300 border-amber-300 dark:border-amber-800';
+      }
+    }
+
+    let max = null;
+    let min = null;
+    let avg = null;
+    let var24 = null;
+    let totalPoints = targetPoints.length;
+
+    if (targetPoints.length > 0) {
+      const vals = targetPoints.map(p => Number(p.y));
+      max = Math.max(...vals);
+      min = Math.min(...vals);
+      const sum = vals.reduce((a, b) => a + b, 0);
+      avg = sum / vals.length;
+
+      // Calcular variación 24h cronológica para la fuente elegida
+      if (source === 'agp' && kpis && kpis.variacion_24h !== null && kpis.variacion_24h !== undefined) {
+        var24 = kpis.variacion_24h;
+      } else {
+        const sorted = [...targetPoints].sort((a, b) => {
+          const ta = new Date((a.t || '').replace(' ', 'T')).getTime();
+          const tb = new Date((b.t || '').replace(' ', 'T')).getTime();
+          return ta - tb;
+        });
+
+        if (sorted.length >= 2) {
+          const lastP = sorted[sorted.length - 1];
+          const lastMs = new Date((lastP.t || '').replace(' ', 'T')).getTime();
+          const targetMs = lastMs - (24 * 3600 * 1000);
+
+          let closestPoint = null;
+          let closestDiff = Infinity;
+          for (let i = 0; i < sorted.length - 1; i++) {
+            const pMs = new Date((sorted[i].t || '').replace(' ', 'T')).getTime();
+            if (!isNaN(pMs)) {
+              const diff = Math.abs(pMs - targetMs);
+              if (diff < closestDiff) {
+                closestDiff = diff;
+                closestPoint = sorted[i];
+              }
+            }
+          }
+
+          if (closestPoint && !isNaN(lastP.y) && !isNaN(closestPoint.y)) {
+            var24 = Number((lastP.y - closestPoint.y).toFixed(2));
+          }
+        }
+      }
+    } else if (kpis) {
+      max = kpis.max_altura;
+      min = kpis.min_altura;
+      avg = kpis.promedio_altura;
+      var24 = kpis.variacion_24h;
+      totalPoints = kpis.total_puntos || 0;
+    }
+
     let unit = 'm';
-
     if (isCota) {
-      if (current !== null) current += offset;
-      if (max !== null) max += offset;
-      if (min !== null) min += offset;
-      if (avg !== null) avg += offset;
+      if (max !== null) max = Number((max + offset).toFixed(2));
+      if (min !== null) min = Number((min + offset).toFixed(2));
+      if (avg !== null) avg = Number((avg + offset).toFixed(2));
       unit = 'msnm';
     }
 
@@ -619,18 +722,37 @@ const Components = {
       if (el) el.textContent = val !== null && val !== undefined ? val.toFixed(2) : '--';
     };
 
-    setVal('kpi-val-current', current);
+    setVal('kpi-val-current', (kpis && kpis.ultima_altura !== null) ? (isCota ? kpis.ultima_altura + offset : kpis.ultima_altura) : null);
     setVal('kpi-val-max', max);
     setVal('kpi-val-min', min);
     setVal('kpi-val-avg', avg);
 
+    // Variación 24h
+    const var24ValElem = document.getElementById('sit-24h-val');
+    if (var24ValElem) {
+      if (var24 !== null && var24 !== undefined && !isNaN(var24)) {
+        const sign = var24 > 0 ? '+' : '';
+        const colorCls = var24 > 0 ? 'text-rose-600 dark:text-rose-400' : (var24 < 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-700 dark:text-slate-200');
+        var24ValElem.innerHTML = `<span class="${colorCls}">${sign}${var24.toFixed(2)} m</span>`;
+      } else {
+        var24ValElem.textContent = '--';
+      }
+    }
+
+    // Badge de fuente activa en "Estadísticas del Período"
+    const badgeEl = document.getElementById('kpi-source-badge');
+    if (badgeEl) {
+      badgeEl.textContent = sourceLabel;
+      badgeEl.className = `text-[10px] px-2 py-0.5 rounded font-bold border transition-colors ${badgeClass}`;
+    }
+
     document.querySelectorAll('.kpi-unit-label').forEach(el => el.textContent = unit);
 
     const timeEl = document.getElementById('kpi-time-current');
-    if (timeEl) timeEl.textContent = kpis.ultimo_timestamp || 'Sin datos';
+    if (timeEl) timeEl.textContent = Components.formatDateTime(kpis && kpis.ultimo_timestamp, true) || 'Sin datos';
 
     const countEl = document.getElementById('kpi-points-count');
-    if (countEl) countEl.textContent = `${kpis.total_puntos || 0} mediciones (${kpis.intervalo_minutos || 20} min)`;
+    if (countEl) countEl.textContent = `${totalPoints} mediciones (${sourceLabel})`;
   },
 
   /**
@@ -682,7 +804,7 @@ const Components = {
 
       return `
         <tr class="hover:bg-slate-50/80 dark:hover:bg-slate-800/40 transition">
-          <td class="py-1.5 px-2.5 font-mono text-[11px] sm:text-xs text-slate-600 dark:text-slate-300">${r.timestamp}</td>
+          <td class="py-1.5 px-2.5 font-mono text-[11px] sm:text-xs text-slate-600 dark:text-slate-300">${Components.formatDateTime(r.timestamp)}</td>
           <td class="py-1.5 px-2.5 text-[11px] sm:text-xs">${agpStr}</td>
           <td class="py-1.5 px-2.5 text-[11px] sm:text-xs">${pnaStr}</td>
           <td class="py-1.5 px-2.5 font-mono text-[11px] sm:text-xs ${diffCls}">${diffStr}</td>
@@ -738,12 +860,12 @@ const Components = {
               <div class="text-xs font-semibold text-slate-800 dark:text-slate-100 truncate group-hover:text-[#008348] dark:group-hover:text-emerald-400 transition" title="${s.nombre}">
                 ${s.nombre}
                 ${isSilenced ? '<span class="text-[9px] text-slate-400 ml-1 font-normal font-mono">(silenciada)</span>' : ''}
-                ${isFailed ? `<span class="text-[9px] font-bold text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/60 border border-amber-300 dark:border-amber-800 px-1 py-0.2 rounded ml-1" title="Sin reporte hace ${s.tiempo_sin_reportar_str || ''}">⚠️ Sin reporte</span>` : ''}
+                ${isFailed ? '<span class="text-amber-500 text-xs ml-1" title="Retraso en reporte">⚠️</span>' : ''}
               </div>
               <div class="text-[10px] text-slate-400 flex items-center space-x-1.5 mt-0.5">
                 <span>${freq} min</span>
                 <span>•</span>
-                <span>${isFailed ? `<span class="text-amber-600 dark:text-amber-400 font-bold" title="Última lectura: ${s.ultimo_timestamp || 'Sin datos'}">⚠️ ${s.tiempo_sin_reportar_str || 'Falla'}</span>` : (s.ultimo_timestamp ? s.ultimo_timestamp.slice(11, 16) : '--:--')}</span>
+                <span>${s.ultimo_timestamp ? s.ultimo_timestamp.slice(11, 16) : '--:--'}</span>
               </div>
             </div>
           </div>
@@ -789,3 +911,6 @@ const Components = {
     }, 3800);
   }
 };
+
+window.Components = Components;
+window.formatDateTimeUnified = Components.formatDateTime.bind(Components);

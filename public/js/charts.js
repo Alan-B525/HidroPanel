@@ -573,18 +573,6 @@ const Charts = {
                 const isPna = dsLabel.toLowerCase().includes('prefectura') || dsLabel.toLowerCase().includes('pna');
                 const icon = isPna ? '⚓' : '🔷';
                 return ` ${icon} ${dsLabel}: ${Number(yVal).toFixed(2)} ${unitSuffix}`;
-              },
-              afterBody: function (items) {
-                if (items.length >= 2) {
-                  const y0 = items[0].parsed && items[0].parsed.y !== undefined ? items[0].parsed.y : items[0].raw;
-                  const y1 = items[1].parsed && items[1].parsed.y !== undefined ? items[1].parsed.y : items[1].raw;
-                  if (y0 !== null && y1 !== null && !isNaN(y0) && !isNaN(y1)) {
-                    const diff = Number(y0 - y1).toFixed(2);
-                    const sign = diff > 0 ? '+' : '';
-                    return [`\n⚖️ Diferencia (AGP − PNA): ${sign}${diff} ${unitSuffix}`];
-                  }
-                }
-                return [];
               }
             }
           },
@@ -1213,18 +1201,6 @@ const Charts = {
                   const isPna = (c.dataset.label || '').toLowerCase().includes('pna') || (c.dataset.label || '').toLowerCase().includes('prefectura');
                   const icon = isPna ? '⚓' : '🔷';
                   return ` ${icon} ${c.dataset.label}: ${Number(yVal).toFixed(2)} ${unitSuffix}`;
-                },
-                afterBody: (items) => {
-                  if (items.length >= 2) {
-                    const y0 = items[0].parsed && items[0].parsed.y !== undefined ? items[0].parsed.y : items[0].raw;
-                    const y1 = items[1].parsed && items[1].parsed.y !== undefined ? items[1].parsed.y : items[1].raw;
-                    if (y0 !== null && y1 !== null && !isNaN(y0) && !isNaN(y1)) {
-                      const diff = Number(y0 - y1).toFixed(2);
-                      const sign = diff > 0 ? '+' : '';
-                      return [`⚖️ Dif: ${sign}${diff} ${unitSuffix}`];
-                    }
-                  }
-                  return [];
                 }
               }
             },

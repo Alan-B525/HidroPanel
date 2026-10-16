@@ -102,6 +102,11 @@ async function loadInitialData() {
       // Inicializar utilidades del Panel de Hidrología (Umbrales y Alertas)
       populateThresholdsEditor(defaultStation);
       renderSidebarAlerts();
+
+      // Pre-cargar mapa de lluvias SIMEPAR en segundo plano para despliegue instantáneo
+      if (window.SimeparView) {
+        SimeparView.init().catch(e => console.warn('Pre-carga SIMEPAR diferida:', e));
+      }
     }
   } catch (e) {
     console.error('Error cargando datos iniciales:', e);
@@ -127,26 +132,7 @@ async function selectStation(stationId, flyMap = true) {
     populateThresholdsEditor(station);
   }
 
-  // Actualizar títulos del encabezado de estación
-  const titleEl = document.getElementById('current-station-title');
-  const metaEl = document.getElementById('current-station-meta');
   const coordsBadge = document.getElementById('station-coords-badge');
-  const coordsText = document.getElementById('station-coords-text');
-
-  if (titleEl) {
-    if (station.falla_reporte) {
-      titleEl.innerHTML = `<span>${station.nombre}</span> <span class="inline-flex items-center gap-1 text-xs font-bold text-amber-700 dark:text-amber-300 bg-amber-100 dark:bg-amber-950/70 border border-amber-300 dark:border-amber-800 px-2.5 py-0.5 rounded-full ml-2 align-middle">⚠️ Sin Reporte (${station.tiempo_sin_reportar_str || 'falla'})</span>`;
-    } else {
-      titleEl.textContent = station.nombre;
-    }
-  }
-  if (metaEl) {
-    const failNotice = station.falla_reporte ? `<strong class="text-amber-600 dark:text-amber-400">⚠️ Sin reporte (${station.tiempo_sin_reportar_str || 'demorado'})</strong>` : '';
-    const fuenteStr = station.fuente_reciente ? `<span class="font-medium text-slate-500 dark:text-slate-400">Fuente: ${station.fuente_reciente === 'PNA' ? 'Prefectura PNA' : 'AGP'}</span>` : '';
-    const tiempoStr = station.tiempo_sin_reportar_str ? `<span class="text-slate-500 dark:text-slate-400">Actualizado ${station.tiempo_sin_reportar_str}</span>` : '';
-    const items = [fuenteStr, tiempoStr, failNotice].filter(Boolean);
-    metaEl.innerHTML = items.length > 0 ? items.join(' • ') : `Estación ${station.nombre}`;
-  }
   if (coordsBadge) {
     coordsBadge.style.display = 'none';
   }
@@ -177,8 +163,15 @@ async function selectStation(stationId, flyMap = true) {
       // Renderizar Nivel-Bar
       Components.renderNivelBar(res.kpis, station);
 
-      // Renderizar KPIs
-      Components.renderKpiCards(res.kpis, isCota, offset);
+      // Renderizar KPIs según fuente seleccionada
+      Components.renderKpiCards(
+        res.kpis,
+        isCota,
+        offset,
+        State.chartSource || 'agp',
+        res.puntos || [],
+        res.puntos_pna || []
+      );
 
       // Renderizar Tabla
       Components.renderRecentTable(res.recientes, isCota, offset);
@@ -283,7 +276,7 @@ function filterStations() {
 /**
  * Manejo de Vistas (Caudales & Represas vs Gráficos vs Mapa vs Lluvias SIMEPAR)
  */
-function setViewMode(mode) {
+async function setViewMode(mode) {
   State.setViewMode(mode);
 
   // Botones de pestañas superiores
@@ -328,22 +321,36 @@ function setViewMode(mode) {
   }
 
   if (mode === 'caudales') {
-    RepresasView.init();
+    if (window.RepresasView && RepresasView.data) {
+      RepresasView.renderOverview(RepresasView.data);
+      RepresasView.renderSchematic(RepresasView.data);
+      RepresasView.renderTable(RepresasView.data.centrales_lista || []);
+      setTimeout(() => {
+        if (RepresasView.caudalesChart) {
+          RepresasView.caudalesChart.resize();
+          RepresasView.caudalesChart.update('none');
+        }
+        if (RepresasView.itaipuChart) {
+          RepresasView.itaipuChart.resize();
+          RepresasView.itaipuChart.update('none');
+        }
+      }, 50);
+    } else if (window.RepresasView) {
+      RepresasView.init();
+    }
   } else if (mode === 'charts') {
-    setTimeout(() => {
-      if (Charts.mainChart) {
-        Charts.mainChart.resize();
-        Charts.mainChart.update('none');
-      }
-      if (Charts.subplotCharts && Charts.subplotCharts.length) {
-        Charts.subplotCharts.forEach(c => {
-          if (c) {
-            c.resize();
-            c.update('none');
-          }
-        });
-      }
-    }, 60);
+    if (State.layout > 1) {
+      setLayout(State.layout);
+    } else {
+      setTimeout(() => {
+        if (Charts.mainChart) {
+          Charts.mainChart.resize();
+          Charts.mainChart.update('none');
+        } else if (State.selectedStationId) {
+          selectStation(State.selectedStationId, false);
+        }
+      }, 50);
+    }
   } else if (mode === 'map') {
     MapView.init('map-leaflet', State.theme === 'dark');
     if (State.stations.length > 0) {
@@ -352,11 +359,20 @@ function setViewMode(mode) {
     if (window.RepresasView && RepresasView.data) {
       MapView.renderDams(RepresasView.data);
     }
+    if (MapView.map) MapView.map.invalidateSize();
     setTimeout(() => {
       if (MapView.map) MapView.map.invalidateSize();
-    }, 180);
+    }, 100);
+    setTimeout(() => {
+      if (MapView.map) MapView.map.invalidateSize();
+    }, 250);
   } else if (mode === 'simepar') {
-    SimeparView.init();
+    if (window.SimeparView && SimeparView.dates && SimeparView.dates.length > 0) {
+      SimeparView.renderImage();
+      SimeparView.updateControls();
+    } else if (window.SimeparView) {
+      await SimeparView.init();
+    }
   }
 }
 
@@ -441,7 +457,33 @@ function setChartSource(source) {
   updateChartSourceUI();
 
   if (State.layout === 1 && State.selectedStationId) {
-    selectStation(State.selectedStationId, false);
+    if (State.selectedStationData) {
+      const res = State.selectedStationData;
+      const station = State.stations.find(s => s.id === State.selectedStationId);
+      const isPosadas = station && station.codigo === 'POSADAS';
+      const isCota = isPosadas && State.posadasMode === 'cota';
+      const offset = State.posadasOffset;
+
+      Components.renderKpiCards(
+        res.kpis,
+        isCota,
+        offset,
+        source,
+        res.puntos || [],
+        res.puntos_pna || []
+      );
+      Charts.renderMainChart(
+        'mainHeightChart',
+        res.puntos || [],
+        res.kpis,
+        isCota,
+        offset,
+        State.theme === 'dark',
+        res.puntos_pna || []
+      );
+    } else {
+      selectStation(State.selectedStationId, false);
+    }
   } else if (State.layout > 1) {
     for (let i = 0; i < State.layout; i++) {
       if (State.subplotStationIds[i]) {
@@ -488,8 +530,8 @@ function populateChartsStationSelect() {
     seen.add(key);
 
     const altStr = (s.ultima_altura !== null && s.ultima_altura !== undefined) ? `${s.ultima_altura.toFixed(2)}m` : '--';
-    const pnaStr = (s.pna_altura !== null && s.pna_altura !== undefined) ? ` | ⚓ PNA: ${s.pna_altura.toFixed(2)}m` : '';
-    const failNotice = s.falla_reporte ? ' [⚠️ Sin reporte]' : '';
+    const pnaStr = (s.pna_altura !== null && s.pna_altura !== undefined) ? ` | ⚓ ${s.pna_altura.toFixed(2)}m` : '';
+    const failNotice = s.falla_reporte ? ' ⚠️' : '';
     const label = `${cleanName} — AGP: ${altStr}${pnaStr}${failNotice}`;
     options.push(`<option value="${s.id}">${label}</option>`);
   }
@@ -575,7 +617,7 @@ function populateThresholdsEditor(station) {
 
         const altStr = (s.ultima_altura !== null && s.ultima_altura !== undefined) ? `${s.ultima_altura.toFixed(2)}m` : '--';
         const pnaStr = (s.pna_altura !== null && s.pna_altura !== undefined) ? ` | ⚓ PNA: ${s.pna_altura.toFixed(2)}m` : '';
-        const failNotice = s.falla_reporte ? ' [⚠️ Sin reporte]' : '';
+        const failNotice = s.falla_reporte ? ' ⚠️' : '';
         options.push(`<option value="${s.id}">${cleanName} (AGP: ${altStr}${pnaStr})${failNotice}</option>`);
       }
       select.innerHTML = options.join('');
@@ -592,7 +634,7 @@ function populateThresholdsEditor(station) {
   if (nameEl) nameEl.textContent = `${station.nombre} (${station.codigo})`;
   if (basinEl) {
     const rioStr = station.rio || 'Cuenca del Plata';
-    const failNotice = station.falla_reporte ? ` • <strong class="text-amber-600 dark:text-amber-400">⚠️ Sin reporte (${station.tiempo_sin_reportar_str || 'falla'})</strong>` : '';
+    const failNotice = station.falla_reporte ? ' <span class="text-amber-500 font-bold ml-1" title="Retraso en reporte">⚠️</span>' : '';
     basinEl.innerHTML = `Río / Cuenca: ${rioStr} • Muestreo esperado: cada ${station.frecuencia_minutos || 20} min${failNotice}`;
   }
   if (heightEl) {
@@ -603,7 +645,7 @@ function populateThresholdsEditor(station) {
       ? `${station.pna_altura.toFixed(2)} m`
       : null;
     if (pnaStr !== null) {
-      heightEl.innerHTML = `<span class="text-sky-600 dark:text-sky-400 font-bold">${agpStr}</span> <span class="text-slate-400 font-normal">|</span> <span class="text-amber-600 dark:text-amber-400 font-bold" title="Guardia Prefectura">⚓ ${pnaStr}</span>`;
+      heightEl.innerHTML = `<span class="text-sky-600 dark:text-sky-400 font-bold">${agpStr}</span> <span class="text-slate-400 font-normal">|</span> <span class="text-amber-600 dark:text-amber-400 font-bold" title="Prefectura">⚓ ${pnaStr}</span>`;
     } else {
       heightEl.innerHTML = `<span class="text-sky-600 dark:text-sky-400 font-bold">${agpStr}</span>`;
     }
@@ -706,7 +748,7 @@ function renderThresholdModalQuickList(query = '', activeStationId = null) {
           <div>${s.nombre}</div>
           <div class="text-[10px] font-normal text-slate-400 flex items-center gap-1 font-mono">
             <span>${s.codigo}</span>
-            ${isFail ? `<span class="text-amber-600 dark:text-amber-400 font-bold" title="Última lectura: ${s.ultimo_timestamp || 'Sin datos'}">⚠️ Sin reporte (${s.tiempo_sin_reportar_str || ''})</span>` : ''}
+            ${isFail ? `<span class="text-amber-500 font-bold ml-1" title="Última lectura: ${s.ultimo_timestamp || 'Sin datos'}">⚠️</span>` : ''}
           </div>
         </td>
         <td class="py-2 px-2 text-center">
@@ -867,7 +909,7 @@ async function handleResetThresholds() {
     const res = await API.resetThresholds(station.codigo);
     if (res && res.success) {
       station.umbrales = res.umbrales;
-      Components.showToast('Umbrales restablecidos', `Valores oficiales restaurados para ${station.nombre}`);
+      Components.showToast('Umbrales restablecidos', `Valores restaurados para ${station.nombre}`);
 
       const sitData = await API.getSituation();
       if (sitData && sitData.success) {
@@ -905,7 +947,7 @@ async function handleSyncPrefecturaClick() {
   try {
     const res = await API.syncPrefectura();
     if (res && res.success) {
-      Components.showToast('Prefectura Sincronizada', `${res.updated_stations} umbrales oficiales actualizados desde PNA`);
+      Components.showToast('Prefectura Sincronizada', `${res.updated_stations} umbrales actualizados desde PNA`);
 
       // Recargar catálogo de estaciones
       const estData = await API.getStations();
@@ -1164,6 +1206,7 @@ function initShortcuts() {
 window.selectStation = selectStation;
 window.selectStationFromAlert = (id) => {
   setViewMode('charts');
+  setLayout(1);
   selectStation(id, true);
 };
 window.filterStations = filterStations;
@@ -1209,11 +1252,62 @@ window.onSubplotStationChange = (index, val) => {
   Charts.loadSubplotData(index, stationId, false);
 };
 
-window.focusStationInSingleMode = (stationId) => {
-  if (!stationId) return;
-  selectStation(stationId, true);
-  setLayout(1);
+window.goToStationCharts = async (stationIdOrCode) => {
+  let targetId = null;
+  if (typeof stationIdOrCode === 'number') {
+    targetId = stationIdOrCode;
+  } else if (typeof stationIdOrCode === 'string') {
+    const num = parseInt(stationIdOrCode);
+    if (!isNaN(num) && String(num) === stationIdOrCode.trim()) {
+      targetId = num;
+    } else {
+      const code = stationIdOrCode.trim().toUpperCase();
+      let st = State.stations.find(s => s.codigo && s.codigo.toUpperCase() === code);
+      if (!st) {
+        st = State.stations.find(s => s.nombre && s.nombre.toUpperCase().includes(code));
+      }
+      if (st) targetId = st.id;
+    }
+  }
+
+  if (!targetId) {
+    try {
+      const res = await API.getStations();
+      if (res && res.success) {
+        State.stations = res.estaciones || [];
+        if (typeof stationIdOrCode === 'string') {
+          const code = stationIdOrCode.trim().toUpperCase();
+          let st = State.stations.find(s => s.codigo && s.codigo.toUpperCase() === code);
+          if (!st) st = State.stations.find(s => s.nombre && s.nombre.toUpperCase().includes(code));
+          if (st) targetId = st.id;
+        }
+      }
+    } catch (e) {
+      console.warn('Error refrescando estaciones:', e);
+    }
+  }
+
+  if (targetId) {
+    // 1. Cambiar a la pestaña de Hidrómetros (Gráficos)
+    setViewMode('charts');
+
+    // 2. Establecer la vista en modo de un solo gráfico (layout = 1)
+    setLayout(1);
+
+    // 3. Seleccionar la estación y cargar sus mediciones
+    await selectStation(targetId, false);
+
+    // 4. Scroll suave hacia la vista de hidrómetros
+    const chartsView = document.getElementById('view-charts-container');
+    if (chartsView) {
+      chartsView.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  } else {
+    setViewMode('caudales');
+  }
 };
+
+window.focusStationInSingleMode = window.goToStationCharts;
 
 // SIMEPAR
 window.selectSimeparDate = (dateStr) => {

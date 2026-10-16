@@ -264,13 +264,15 @@ const MapView = {
       const timeStr = s.ultimo_timestamp || '';
 
       const failNotice = isFailed
-        ? `<div style="font-size: 0.68rem; font-weight: 700; color: #b45309; background: #fef3c7; border: 1px solid #fde68a; padding: 3px 6px; border-radius: 4px; margin-bottom: 6px;">⚠️ Posible falla: No reporta hace ${s.tiempo_sin_reportar_str || 'varias horas'} (frecuencia normal: cada ${s.frecuencia_minutos || 60}m)</div>`
+        ? `<div style="font-size: 0.72rem; font-weight: 600; color: #b45309; margin-bottom: 4px;">⚠️ Actualización demorada</div>`
         : '';
 
       const popupContent = `
-        <div style="font-family: var(--font-body); padding: 4px; min-width: 180px;">
-          <div style="font-weight: 700; font-size: 0.85rem; color: #0284c7; margin-bottom: 2px;">${s.nombre}</div>
-          <div style="font-size: 0.72rem; color: #64748b; margin-bottom: 6px;">Código: ${s.codigo}</div>
+        <div style="font-family: var(--font-body); padding: 4px; min-width: 190px;">
+          <div onclick="window.goToStationCharts(${s.id})" style="cursor: pointer;" title="Ir a pestaña de Hidrómetros">
+            <div style="font-weight: 800; font-size: 0.95rem; color: #0284c7; margin-bottom: 2px;">${s.nombre}</div>
+            <div style="font-size: 0.72rem; color: #64748b; margin-bottom: 6px;">Código: ${s.codigo}</div>
+          </div>
           ${failNotice}
           <div style="display: flex; align-items: baseline; gap: 4px; margin-bottom: 4px;">
             <span style="font-family: var(--font-value); font-size: 1.25rem; font-weight: 800; color: #0f172a;">${valStr}</span>
@@ -280,18 +282,22 @@ const MapView = {
             Estado: ${st}
           </div>
           <div style="margin-top: 8px;">
-            <button onclick="window.selectStation(${s.id})" style="background: #0284c7; color: white; border: 0; padding: 3px 8px; border-radius: 4px; font-size: 0.7rem; font-weight: 600; cursor: pointer; width: 100%;">
-              Ver Curva de Nivel
+            <button onclick="window.goToStationCharts(${s.id})" style="background: #0284c7; color: white; border: 0; padding: 6px 10px; border-radius: 6px; font-size: 0.75rem; font-weight: 700; cursor: pointer; width: 100%; display: flex; align-items: center; justify-content: center; gap: 5px; box-shadow: 0 1px 2px rgba(0,0,0,0.1); transition: background 0.15s;" onmouseover="this.style.background='#0369a1'" onmouseout="this.style.background='#0284c7'">
+              <span>📈 Ver en Hidrómetros (1 Gráfico)</span>
             </button>
           </div>
         </div>
       `;
 
       marker.bindPopup(popupContent);
-      marker.bindTooltip(`<strong>${s.nombre}</strong>: ${valStr}${isFailed ? ' <span style="color:#d97706; font-weight:bold;">(⚠️ Sin reporte)</span>' : ''}`, { direction: 'top', offset: [0, -6] });
+      marker.bindTooltip(`<strong>${s.nombre}</strong>: ${valStr}${isFailed ? ' <span style="color:#d97706; font-weight:bold;">⚠️</span>' : ''}`, { direction: 'top', offset: [0, -6] });
 
       marker.on('click', () => {
         if (onSelectStation) onSelectStation(s.id);
+      });
+      marker.on('dblclick', (e) => {
+        L.DomEvent.stop(e);
+        window.goToStationCharts(s.id);
       });
 
       this.markersGroup.addLayer(marker);
@@ -381,7 +387,9 @@ const MapView = {
         popupHtml = `
           <div style="font-family: var(--font-body); padding: 4px; min-width: 200px;">
             <div style="font-size: 0.65rem; font-weight: 700; text-transform: uppercase; color: #d97706; letter-spacing: 0.05em; margin-bottom: 2px;">${d.tipo}</div>
-            <div style="font-weight: 800; font-size: 0.95rem; color: #0f172a; margin-bottom: 2px;">${d.nombre}</div>
+            <div onclick="window.goToStationCharts('${d.codigo}')" style="cursor: pointer;" title="Ir a pestaña de Hidrómetros">
+              <div style="font-weight: 800; font-size: 0.95rem; color: #0f172a; margin-bottom: 2px;">${d.nombre}</div>
+            </div>
             <div style="font-size: 0.72rem; color: #64748b; margin-bottom: 8px;">${d.operador} • ${d.rio}</div>
 
             <div style="background: #fffbeb; border: 1px solid #fde68a; border-radius: 6px; padding: 8px; margin-bottom: 6px;">
@@ -395,6 +403,12 @@ const MapView = {
                 Lectura de telemetría: ${data.fecha}
               </div>
             ` : ''}
+
+            <div style="margin-top: 8px;">
+              <button onclick="window.goToStationCharts('${d.codigo}')" style="background: #d97706; color: white; border: 0; padding: 6px 10px; border-radius: 6px; font-size: 0.75rem; font-weight: 700; cursor: pointer; width: 100%; display: flex; align-items: center; justify-content: center; gap: 5px; box-shadow: 0 1px 2px rgba(0,0,0,0.1); transition: background 0.15s;" onmouseover="this.style.background='#b45309'" onmouseout="this.style.background='#d97706'">
+                <span>📈 Ver en Hidrómetros (1 Gráfico)</span>
+              </button>
+            </div>
           </div>
         `;
         tooltipText = `<strong>${d.nombre}</strong><br/>Caudal: ${caudalStr}${reglaVal ? ` • Regla: ${reglaVal}` : ''}`;
@@ -404,7 +418,9 @@ const MapView = {
         popupHtml = `
           <div style="font-family: var(--font-body); padding: 4px; min-width: 215px;">
             <div style="font-size: 0.65rem; font-weight: 700; text-transform: uppercase; color: #059669; letter-spacing: 0.05em; margin-bottom: 2px;">${d.tipo}</div>
-            <div style="font-weight: 800; font-size: 0.95rem; color: #0f172a; margin-bottom: 2px;">${d.nombre}</div>
+            <div onclick="window.goToStationCharts('ITUZAINGO')" style="cursor: pointer;" title="Ir a pestaña de Hidrómetros">
+              <div style="font-weight: 800; font-size: 0.95rem; color: #0f172a; margin-bottom: 2px;">${d.nombre}</div>
+            </div>
             <div style="font-size: 0.72rem; color: #64748b; margin-bottom: 8px;">${d.operador} • ${d.rio}</div>
 
             <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 6px; padding: 8px; margin-bottom: 6px;">
@@ -415,26 +431,34 @@ const MapView = {
             <div style="font-size: 0.68rem; color: #64748b;">
               Confluencia hidrológica directa hacia el embalse de Yacyretá.
             </div>
+
+            <div style="margin-top: 8px;">
+              <button onclick="window.goToStationCharts('ITUZAINGO')" style="background: #059669; color: white; border: 0; padding: 6px 10px; border-radius: 6px; font-size: 0.75rem; font-weight: 700; cursor: pointer; width: 100%; display: flex; align-items: center; justify-content: center; gap: 5px; box-shadow: 0 1px 2px rgba(0,0,0,0.1); transition: background 0.15s;" onmouseover="this.style.background='#047857'" onmouseout="this.style.background='#059669'">
+                <span>📈 Ver en Hidrómetros (1 Gráfico)</span>
+              </button>
+            </div>
           </div>
         `;
         tooltipText = `<strong>${d.nombre}</strong><br/>Aporte en tránsito: ${afluStr}`;
 
       } else {
-        // Pop-up para Centrales Hidroeléctricas: Muestra Afluentes y Defluentes (lo que llega y lo que derogan)
+        // Pop-up para Centrales Hidroeléctricas: Muestra Afluentes y Defluentes (sin 'Llega' ni 'Deroga')
         popupHtml = `
           <div style="font-family: var(--font-body); padding: 4px; min-width: 220px;">
             <div style="font-size: 0.65rem; font-weight: 700; text-transform: uppercase; color: #0284c7; letter-spacing: 0.05em; margin-bottom: 2px;">${d.tipo}</div>
-            <div style="font-weight: 800; font-size: 0.95rem; color: #0f172a; margin-bottom: 2px;">${d.nombre}</div>
-            <div style="font-size: 0.72rem; color: #64748b; margin-bottom: 8px;">${d.operador} • ${d.rio}</div>
+            <div onclick="window.goToStationCharts('${d.codigo}')" style="cursor: pointer;" title="Ir a pestaña de Hidrómetros">
+              <div style="font-weight: 800; font-size: 0.95rem; color: #0f172a; margin-bottom: 2px;">${d.nombre}</div>
+            </div>
+            <div style="font-size: 0.72rem; color: #64748b; margin-bottom: 8px;">${d.operador} • ${d.rio}${data.fuente ? ` • <span style="color: #0284c7; font-weight: 600;">${data.fuente}</span>` : ''}</div>
 
-            <!-- Valores Afluente (lo que le llega) y Defluente (lo que derogan) -->
+            <!-- Valores Afluente y Defluente -->
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 6px;">
               <div style="background: #f0f9ff; border: 1px solid #bae6fd; border-radius: 6px; padding: 6px;">
-                <div style="font-size: 0.62rem; text-transform: uppercase; font-weight: 700; color: #0369a1;">📥 Afluente (Llega)</div>
+                <div style="font-size: 0.62rem; text-transform: uppercase; font-weight: 700; color: #0369a1;">📥 Afluente</div>
                 <div style="font-family: var(--font-value); font-size: 1.05rem; font-weight: 800; color: #0284c7; margin-top: 2px;">${afluStr}</div>
               </div>
               <div style="background: #ecfdf5; border: 1px solid #a7f3d0; border-radius: 6px; padding: 6px;">
-                <div style="font-size: 0.62rem; text-transform: uppercase; font-weight: 700; color: #047857;">📤 Defluente (Deroga)</div>
+                <div style="font-size: 0.62rem; text-transform: uppercase; font-weight: 700; color: #047857;">📤 Defluente</div>
                 <div style="font-family: var(--font-value); font-size: 1.05rem; font-weight: 800; color: #059669; margin-top: 2px;">${deflStr}</div>
               </div>
             </div>
@@ -457,13 +481,24 @@ const MapView = {
                 Último registro ONS: ${data.fecha}
               </div>
             ` : ''}
+
+            <div style="margin-top: 8px;">
+              <button onclick="window.goToStationCharts('${d.codigo}')" style="background: #0284c7; color: white; border: 0; padding: 6px 10px; border-radius: 6px; font-size: 0.75rem; font-weight: 700; cursor: pointer; width: 100%; display: flex; align-items: center; justify-content: center; gap: 5px; box-shadow: 0 1px 2px rgba(0,0,0,0.1); transition: background 0.15s;" onmouseover="this.style.background='#0369a1'" onmouseout="this.style.background='#0284c7'">
+                <span>📈 Ver en Hidrómetros (1 Gráfico)</span>
+              </button>
+            </div>
           </div>
         `;
-        tooltipText = `<strong>${d.nombre}</strong><br/>📥 Afluente (llega): ${afluStr}<br/>📤 Defluente (deroga): ${deflStr}`;
+        tooltipText = `<strong>${d.nombre}</strong><br/>📥 Afluente: ${afluStr}<br/>📤 Defluente: ${deflStr}`;
       }
 
       marker.bindPopup(popupHtml);
       marker.bindTooltip(tooltipText, { direction: 'top', offset: [0, -10] });
+
+      marker.on('dblclick', (e) => {
+        L.DomEvent.stop(e);
+        window.goToStationCharts(d.codigo);
+      });
 
       this.damsGroup.addLayer(marker);
     });

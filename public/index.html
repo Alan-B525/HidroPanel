@@ -49,7 +49,7 @@
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
   <!-- Tokens & Estilos Propios -->
-  <link rel="stylesheet" href="css/tokens.css">
+  <link rel="stylesheet" href="css/tokens.css?v=12">
 
   <style>
     /* Scrollbars elegantes */
@@ -184,15 +184,8 @@
       </button>
     </nav>
 
-    <!-- ACCIONES DE DERECHA: UMBRALES, TEMA, STATUS, REFRESH -->
+    <!-- ACCIONES DE DERECHA: TEMA, STATUS, REFRESH -->
     <div class="flex items-center space-x-2 shrink-0">
-      <!-- Botón Configurar Umbrales -->
-      <button id="btn-header-umbrales" type="button" onclick="openThresholdsModal()" class="flex items-center space-x-1.5 bg-white/10 hover:bg-white/20 active:bg-white/25 text-white text-xs font-semibold px-2.5 sm:px-3 py-1.5 rounded-lg border border-white/15 transition shadow-xs cursor-pointer" title="Configurar niveles oficiales de alerta y evacuación">
-        <svg class="w-3.5 h-3.5 text-amber-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"/>
-        </svg>
-        <span class="hidden sm:inline">Umbrales</span>
-      </button>
 
       <!-- Alternador Tema Claro / Oscuro -->
       <button id="btn-theme-toggle" type="button" onclick="toggleTheme()" title="Cambiar tema (Claro / Oscuro)" class="p-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-white/90 border border-white/20 transition shadow-xs cursor-pointer">
@@ -215,7 +208,7 @@
   </header>
 
   <!-- CARRUSEL DISCRETO DE ALERTAS / TICKER HIDROLÓGICO CONTINUO -->
-  <div id="alert-banner-container" class="w-full shrink-0"></div>
+  <div id="alert-banner-container" class="w-full shrink-0 relative z-40"></div>
 
   <!-- ============================================================
        CONTENEDOR PRINCIPAL FLUIDO Y CONTENIDO (DASHBOARD CONTAINER)
@@ -258,19 +251,19 @@
           <!-- TARJETAS DE CENTRALES PRINCIPALES -->
           <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3.5">
             <!-- ITAIPÚ BINACIONAL -->
-            <div class="card-panel p-3.5 space-y-2">
-              <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-800/80 pb-1.5">
-                <div>
+            <div class="card-panel p-3.5 flex flex-col justify-between space-y-2.5">
+              <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-800/80 pb-2">
+                <div class="flex items-center gap-2">
+                  <span class="w-2 h-2 rounded-full bg-sky-500"></span>
                   <h4 class="font-bold text-slate-900 dark:text-white text-sm">Itaipú Binacional</h4>
-                  <span class="text-[10px] text-slate-400">Río Paraná • Brasil / Paraguay</span>
                 </div>
-                <span id="rep-it-time" class="text-[10px] font-mono text-slate-400">--</span>
+                <span id="rep-it-time" class="text-[10px] font-mono text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800/80 px-2 py-0.5 rounded border border-slate-200 dark:border-slate-700">--</span>
               </div>
 
               <div>
-                <div class="text-[11px] font-semibold text-slate-500">Caudal Defluente Total:</div>
-                <div class="flex items-baseline space-x-1">
-                  <span id="rep-it-defl" class="text-2xl font-extrabold font-data text-sky-600 dark:text-sky-400">--</span>
+                <div class="text-[10px] font-bold uppercase tracking-wider text-slate-500">Caudal Defluente Total:</div>
+                <div class="flex items-baseline space-x-1.5 mt-0.5">
+                  <span id="rep-it-defl" class="text-2xl sm:text-3xl font-extrabold font-data text-sky-600 dark:text-sky-400">--</span>
                   <span class="text-xs font-bold text-slate-400">m³/s</span>
                 </div>
               </div>
@@ -286,26 +279,26 @@
                 </div>
               </div>
 
-              <div class="flex items-center justify-between text-xs text-slate-500 pt-1">
+              <div class="flex items-center justify-between text-xs text-slate-500 pt-1.5 border-t border-slate-100 dark:border-slate-800/80">
                 <span>Afluente: <strong id="rep-it-aflu" class="text-slate-800 dark:text-slate-200 font-mono">--</strong></span>
                 <span>Cota: <strong id="rep-it-cota" class="text-slate-800 dark:text-slate-200 font-mono">--</strong></span>
               </div>
             </div>
 
-            <!-- BAIXO IGUAÇU (COPEL) -->
-            <div class="card-panel p-3.5 space-y-2">
-              <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-800/80 pb-1.5">
-                <div>
+            <!-- BAIXO IGUAÇU -->
+            <div class="card-panel p-3.5 flex flex-col justify-between space-y-2.5">
+              <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-800/80 pb-2">
+                <div class="flex items-center gap-2">
+                  <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
                   <h4 class="font-bold text-slate-900 dark:text-white text-sm">Baixo Iguaçu</h4>
-                  <span class="text-[10px] text-slate-400">COPEL • Última central Río Iguazú</span>
                 </div>
-                <span id="rep-bx-time" class="text-[10px] font-mono text-slate-400">--</span>
+                <span id="rep-bx-time" class="text-[10px] font-mono text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800/80 px-2 py-0.5 rounded border border-slate-200 dark:border-slate-700">--</span>
               </div>
 
               <div>
-                <div class="text-[11px] font-semibold text-slate-500">Caudal Defluente Total:</div>
-                <div class="flex items-baseline space-x-1">
-                  <span id="rep-bx-defl" class="text-2xl font-extrabold font-data text-emerald-600 dark:text-emerald-400">--</span>
+                <div class="text-[10px] font-bold uppercase tracking-wider text-slate-500">Caudal Defluente Total:</div>
+                <div class="flex items-baseline space-x-1.5 mt-0.5">
+                  <span id="rep-bx-defl" class="text-2xl sm:text-3xl font-extrabold font-data text-emerald-600 dark:text-emerald-400">--</span>
                   <span class="text-xs font-bold text-slate-400">m³/s</span>
                 </div>
               </div>
@@ -320,53 +313,80 @@
                   <div id="rep-bx-vert" class="font-mono font-bold text-amber-600 dark:text-amber-400">-- m³/s</div>
                 </div>
               </div>
+
+              <div class="flex items-center justify-between text-xs text-slate-500 pt-1.5 border-t border-slate-100 dark:border-slate-800/80">
+                <span>Afluente: <strong id="rep-bx-aflu" class="text-slate-800 dark:text-slate-200 font-mono">--</strong></span>
+                <span>Cota: <strong id="rep-bx-cota" class="text-slate-800 dark:text-slate-200 font-mono">--</strong></span>
+              </div>
             </div>
 
             <!-- PORTO CAPANEMA -->
-            <div class="card-panel p-3.5 space-y-2">
-              <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-800/80 pb-1.5">
-                <div>
+            <div class="card-panel p-3.5 flex flex-col justify-between space-y-2.5">
+              <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-800/80 pb-2">
+                <div class="flex items-center gap-2">
+                  <span class="w-2 h-2 rounded-full bg-amber-500"></span>
                   <h4 class="font-bold text-slate-900 dark:text-white text-sm">Porto Capanema</h4>
-                  <span class="text-[10px] text-slate-400">COPEL / ANA • Río Iguazú</span>
                 </div>
-                <span id="rep-cap-time" class="text-[10px] font-mono text-slate-400">--</span>
+                <span id="rep-cap-time" class="text-[10px] font-mono text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800/80 px-2 py-0.5 rounded border border-slate-200 dark:border-slate-700">--</span>
               </div>
 
               <div>
-                <div class="text-[11px] font-semibold text-slate-500">Caudal Medido (Pasante):</div>
-                <div class="flex items-baseline space-x-1">
-                  <span id="rep-cap-caudal" class="text-2xl font-extrabold font-data text-amber-600 dark:text-amber-400">--</span>
+                <div class="text-[10px] font-bold uppercase tracking-wider text-slate-500">Caudal Pasante:</div>
+                <div class="flex items-baseline space-x-1.5 mt-0.5">
+                  <span id="rep-cap-caudal" class="text-2xl sm:text-3xl font-extrabold font-data text-amber-600 dark:text-amber-400">--</span>
                   <span class="text-xs font-bold text-slate-400">m³/s</span>
                 </div>
               </div>
 
-              <div class="flex items-center justify-between text-xs text-slate-500 pt-1">
-                <span>Nivel de Regla:</span>
-                <strong id="rep-cap-regla" class="text-slate-800 dark:text-slate-200 font-mono">-- m</strong>
+              <div class="grid grid-cols-2 gap-2 text-xs">
+                <div class="bg-slate-50 dark:bg-slate-900/80 p-2 rounded-lg border border-slate-200 dark:border-slate-800">
+                  <div class="text-[10px] font-bold text-slate-500 uppercase">Nivel de Regla</div>
+                  <div id="rep-cap-regla" class="font-mono font-bold text-sky-600 dark:text-sky-400">-- m</div>
+                </div>
+                <div class="bg-slate-50 dark:bg-slate-900/80 p-2 rounded-lg border border-slate-200 dark:border-slate-800">
+                  <div class="text-[10px] font-bold text-slate-500 uppercase">Estación</div>
+                  <div class="font-mono font-bold text-slate-700 dark:text-slate-300">Fluviométrica</div>
+                </div>
+              </div>
+
+              <div class="flex items-center justify-between text-xs text-slate-500 pt-1.5 border-t border-slate-100 dark:border-slate-800/80">
+                <span>Tipo: <strong class="text-slate-800 dark:text-slate-200 font-mono">Punto de Aforo</strong></span>
+                <span>Cuenca: <strong class="text-slate-800 dark:text-slate-200 font-mono">Río Iguazú</strong></span>
               </div>
             </div>
 
             <!-- ESTACIÓN CATARATAS -->
-            <div class="card-panel p-3.5 space-y-2">
-              <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-800/80 pb-1.5">
-                <div>
+            <div class="card-panel p-3.5 flex flex-col justify-between space-y-2.5">
+              <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-800/80 pb-2">
+                <div class="flex items-center gap-2">
+                  <span class="w-2 h-2 rounded-full bg-amber-500"></span>
                   <h4 class="font-bold text-slate-900 dark:text-white text-sm">Cataratas</h4>
-                  <span class="text-[10px] text-slate-400">COPEL / Parques • Río Iguazú</span>
                 </div>
-                <span id="rep-cat-time" class="text-[10px] font-mono text-slate-400">--</span>
+                <span id="rep-cat-time" class="text-[10px] font-mono text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800/80 px-2 py-0.5 rounded border border-slate-200 dark:border-slate-700">--</span>
               </div>
 
               <div>
-                <div class="text-[11px] font-semibold text-slate-500">Caudal Pasante en Cataratas:</div>
-                <div class="flex items-baseline space-x-1">
-                  <span id="rep-cat-caudal" class="text-2xl font-extrabold font-data text-amber-600 dark:text-amber-400">--</span>
+                <div class="text-[10px] font-bold uppercase tracking-wider text-slate-500">Caudal Pasante:</div>
+                <div class="flex items-baseline space-x-1.5 mt-0.5">
+                  <span id="rep-cat-caudal" class="text-2xl sm:text-3xl font-extrabold font-data text-amber-600 dark:text-amber-400">--</span>
                   <span class="text-xs font-bold text-slate-400">m³/s</span>
                 </div>
               </div>
 
-              <div class="flex items-center justify-between text-xs text-slate-500 pt-1">
-                <span>Nivel de Regla:</span>
-                <strong id="rep-cat-regla" class="text-slate-800 dark:text-slate-200 font-mono">-- m</strong>
+              <div class="grid grid-cols-2 gap-2 text-xs">
+                <div class="bg-slate-50 dark:bg-slate-900/80 p-2 rounded-lg border border-slate-200 dark:border-slate-800">
+                  <div class="text-[10px] font-bold text-slate-500 uppercase">Nivel de Regla</div>
+                  <div id="rep-cat-regla" class="font-mono font-bold text-sky-600 dark:text-sky-400">-- m</div>
+                </div>
+                <div class="bg-slate-50 dark:bg-slate-900/80 p-2 rounded-lg border border-slate-200 dark:border-slate-800">
+                  <div class="text-[10px] font-bold text-slate-500 uppercase">Estación</div>
+                  <div class="font-mono font-bold text-slate-700 dark:text-slate-300">Fluviométrica</div>
+                </div>
+              </div>
+
+              <div class="flex items-center justify-between text-xs text-slate-500 pt-1.5 border-t border-slate-100 dark:border-slate-800/80">
+                <span>Tipo: <strong class="text-slate-800 dark:text-slate-200 font-mono">Punto de Aforo</strong></span>
+                <span>Cuenca: <strong class="text-slate-800 dark:text-slate-200 font-mono">Río Iguazú</strong></span>
               </div>
             </div>
           </div>
@@ -411,7 +431,7 @@
                     <span class="w-2 h-2 rounded-full bg-sky-500"></span>
                     <span>Itaipú: Turbinada vs Vertida</span>
                   </h4>
-                  <span class="text-[10px] text-slate-400">Valores oficiales ONS • m³/s</span>
+                  <span class="text-[10px] text-slate-400">Valores ONS • m³/s</span>
                 </div>
                 <div class="flex items-center space-x-2">
                   <span class="hidden sm:flex text-[10px] text-slate-400 font-sans items-center gap-1">
@@ -441,7 +461,7 @@
                 <h4 class="text-xs font-bold uppercase tracking-wider text-slate-800 dark:text-slate-200">
                   Matriz Hidráulica de Presas y Centrales Monitoreadas
                 </h4>
-                <p class="text-[11px] text-slate-400">Valores oficiales de cota, volumen de embalse y caudales en m³/s</p>
+                <p class="text-[11px] text-slate-400">Cota, volumen de embalse y caudales en m³/s</p>
               </div>
 
               <!-- Filtros de Cuencas en Tabla -->
@@ -586,12 +606,6 @@
                   </button>
                 </div>
               </div>
-
-              <!-- Detalle de nombre y metadatos -->
-              <div class="border-t border-slate-100 dark:border-slate-800/80 pt-1.5 flex flex-wrap items-baseline justify-between gap-1">
-                <h2 id="current-station-title" class="text-base sm:text-lg font-bold text-slate-900 dark:text-white tracking-tight truncate">Seleccione una estación</h2>
-                <p id="current-station-meta" class="text-[11px] text-slate-500 dark:text-slate-400">Cargando mediciones...</p>
-              </div>
             </div>
 
             <!-- GRID PRINCIPAL DEL COCKPIT (8 COLS IZQ / 4 COLS DER) -->
@@ -659,7 +673,7 @@
                 <!-- CARD 1: NIVEL ACTUAL & MONITOREO DUAL (AGP + PREFECTURA) -->
                 <div class="card-panel p-3 sm:p-3.5 space-y-2.5">
                   <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-800/80 pb-1.5">
-                    <div class="text-[11px] uppercase font-bold tracking-wider text-slate-500">Medición Dual Oficial</div>
+                    <div class="text-[11px] uppercase font-bold tracking-wider text-slate-500">Medición</div>
                     <div class="flex items-center space-x-1.5">
                       <span id="sit-status-badge" class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
                       <span id="sit-status-text" class="text-xs font-extrabold font-data text-slate-900 dark:text-white uppercase">NORMAL</span>
@@ -693,7 +707,7 @@
                     </div>
                   </div>
 
-                  <!-- 2. Prefectura Naval Argentina (PNA) Oficial -->
+                  <!-- 2. Prefectura Naval Argentina (PNA) -->
                   <div class="p-2.5 rounded-xl bg-amber-50/60 dark:bg-amber-950/20 border border-amber-200/80 dark:border-amber-900/40 space-y-1">
                     <div class="flex items-center justify-between text-[10px] text-slate-500 dark:text-slate-400 font-semibold uppercase tracking-wider">
                       <span id="sit-pna-title" class="flex items-center gap-1.5 text-amber-800 dark:text-amber-400 font-bold">
@@ -706,29 +720,15 @@
                         <span id="sit-pna-val" class="text-2xl sm:text-3xl font-extrabold text-amber-700 dark:text-amber-300 font-data">--</span>
                         <span class="text-xs font-bold text-amber-600/70 dark:text-amber-400/70">m</span>
                       </div>
-                      <span id="sit-pna-time" class="text-[10px] text-amber-700/80 dark:text-amber-400/80 font-mono text-right truncate max-w-[150px]">Guardia: --</span>
+                      <span id="sit-pna-time" class="text-[10px] text-amber-700/80 dark:text-amber-400/80 font-mono text-right truncate max-w-[150px]">--</span>
                     </div>
-                  </div>
-
-                  <!-- 3. Indicador de Offset / Discrepancia entre fuentes -->
-                  <div id="sit-diff-container" class="flex items-center justify-between px-2.5 py-1.5 rounded-lg bg-slate-100/80 dark:bg-slate-800/60 text-xs">
-                    <span class="text-[11px] font-medium text-slate-600 dark:text-slate-400 flex items-center gap-1.5">
-                      <span class="text-slate-400 font-bold">⚖️</span>
-                      <span>Diferencia (AGP − PNA):</span>
-                    </span>
-                    <span id="sit-diff-val" class="font-data font-bold text-xs text-slate-800 dark:text-slate-200">--</span>
-                  </div>
-
-                  <!-- 4. Proyección de Márgenes de Seguridad -->
-                  <div class="bg-slate-50 dark:bg-slate-900/60 p-2 rounded-lg border border-slate-200 dark:border-slate-800 text-[11px] text-slate-600 dark:text-slate-300 leading-snug" id="sit-status-projection">
-                    Calculando márgenes respecto a umbrales oficiales...
                   </div>
                 </div>
 
                 <!-- CARD 2: MEDIDOR HORIZONTAL PROPORCIONAL (NIVEL-BAR GAUGE) -->
                 <div id="nivel-bar-wrap" class="card-panel p-3 space-y-1.5">
                   <div class="flex items-center justify-between text-xs">
-                    <span class="font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 text-[10px]">Escala de Seguridad Oficial</span>
+                    <span class="font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 text-[10px]">Escala de Seguridad</span>
                     <span class="text-[10px] font-mono text-slate-400">Umbrales MOP / EBY</span>
                   </div>
                   
@@ -736,22 +736,25 @@
                     <div id="nivel-bar-inner" class="nivel-bar-fill h-full bg-emerald-500 rounded-full transition-all duration-500" style="width: 0%;"></div>
                   </div>
 
-                  <!-- Umbrales en leyenda inferior limpia (Oficiales PNA: Alerta y Evacuación) -->
+                  <!-- Umbrales en leyenda inferior limpia (Alerta y Evacuación) -->
                   <div class="flex items-center justify-around text-[10px] sm:text-[11px] text-slate-500 dark:text-slate-400 font-mono pt-1 border-t border-slate-100 dark:border-slate-800/80 gap-2 overflow-x-auto">
                     <div class="flex items-center gap-1.5 shrink-0 whitespace-nowrap">
                       <span class="w-2 h-2 rounded-full bg-orange-500"></span>
-                      <span>Alerta Oficial: <strong id="lbl-val-alerta" class="text-orange-600 dark:text-orange-400 font-bold">--</strong></span>
+                      <span>Alerta: <strong id="lbl-val-alerta" class="text-orange-600 dark:text-orange-400 font-bold">--</strong></span>
                     </div>
                     <div class="flex items-center gap-1.5 shrink-0 whitespace-nowrap">
                       <span class="w-2 h-2 rounded-full bg-red-600"></span>
-                      <span>Evacuación Oficial: <strong id="lbl-val-evac" class="text-red-600 dark:text-red-400 font-bold">--</strong></span>
+                      <span>Evacuación: <strong id="lbl-val-evac" class="text-red-600 dark:text-red-400 font-bold">--</strong></span>
                     </div>
                   </div>
                 </div>
 
                 <!-- CARD 3: EXTREMOS DEL PERÍODO (MÍN, MÁX, PROMEDIO) -->
                 <div class="card-panel p-2.5 sm:p-3 space-y-2">
-                  <div class="text-[10px] uppercase font-bold text-slate-500 tracking-wider">Estadísticas del Período</div>
+                  <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-800/80 pb-1">
+                    <div class="text-[10px] uppercase font-bold text-slate-500 tracking-wider">Estadísticas del Período</div>
+                    <span id="kpi-source-badge" class="text-[10px] px-2 py-0.5 rounded font-bold bg-sky-100 text-sky-800 dark:bg-sky-950 dark:text-sky-300 border border-sky-300 dark:border-sky-800">AGP</span>
+                  </div>
                   
                   <div class="grid grid-cols-2 gap-1.5 sm:gap-2 text-xs">
                     <div class="bg-slate-50 dark:bg-slate-900/60 p-1.5 sm:p-2 rounded-lg border border-slate-200 dark:border-slate-800">
@@ -957,7 +960,7 @@
           </div>
           <div>
             <h3 class="text-base font-bold text-slate-900 dark:text-white">Configuración de Umbrales Hidrológicos</h3>
-            <p class="text-xs text-slate-500 dark:text-slate-400">Niveles oficiales de Prefectura Naval Argentina (Alerta y Evacuación)</p>
+            <p class="text-xs text-slate-500 dark:text-slate-400">Niveles de Prefectura Naval Argentina (Alerta y Evacuación)</p>
           </div>
         </div>
         <button onclick="closeThresholdsModal()" class="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition">
@@ -968,18 +971,18 @@
       <!-- Modal Body -->
       <div class="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4">
         
-        <!-- BANNER OFICIAL PREFECTURA NAVAL ARGENTINA -->
+        <!-- BANNER PREFECTURA NAVAL ARGENTINA -->
         <div class="p-3.5 rounded-xl bg-gradient-to-r from-sky-500/10 via-emerald-500/10 to-transparent border border-sky-300 dark:border-sky-800 flex flex-wrap items-center justify-between gap-2.5 shadow-xs">
           <div class="flex items-center space-x-2.5">
             <div class="w-8 h-8 rounded-lg bg-sky-500/15 flex items-center justify-center text-sky-600 dark:text-sky-300 font-bold text-sm">
               ⚓
             </div>
             <div>
-              <span class="font-bold text-xs text-slate-900 dark:text-slate-100 block">Niveles Oficiales Prefectura Naval Argentina</span>
+              <span class="font-bold text-xs text-slate-900 dark:text-slate-100 block">Niveles Prefectura Naval Argentina</span>
               <span class="text-[10px] text-slate-500 dark:text-slate-400">Extraídos en vivo de <a href="https://contenidosweb.prefecturanaval.gob.ar/alturas/index.php" target="_blank" class="underline text-sky-600 dark:text-sky-400">contenidosweb.prefecturanaval.gob.ar</a></span>
             </div>
           </div>
-          <button type="button" id="btn-sync-pna" onclick="handleSyncPrefecturaClick()" class="px-3 py-1.5 rounded-lg text-xs font-bold bg-[#008348] hover:bg-[#006e3c] active:bg-[#005a31] text-white transition shadow-xs flex items-center space-x-1.5 cursor-pointer" title="Descargar y sincronizar umbrales oficiales PNA">
+          <button type="button" id="btn-sync-pna" onclick="handleSyncPrefecturaClick()" class="px-3 py-1.5 rounded-lg text-xs font-bold bg-[#008348] hover:bg-[#006e3c] active:bg-[#005a31] text-white transition shadow-xs flex items-center space-x-1.5 cursor-pointer" title="Descargar y sincronizar umbrales PNA">
             <svg id="sync-pna-icon" class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
             </svg>
@@ -1043,7 +1046,7 @@
               <div class="flex items-center justify-between">
                 <span class="text-xs font-bold text-orange-800 dark:text-orange-300 flex items-center gap-1.5">
                   <span class="w-2.5 h-2.5 rounded-full bg-orange-500"></span>
-                  <span>1. Nivel de Alerta Oficial (m)</span>
+                  <span>1. Nivel de Alerta (m)</span>
                 </span>
                 <span class="text-[10px] text-orange-600/80 font-mono font-semibold">Aviso preventivo PNA</span>
               </div>
@@ -1056,7 +1059,7 @@
               <div class="flex items-center justify-between">
                 <span class="text-xs font-bold text-rose-800 dark:text-rose-300 flex items-center gap-1.5">
                   <span class="w-2.5 h-2.5 rounded-full bg-rose-600"></span>
-                  <span>2. Nivel de Evacuación Oficial (m)</span>
+                  <span>2. Nivel de Evacuación (m)</span>
                 </span>
                 <span class="text-[10px] text-rose-600/80 font-mono font-semibold">Afectación costera PNA</span>
               </div>
@@ -1156,13 +1159,13 @@
   </script>
 
   <!-- SCRIPTS MODULARES -->
-  <script src="js/api.js?v=9"></script>
-  <script src="js/state.js?v=9"></script>
-  <script src="js/components.js?v=9"></script>
-  <script src="js/charts.js?v=9"></script>
-  <script src="js/represas.js?v=9"></script>
-  <script src="js/map.js?v=9"></script>
-  <script src="js/simepar.js?v=9"></script>
-  <script src="js/app.js?v=9"></script>
+  <script src="js/api.js?v=16"></script>
+  <script src="js/state.js?v=16"></script>
+  <script src="js/components.js?v=16"></script>
+  <script src="js/charts.js?v=16"></script>
+  <script src="js/represas.js?v=16"></script>
+  <script src="js/map.js?v=16"></script>
+  <script src="js/simepar.js?v=16"></script>
+  <script src="js/app.js?v=16"></script>
 </body>
 </html>
