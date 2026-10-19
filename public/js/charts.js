@@ -53,8 +53,8 @@ const pnaPlotLinesPlugin = {
       ctx.lineTo(right, yPix);
       ctx.stroke();
 
-      // 2. Etiqueta PNA en el margen izquierdo: ej. "Evacuación (31.00)"
-      const text = `${l.label} (${Number(l.val).toFixed(2)})`;
+      // 2. Etiqueta PNA en el margen izquierdo: ej. "Evacuación · 31.00m"
+      const text = `${l.label} · ${Number(l.val).toFixed(2)}m`;
       ctx.font = '600 10px Inter, system-ui, sans-serif';
       ctx.setLineDash([]);
       const textWidth = ctx.measureText(text).width;
@@ -222,7 +222,7 @@ const Charts = {
     if (showBoth) {
       // Ambas fuentes superpuestas con 2 escalas de eje Y independientes
       datasets.push({
-        label: isCota ? 'Medición AGP (Cota msnm)' : 'Medición AGP',
+        label: isCota ? 'Medición AGP · Cota msnm' : 'Medición AGP',
         data: useTimeScale ? agpPoints : fallbackAgpData,
         yAxisID: 'y',
         borderColor: agpColor,
@@ -239,7 +239,7 @@ const Charts = {
         order: 2
       });
       datasets.push({
-        label: isCota ? 'Prefectura PNA (Cota)' : 'Prefectura PNA',
+        label: isCota ? 'Prefectura PNA · Cota' : 'Prefectura PNA',
         data: useTimeScale ? pnaPoints : fallbackPnaData,
         yAxisID: 'y1',
         borderColor: pnaColor,
@@ -272,7 +272,7 @@ const Charts = {
       }
 
       datasets.push({
-        label: isCota ? 'Prefectura PNA (Cota msnm)' : 'Prefectura PNA',
+        label: isCota ? 'Prefectura PNA · Cota msnm' : 'Prefectura PNA',
         data: useTimeScale ? pnaPoints : fallbackPnaData,
         yAxisID: 'y',
         borderColor: pnaColor,
@@ -291,7 +291,7 @@ const Charts = {
     } else {
       // Únicamente Medición AGP (1 sola curva, 1 solo eje Y a la izquierda)
       datasets.push({
-        label: isCota ? 'Medición AGP (Cota msnm)' : 'Medición AGP',
+        label: isCota ? 'Medición AGP · Cota msnm' : 'Medición AGP',
         data: useTimeScale ? agpPoints : fallbackAgpData,
         yAxisID: 'y',
         borderColor: agpColor,
@@ -308,18 +308,6 @@ const Charts = {
         order: 1
       });
     }
-
-    if (this.mainChart) {
-      this.mainChart.destroy();
-      this.mainChart = null;
-    }
-
-    // Reiniciar dimensiones del canvas
-    canvas.removeAttribute('width');
-    canvas.removeAttribute('height');
-    canvas.style.width = '100%';
-    canvas.style.height = '100%';
-    canvas.style.display = 'block';
 
     // Determinar nombre del puerto para el encabezado oficial PNA
     const station = State.stations.find(s => s.id === State.selectedStationId);
@@ -402,7 +390,7 @@ const Charts = {
           position: 'left',
           title: {
             display: true,
-            text: isCota ? 'AGP Cota (msnm)' : 'Altura AGP (m)',
+            text: isCota ? 'AGP Cota msnm' : 'Altura AGP m',
             color: agpColor,
             font: { family: 'Inter', size: 11, weight: '700' },
             padding: { bottom: 6 }
@@ -423,7 +411,7 @@ const Charts = {
           position: 'right',
           title: {
             display: true,
-            text: isCota ? 'PNA Cota (msnm)' : 'Prefectura PNA (m)',
+            text: isCota ? 'PNA Cota msnm' : 'Prefectura PNA m',
             color: pnaColor,
             font: { family: 'Inter', size: 11, weight: '700' },
             padding: { bottom: 6 }
@@ -447,7 +435,7 @@ const Charts = {
           position: 'left',
           title: {
             display: true,
-            text: isCota ? 'Prefectura PNA Cota (msnm)' : 'Prefectura PNA (m)',
+            text: isCota ? 'Prefectura PNA Cota msnm' : 'Prefectura PNA m',
             color: pnaColor,
             font: { family: 'Inter', size: 11, weight: '700' },
             padding: { bottom: 6 }
@@ -471,7 +459,7 @@ const Charts = {
           position: 'left',
           title: {
             display: true,
-            text: isCota ? 'Medición AGP Cota (msnm)' : 'Medición AGP (m)',
+            text: isCota ? 'Medición AGP Cota msnm' : 'Medición AGP m',
             color: agpColor,
             font: { family: 'Inter', size: 11, weight: '700' },
             padding: { bottom: 6 }
@@ -489,6 +477,60 @@ const Charts = {
         }
       };
     }
+
+    const canReuse = Boolean(
+      this.mainChart &&
+      this._mainMeta &&
+      this._mainMeta.stationId === State.selectedStationId &&
+      this._mainMeta.isCota === isCota &&
+      this._mainMeta.source === activeSource &&
+      this._mainMeta.isDark === isDark &&
+      this._mainMeta.useTimeScale === useTimeScale &&
+      this.mainChart.data &&
+      this.mainChart.data.datasets &&
+      this.mainChart.data.datasets.length === datasets.length
+    );
+
+    if (canReuse) {
+      if (!useTimeScale) {
+        this.mainChart.data.labels = fallbackLabels;
+      }
+      datasets.forEach((ds, idx) => {
+        if (this.mainChart.data.datasets[idx]) {
+          this.mainChart.data.datasets[idx].data = ds.data;
+          this.mainChart.data.datasets[idx].label = ds.label;
+        }
+      });
+      if (this.mainChart.options.plugins?.pnaPlotLines) {
+        this.mainChart.options.plugins.pnaPlotLines.umbrales = {
+          alerta: alertaVal,
+          evacuacion: evacVal
+        };
+        this.mainChart.options.plugins.pnaPlotLines.unitSuffix = unitSuffix;
+      }
+      if (yScalesConfig.y && this.mainChart.options.scales.y) {
+        this.mainChart.options.scales.y.min = yScalesConfig.y.min;
+        this.mainChart.options.scales.y.max = yScalesConfig.y.max;
+      }
+      if (yScalesConfig.y1 && this.mainChart.options.scales.y1) {
+        this.mainChart.options.scales.y1.min = yScalesConfig.y1.min;
+        this.mainChart.options.scales.y1.max = yScalesConfig.y1.max;
+      }
+      this.mainChart.update('none');
+      return;
+    }
+
+    if (this.mainChart) {
+      this.mainChart.destroy();
+      this.mainChart = null;
+    }
+
+    // Reiniciar dimensiones del canvas
+    canvas.removeAttribute('width');
+    canvas.removeAttribute('height');
+    canvas.style.width = '100%';
+    canvas.style.height = '100%';
+    canvas.style.display = 'block';
 
     this.mainChart = new Chart(ctx, {
       type: 'line',
@@ -601,6 +643,14 @@ const Charts = {
       }
     });
 
+    this._mainMeta = {
+      stationId: State.selectedStationId,
+      isCota,
+      source: activeSource,
+      isDark,
+      useTimeScale
+    };
+
     this.toggleFloatingResetBtn('floating-reset-zoom-main', false);
   },
 
@@ -711,7 +761,7 @@ const Charts = {
               ${distinctStations.map(s => {
                 const alt = (s.ultima_altura !== null && s.ultima_altura !== undefined) ? `${s.ultima_altura.toFixed(2)}m` : '--';
                 const pna = (s.pna_altura !== null && s.pna_altura !== undefined) ? ` | ⚓ ${s.pna_altura.toFixed(2)}m` : '';
-                return `<option value="${s.id}" ${s.id === selectedId ? 'selected' : ''}>${s.nombre || s.codigo} (${alt}${pna})</option>`;
+                return `<option value="${s.id}" ${s.id === selectedId ? 'selected' : ''}>${s.nombre || s.codigo} · ${alt}${pna}</option>`;
               }).join('')}
             </select>
           </div>
@@ -732,7 +782,7 @@ const Charts = {
             </button>
 
             <!-- Botón Enfocar en Modo 1 -->
-            <button onclick="window.focusStationInSingleMode(${selectedId})" id="subplot-focus-btn-${i}" title="Enfocar en pantalla completa (Modo 1)" class="text-slate-400 hover:text-slate-800 dark:hover:text-white p-1 rounded hover:bg-slate-100 dark:hover:bg-slate-800 transition">
+            <button onclick="window.focusStationInSingleMode(${selectedId})" id="subplot-focus-btn-${i}" title="Enfocar en pantalla completa · Modo 1" class="text-slate-400 hover:text-slate-800 dark:hover:text-white p-1 rounded hover:bg-slate-100 dark:hover:bg-slate-800 transition">
               <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"/></svg>
             </button>
           </div>
@@ -816,7 +866,7 @@ const Charts = {
       // Actualizar badge individual (dual AGP + PNA con delta)
       const badge = document.getElementById(`subplot-badge-${slotIdx}`);
       if (badge && data.kpis) {
-        let agpValStr = '--';
+        let agpValStr = '—';
         let agpValNum = null;
         if (data.kpis.ultima_altura !== null && data.kpis.ultima_altura !== undefined) {
           agpValNum = applyCota ? (data.kpis.ultima_altura + offset) : data.kpis.ultima_altura;
@@ -829,17 +879,11 @@ const Charts = {
           if (agpValNum !== null) {
             const diff = agpValNum - pv;
             const sign = diff > 0 ? '+' : '';
-            diffStr = ` (Δ ${sign}${diff.toFixed(2)})`;
+            diffStr = ` · Δ ${sign}${diff.toFixed(2)}`;
           }
           pnaValStr = `<span class="text-amber-600 dark:text-amber-400 font-bold ml-1.5 font-mono text-[10px]" title="Prefectura: ${pv.toFixed(2)} ${unitSuffix}${diffStr}">⚓ ${pv.toFixed(2)}${diffStr}</span>`;
         }
-        badge.innerHTML = `<span class="text-sky-600 dark:text-sky-400 font-bold font-data">${agpValStr}</span>${pnaValStr}`;
-      }
-
-      // Destruir instancia previa de este subplot si existe
-      if (this.subplotCharts[slotIdx]) {
-        this.subplotCharts[slotIdx].destroy();
-        this.subplotCharts[slotIdx] = null;
+        badge.innerHTML = `<span class="text-sky-600 dark:text-sky-400 font-bold font-data tabular-nums">${agpValStr}</span>${pnaValStr}`;
       }
 
       const isDark = State.theme === 'dark';
@@ -1048,7 +1092,7 @@ const Charts = {
             position: 'left',
             title: {
               display: true,
-              text: applyCota ? 'AGP Cota' : 'AGP (m)',
+              text: applyCota ? 'AGP Cota' : 'AGP m',
               color: agpColor,
               font: { family: 'Inter', size: 9, weight: '700' },
               padding: { bottom: 2 }
@@ -1067,7 +1111,7 @@ const Charts = {
             position: 'right',
             title: {
               display: true,
-              text: applyCota ? 'PNA Cota' : 'PNA (m)',
+              text: applyCota ? 'PNA Cota' : 'PNA m',
               color: pnaColor,
               font: { family: 'Inter', size: 9, weight: '700' },
               padding: { bottom: 2 }
@@ -1089,7 +1133,7 @@ const Charts = {
             position: 'left',
             title: {
               display: true,
-              text: applyCota ? 'PNA Cota' : 'PNA (m)',
+              text: applyCota ? 'PNA Cota' : 'PNA m',
               color: pnaColor,
               font: { family: 'Inter', size: 9, weight: '700' },
               padding: { bottom: 2 }
@@ -1111,7 +1155,7 @@ const Charts = {
             position: 'left',
             title: {
               display: true,
-              text: applyCota ? 'AGP Cota' : 'AGP (m)',
+              text: applyCota ? 'AGP Cota' : 'AGP m',
               color: agpColor,
               font: { family: 'Inter', size: 9, weight: '700' },
               padding: { bottom: 2 }
@@ -1127,6 +1171,59 @@ const Charts = {
           }
         };
       }
+
+      const prevChart = this.subplotCharts[slotIdx];
+      const prevMeta = this._subplotMeta ? this._subplotMeta[slotIdx] : null;
+      const canReuseSubplot = Boolean(
+        prevChart &&
+        prevMeta &&
+        prevMeta.stationId === stationId &&
+        prevMeta.applyCota === applyCota &&
+        prevMeta.source === activeSource &&
+        prevMeta.isDark === isDark &&
+        prevMeta.useTimeScale === useTimeScale &&
+        prevChart.data &&
+        prevChart.data.datasets &&
+        prevChart.data.datasets.length === datasets.length
+      );
+
+      if (canReuseSubplot) {
+        if (!useTimeScale) prevChart.data.labels = fallbackLabels;
+        datasets.forEach((ds, idx) => {
+          if (prevChart.data.datasets[idx]) {
+            prevChart.data.datasets[idx].data = ds.data;
+            prevChart.data.datasets[idx].label = ds.label;
+          }
+        });
+        if (prevChart.options.plugins?.pnaPlotLines) {
+          prevChart.options.plugins.pnaPlotLines.umbrales = {
+            alerta: alertaVal,
+            evacuacion: evacVal
+          };
+          prevChart.options.plugins.pnaPlotLines.unitSuffix = unitSuffix;
+        }
+        if (subYScales.y && prevChart.options.scales.y) {
+          prevChart.options.scales.y.min = subYScales.y.min;
+          prevChart.options.scales.y.max = subYScales.y.max;
+        }
+        if (subYScales.y1 && prevChart.options.scales.y1) {
+          prevChart.options.scales.y1.min = subYScales.y1.min;
+          prevChart.options.scales.y1.max = subYScales.y1.max;
+        }
+        prevChart.update('none');
+        return;
+      }
+
+      if (this.subplotCharts[slotIdx]) {
+        this.subplotCharts[slotIdx].destroy();
+        this.subplotCharts[slotIdx] = null;
+      }
+
+      canvas.removeAttribute('width');
+      canvas.removeAttribute('height');
+      canvas.style.width = '100%';
+      canvas.style.height = '100%';
+      canvas.style.display = 'block';
 
       const chart = new Chart(ctx, {
         type: 'line',
@@ -1253,6 +1350,14 @@ const Charts = {
       });
 
       this.subplotCharts[slotIdx] = chart;
+      this._subplotMeta = this._subplotMeta || [];
+      this._subplotMeta[slotIdx] = {
+        stationId,
+        applyCota,
+        source: activeSource,
+        isDark,
+        useTimeScale
+      };
       this.toggleFloatingResetBtn(`subplot-floating-reset-${slotIdx}`, false);
     } catch (e) {
       if (loader && !silent) loader.classList.add('hidden');

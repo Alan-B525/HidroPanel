@@ -7,6 +7,7 @@ import sys
 import os
 sys.path.insert(0, os.path.abspath('.'))
 from bs4 import BeautifulSoup
+from backend.config import DB_PATH
 
 def norm(text):
     if not text:
@@ -57,7 +58,7 @@ for r in rows[1:]:
             'evacuacion': ev_val,
         }
 
-conn = sqlite3.connect('hidrografia.db')
+conn = sqlite3.connect(DB_PATH)
 c = conn.cursor()
 c.execute('''
     SELECT e.id, e.codigo, e.nombre, m.altura, m.timestamp
@@ -100,7 +101,7 @@ for st_id, codigo, nombre, agp_alt, agp_ts in agp_stations:
             'codigo': codigo,
             'nombre': nombre,
             'puerto_pna': match['puerto'],
-            'rio': rio,
+            'rio': match.get('rio', ''),
             'agp_alt': agp_alt,
             'agp_ts': agp_ts,
             'pna_alt': match['altura'],

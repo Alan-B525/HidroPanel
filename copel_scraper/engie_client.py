@@ -1,12 +1,46 @@
 import requests
 from datetime import datetime
+from typing import Dict, Any, List, Optional
+
+def clean_engie_num(val: Any) -> Optional[float]:
+    """Convierte números formateados a float o retorna None (prohibido el falso cero)."""
+    if val is None:
+        return None
+    if isinstance(val, (int, float)):
+        import math
+        if math.isnan(val) or math.isinf(val):
+            return None
+        return round(float(val), 2)
+    s = str(val).strip()
+    if not s or s.upper() in ('-', '--', 'N/A', 'NAN', 'NONE', 'NULL', 'S/D', 'S/E'):
+        return None
+    s = s.replace(',', '.')
+    try:
+        return round(float(s), 2)
+    except (ValueError, TypeError):
+        return None
+
 
 class EngieClient:
     """
     Cliente para la API de telemetría de embalses de ENGIE Brasil
     (Salto Santiago y Salto Osório).
+    Garantiza blindaje contra falsos ceros y exportación DTO unificada.
     """
     URL = "https://www.engie.com.br/wp-json/v1/telemetria/get-data"
+
+    ENGIE_META = {
+        "UHSS": {
+            "station_id": "IGSSAN",
+            "station_name": "Salto Santiago",
+            "river": "Iguazú"
+        },
+        "UHSO": {
+            "station_id": "IGSOSO",
+            "station_name": "Salto Osório",
+            "river": "Iguazú"
+        }
+    }
 
     def __init__(self, timeout=20):
         self.timeout = timeout
@@ -17,18 +51,15 @@ class EngieClient:
             'X-Requested-With': 'XMLHttpRequest'
         })
 
-    def fetch_plant_data(self, plant_code, fecha_inicio=None):
+    def fetch_plant_dto(self, plant_code: str, fecha_inicio: Optional[datetime] = None) -> List[Dict[str, Any]]:
         """
-        Consulta datos para 'UHSS' (Salto Santiago) o 'UHSO' (Salto Osório).
-        Retorna registros formateados para el archivo TXT de Tractebel/Engie:
-        [dataHora, nivelReservatorio, percVolumeUtil, vazaoAfluente, vazaoTurbinada, vazaoVertida, vazaoDefluente]
-        ordenados de más reciente a más antiguo (descendente).
+        Retorna registros conforme al CONTRATO DTO UNIFICADO de HidroPanel.
         """
         params = {
             'action': 'getComplexoData',
             'complexo_uri': 'nivelDoReservatorioPorUsina',
             'nocache': 'false',
-            f'body_json[cdUsina]': plant_code
+            'body_json[cdUsina]': plant_code
         }
 
         resp = self.session.get(self.URL, params=params, timeout=self.timeout)
@@ -37,15 +68,21 @@ class EngieClient:
 
         data = resp.json()
         retorno = data.get('dados', {}).get('retorno', [])
+        meta = self.ENGIE_META.get(plant_code.upper(), {
+            "station_id": plant_code.upper(),
+            "station_name": f"Engie {plant_code}",
+            "river": "Iguazú"
+        })
 
-        records = []
+        fetched_at = datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
+        dto_list: List[Dict[str, Any]] = []
+
         for item in retorno:
             dt_str = item.get('dataHora', '').strip()
             if not dt_str:
                 continue
 
             try:
-                # dataHora format: '2026-10-09 08:00:00'
                 dt = datetime.strptime(dt_str, "%Y-%m-%d %H:%M:%S")
             except ValueError:
                 continue
@@ -53,35 +90,45 @@ class EngieClient:
             if fecha_inicio and dt < fecha_inicio:
                 continue
 
-            # Nivel
-            nivel = item.get('nivelReservatorio', '')
-            try:
-                # Si es flotante limpio, formatear
-                nivel_f = float(str(nivel).replace(',', '.'))
-                # En el ejemplo: 396.56 o 396
-                nivel_str = f"{nivel_f:.2f}".rstrip('0').rstrip('.') if '.' in f"{nivel_f:.2f}" else f"{nivel_f:.2f}"
-                # Pero en el ejemplo: '396.56', '396.4'
-                nivel_str = str(round(nivel_f, 2))
-            except Exception:
-                nivel_str = str(nivel)
+            measured_at = dt.strftime("%Y-%m-%dT%H:%M:%S")
 
-            # Volume Util (en API viene en notación científica ej: 7.3189...E01)
-            vol = item.get('percVolumeUtil', '')
-            try:
-                vol_f = float(str(vol).replace(',', '.'))
-                vol_str = f"{vol_f:.2f}"
-            except Exception:
-                vol_str = str(vol)
+            dto_list.append({
+                "station_id": meta["station_id"],
+                "station_name": meta["station_name"],
+                "river": meta["river"],
+                "source": "ENGIE",
+                "measured_at": measured_at,
+                "fetched_at": fetched_at,
+                "level_m": clean_engie_num(item.get('nivelReservatorio')),
+                "variation_m": None,
+                "flow_in_m3s": clean_engie_num(item.get('vazaoAfluente')),
+                "flow_out_m3s": clean_engie_num(item.get('vazaoDefluente')),
+                "flow_turbined_m3s": clean_engie_num(item.get('vazaoTurbinada')),
+                "flow_spilled_m3s": clean_engie_num(item.get('vazaoVertida')),
+                "rain_mm": None,
+                "trend": None,
+                "raw_status": "OPERATIVA"
+            })
 
-            # Caudales: vazaoAfluente, vazaoTurbinada, vazaoVertida, vazaoDefluente
-            v_afl = str(item.get('vazaoAfluente', ''))
-            v_turb = str(item.get('vazaoTurbinada', ''))
-            v_vert = str(item.get('vazaoVertida', ''))
-            v_defl = str(item.get('vazaoDefluente', ''))
+        dto_list.sort(key=lambda x: x["measured_at"], reverse=True)
+        return dto_list
 
-            row = [dt_str, nivel_str, vol_str, v_afl, v_turb, v_vert, v_defl]
-            records.append((dt, row))
+    def fetch_plant_data(self, plant_code, fecha_inicio=None):
+        """
+        Compatibilidad retroactiva con macros Excel:
+        [dataHora, nivelReservatorio, percVolumeUtil, vazaoAfluente, vazaoTurbinada, vazaoVertida, vazaoDefluente]
+        """
+        dtos = self.fetch_plant_dto(plant_code, fecha_inicio=fecha_inicio)
+        records = []
+        for d in dtos:
+            dt_s = d["measured_at"].replace("T", " ")
+            nivel_s = str(d["level_m"]) if d["level_m"] is not None else ""
+            v_afl = str(d["flow_in_m3s"]) if d["flow_in_m3s"] is not None else ""
+            v_turb = str(d["flow_turbined_m3s"]) if d["flow_turbined_m3s"] is not None else ""
+            v_vert = str(d["flow_spilled_m3s"]) if d["flow_spilled_m3s"] is not None else ""
+            v_defl = str(d["flow_out_m3s"]) if d["flow_out_m3s"] is not None else ""
+            vol_s = ""
 
-        # Ordenar descendente (más reciente primero)
-        records.sort(key=lambda x: x[0], reverse=True)
-        return [r[1] for r in records]
+            records.append([dt_s, nivel_s, vol_s, v_afl, v_turb, v_vert, v_defl])
+
+        return records

@@ -13,10 +13,10 @@ from http.server import ThreadingHTTPServer, SimpleHTTPRequestHandler
 
 import threading
 from .config import STATIC_DIR, DEFAULT_PORT
-from .database import seed_stations_catalog
+from .database import seed_stations_catalog, init_db_schema
 from .services.sync_service import start_background_scheduler
 from .services.simepar_service import start_simepar_daily_scheduler
-from .services import prefectura_service
+from .services import represas_service
 from . import routes
 
 # Asegurar mimetypes esenciales
@@ -145,12 +145,16 @@ class HidroRequestHandler(SimpleHTTPRequestHandler):
                 pass
 
     def end_headers(self):
-        # Política de caché inteligente para archivos estáticos
-        if hasattr(self, "path") and not self.path.startswith("/api/"):
-            if any(self.path.endswith(ext) for ext in [".css", ".js", ".svg", ".png", ".woff2"]):
-                self.send_header("Cache-Control", "public, max-age=86400")
-            elif self.path == "/" or self.path.endswith(".html"):
-                self.send_header("Cache-Control", "no-cache, must-revalidate")
+        # Política de caché inteligente para archivos estáticos y assets
+        if hasattr(self, "path"):
+            req_path = urlparse(self.path).path
+            if not req_path.startswith("/api/"):
+                if req_path == "/" or any(req_path.endswith(ext) for ext in [".html", ".js", ".css"]):
+                    self.send_header("Cache-Control", "no-cache, no-store, must-revalidate, max-age=0")
+                    self.send_header("Pragma", "no-cache")
+                    self.send_header("Expires", "0")
+                elif any(req_path.endswith(ext) for ext in [".svg", ".png", ".woff2", ".ico"]):
+                    self.send_header("Cache-Control", "public, max-age=86400")
         super().end_headers()
 
 
@@ -166,18 +170,20 @@ def is_port_available(port: int) -> bool:
 
 def run_server(port: int = DEFAULT_PORT):
     """Inicia el servidor y los servicios en segundo plano."""
+    logger.info("Asegurando esquema SQLite y modo WAL...")
+    init_db_schema()
+
     logger.info("Verificando catálogo de estaciones...")
     seed_stations_catalog()
 
-    logger.info("Iniciando planificador automático de telemetría...")
+    logger.info("Iniciando planificador automático de telemetría y sincronización paralela...")
     start_background_scheduler()
 
     logger.info("Iniciando planificador diario de SIMEPAR...")
     start_simepar_daily_scheduler()
 
-    logger.info("Iniciando sincronización oficial con Prefectura Naval Argentina...")
-    t_pref = threading.Thread(target=lambda: prefectura_service.sync_prefectura_all(force_history=False), daemon=True, name="PrefecturaSyncInit")
-    t_pref.start()
+    logger.info("Pre-calentando balance hidráulico de represas en memoria...")
+    threading.Thread(target=lambda: represas_service.get_hydraulic_summary(), daemon=True, name="PreWarmRepresas").start()
 
     # Selección de puerto disponible
     server_address = ('', port)

@@ -1,9 +1,14 @@
+import sys
+import os
 import urllib.request
 import ssl
 import sqlite3
 import re
 from datetime import datetime, timedelta
 from bs4 import BeautifulSoup
+
+sys.path.insert(0, os.path.abspath('.'))
+from backend.config import DB_PATH
 
 ctx = ssl.create_default_context()
 ctx.check_hostname = False
@@ -29,7 +34,7 @@ STATIONS_TO_INVESTIGATE = [
     ("PUERTO_LIBERTAD", "30", "Puerto Libertad")
 ]
 
-conn = sqlite3.connect("hidrografia.db")
+conn = sqlite3.connect(DB_PATH)
 
 def parse_pna_history(port_id):
     url = f"https://contenidosweb.prefecturanaval.gob.ar/alturas/?page=historico&tiempo=7&id={port_id}"

@@ -102,11 +102,17 @@ def init_thresholds_table(conn: sqlite3.Connection):
             pass
 
 
+def _get_db_connection() -> sqlite3.Connection:
+    """Obtiene una conexión SQLite garantizando modo WAL y pragmas de integridad."""
+    from .database import get_connection
+    return get_connection()
+
+
 def load_custom_thresholds():
     """Carga los umbrales oficiales/personalizados desde SQLite al caché de memoria."""
     global _CUSTOM_THRESHOLDS
     try:
-        conn = sqlite3.connect(DB_PATH)
+        conn = _get_db_connection()
         init_thresholds_table(conn)
         cursor = conn.cursor()
         cursor.execute("SELECT codigo, alerta, evacuacion, alertas_activas FROM umbrales_config")
@@ -157,6 +163,64 @@ def get_station_thresholds(station_code: str) -> Dict[str, Any]:
     return {"alerta": None, "evacuacion": None, "alertas_activas": True, "custom": False}
 
 
+def get_station_alert_info(station_code: str, altura: Optional[float] = None) -> Dict[str, Any]:
+    """
+    Cruza una estación o represa con sus umbrales oficiales y determina su estado:
+    Retorna:
+    - "threshold_alert": float | None
+    - "threshold_evacuation": float | None
+    - "alert_state": "NORMAL" | "ALERTA" | "EVACUACION"
+    """
+    th = get_station_thresholds(station_code)
+    ale = th.get("alerta")
+    eva = th.get("evacuacion")
+
+    if not th.get("alertas_activas", True) or altura is None:
+        state = "NORMAL"
+    elif eva is not None and altura >= eva:
+        state = "EVACUACION"
+    elif ale is not None and altura >= ale:
+        state = "ALERTA"
+    else:
+        state = "NORMAL"
+
+    return {
+        "threshold_alert": ale,
+        "threshold_evacuation": eva,
+        "alert_state": state
+    }
+
+
+def inject_thresholds(obj: Dict[str, Any], code_key: str = "codigo", height_key: str = "ultima_altura") -> Dict[str, Any]:
+    """
+    Inyecta 'threshold_alert', 'threshold_evacuation' y 'alert_state' en el objeto devuelto.
+    Cruza con backend/thresholds.py para estaciones y represas.
+    """
+    code = str(obj.get(code_key) or obj.get("clave") or obj.get("id") or "").strip()
+    altura = obj.get(height_key)
+
+    if altura is None:
+        # Fallbacks limpios según el modelo de datos sin inventar valores
+        for candidate_key in ("altura", "agp_altura", "cota", "regla", "pna_altura", "defluente"):
+            val = obj.get(candidate_key)
+            if val is not None and isinstance(val, (int, float)):
+                altura = float(val)
+                break
+    elif isinstance(altura, (int, float)):
+        altura = float(altura)
+    else:
+        try:
+            altura = float(altura)
+        except (ValueError, TypeError):
+            altura = None
+
+    info = get_station_alert_info(code, altura)
+    obj["threshold_alert"] = info["threshold_alert"]
+    obj["threshold_evacuation"] = info["threshold_evacuation"]
+    obj["alert_state"] = info["alert_state"]
+    return obj
+
+
 def get_all_thresholds_dict() -> Dict[str, Dict[str, Any]]:
     """
     Devuelve un diccionario con los umbrales vigentes de todas las estaciones registradas.
@@ -164,7 +228,7 @@ def get_all_thresholds_dict() -> Dict[str, Dict[str, Any]]:
     all_codes = set(STATION_THRESHOLDS.keys()).union(_CUSTOM_THRESHOLDS.keys())
     
     try:
-        conn = sqlite3.connect(DB_PATH)
+        conn = _get_db_connection()
         cursor = conn.cursor()
         cursor.execute("SELECT codigo, nombre FROM estaciones")
         db_stations = cursor.fetchall()
@@ -212,8 +276,7 @@ def save_station_thresholds(codigo: str,
     should_close = False
     conn = db_conn
     if conn is None:
-        conn = sqlite3.connect(DB_PATH, timeout=30.0)
-        conn.execute("PRAGMA busy_timeout = 30000;")
+        conn = _get_db_connection()
         should_close = True
 
     try:
@@ -255,7 +318,7 @@ def reset_station_thresholds(codigo: str) -> Dict[str, Any]:
     """
     norm_code = codigo.upper().strip()
     try:
-        conn = sqlite3.connect(DB_PATH)
+        conn = _get_db_connection()
         init_thresholds_table(conn)
         with conn:
             conn.execute("DELETE FROM umbrales_config WHERE codigo = ?", (norm_code,))

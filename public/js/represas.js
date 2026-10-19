@@ -40,7 +40,7 @@ const RepresasView = {
     const it = data.itaipu || {};
     const ig = data.iguazu || {};
 
-    const fmt = (v) => (v !== undefined && v !== null ? Number(v).toLocaleString('es-AR', { maximumFractionDigits: 1 }) : '--');
+    const fmt = (v) => (v !== undefined && v !== null && !isNaN(v) ? Number(v).toLocaleString('es-AR', { maximumFractionDigits: 1 }) : '—');
 
     // 1. Hero Total hacia Yacyretá
     const totalEl = document.getElementById('rep-total-yacyreta');
@@ -50,21 +50,21 @@ const RepresasView = {
     const igPctEl = document.getElementById('rep-pct-iguazu');
 
     if (totalEl) totalEl.textContent = fmt(bal.caudal_total_m3s);
-    if (itAporteEl) itAporteEl.textContent = `${fmt(bal.aporte_itaipu_m3s)} m³/s`;
-    if (igAporteEl) igAporteEl.textContent = `${fmt(bal.aporte_iguazu_m3s)} m³/s`;
-    if (itPctEl) itPctEl.textContent = `(${bal.pct_itaipu || 0}%)`;
-    if (igPctEl) igPctEl.textContent = `(${bal.pct_iguazu || 0}%)`;
+    if (itAporteEl) itAporteEl.textContent = bal.aporte_itaipu_m3s != null ? `${fmt(bal.aporte_itaipu_m3s)} m³/s` : '—';
+    if (igAporteEl) igAporteEl.textContent = bal.aporte_iguazu_m3s != null ? `${fmt(bal.aporte_iguazu_m3s)} m³/s` : '—';
+    if (itPctEl) itPctEl.textContent = bal.pct_itaipu != null ? `${bal.pct_itaipu}%` : '';
+    if (igPctEl) igPctEl.textContent = bal.pct_iguazu != null ? `${bal.pct_iguazu}%` : '';
 
     // 2. Estado de Vertederos (Spillways)
     const itVertVal = Number(it.vertida || 0);
     const itSpillwayEl = document.getElementById('rep-it-spillway-badge');
     if (itSpillwayEl) {
       if (itVertVal > 0) {
-        itSpillwayEl.className = 'text-[11px] font-bold px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/50 flex items-center gap-1';
+        itSpillwayEl.className = 'text-[11px] font-bold px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/50 flex items-center gap-1 tabular-nums';
         itSpillwayEl.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse"></span> Vertedero Activo: ${fmt(itVertVal)} m³/s`;
       } else {
         itSpillwayEl.className = 'text-[11px] font-medium px-2 py-0.5 rounded-full bg-slate-800 text-slate-300 border border-slate-700';
-        itSpillwayEl.textContent = 'Vertedero Cerrado (100% Turbinada)';
+        itSpillwayEl.textContent = 'Vertedero Cerrado';
       }
     }
 
@@ -72,7 +72,7 @@ const RepresasView = {
     const igSpillwayEl = document.getElementById('rep-ig-spillway-badge');
     if (igSpillwayEl) {
       if (bxVertVal > 0) {
-        igSpillwayEl.className = 'text-[11px] font-bold px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/50 flex items-center gap-1';
+        igSpillwayEl.className = 'text-[11px] font-bold px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/50 flex items-center gap-1 tabular-nums';
         igSpillwayEl.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse"></span> Vertedero Baixo: ${fmt(bxVertVal)} m³/s`;
       } else {
         igSpillwayEl.className = 'text-[11px] font-medium px-2 py-0.5 rounded-full bg-slate-800 text-slate-300 border border-slate-700';
@@ -80,7 +80,7 @@ const RepresasView = {
       }
     }
 
-    const formatDt = (val) => (window.Components && typeof Components.formatDateTime === 'function' ? Components.formatDateTime(val, true) : (val || '--'));
+    const formatDt = (val) => (window.Components && typeof Components.formatDateTime === 'function' ? Components.formatDateTime(val, true) : (val || '—'));
 
     // 3. Tarjeta Itaipú (ONS)
     const itDeflEl = document.getElementById('rep-it-defl');
@@ -91,11 +91,15 @@ const RepresasView = {
     const itTimeEl = document.getElementById('rep-it-time');
 
     if (itDeflEl) itDeflEl.textContent = fmt(it.defluente);
-    if (itTurbEl) itTurbEl.textContent = `${fmt(it.turbinada)} m³/s`;
-    if (itVertEl) itVertEl.textContent = `${fmt(it.vertida)} m³/s`;
-    if (itAfluEl) itAfluEl.textContent = `${fmt(it.afluente)} m³/s`;
-    if (itCotaEl) itCotaEl.textContent = `${fmt(it.cota)} msnm`;
-    if (itTimeEl) itTimeEl.textContent = formatDt(it.fecha);
+    if (itTurbEl) itTurbEl.textContent = it.turbinada != null ? `${fmt(it.turbinada)} m³/s` : '—';
+    if (itVertEl) itVertEl.textContent = it.vertida != null ? `${fmt(it.vertida)} m³/s` : '—';
+    if (itAfluEl) itAfluEl.textContent = it.afluente != null ? `${fmt(it.afluente)} m³/s` : '—';
+    if (itCotaEl) itCotaEl.textContent = it.cota != null ? `${fmt(it.cota)} msnm` : '—';
+    if (itTimeEl) {
+      itTimeEl.innerHTML = window.Components && typeof Components.renderFreshnessBadge === 'function'
+        ? Components.renderFreshnessBadge('ONS', it.fecha)
+        : formatDt(it.fecha);
+    }
 
     // 4. Tarjeta Baixo Iguaçu (ONS) - Datos directos de la central sin mezclar
     const bxDeflEl = document.getElementById('rep-bx-defl');
@@ -106,11 +110,15 @@ const RepresasView = {
     const bxTimeEl = document.getElementById('rep-bx-time');
 
     if (bxDeflEl) bxDeflEl.textContent = fmt(ig.baixo_iguazu_defluente);
-    if (bxTurbEl) bxTurbEl.textContent = `${fmt(ig.baixo_iguazu_turbinada)} m³/s`;
-    if (bxVertEl) bxVertEl.textContent = `${fmt(ig.baixo_iguazu_vertida)} m³/s`;
-    if (bxAfluEl) bxAfluEl.textContent = `${fmt(ig.baixo_iguazu_afluente)} m³/s`;
-    if (bxCotaEl) bxCotaEl.textContent = `${fmt(ig.baixo_iguazu_cota)} msnm`;
-    if (bxTimeEl) bxTimeEl.textContent = formatDt(ig.fecha);
+    if (bxTurbEl) bxTurbEl.textContent = ig.baixo_iguazu_turbinada != null ? `${fmt(ig.baixo_iguazu_turbinada)} m³/s` : '—';
+    if (bxVertEl) bxVertEl.textContent = ig.baixo_iguazu_vertida != null ? `${fmt(ig.baixo_iguazu_vertida)} m³/s` : '—';
+    if (bxAfluEl) bxAfluEl.textContent = ig.baixo_iguazu_afluente != null ? `${fmt(ig.baixo_iguazu_afluente)} m³/s` : '—';
+    if (bxCotaEl) bxCotaEl.textContent = ig.baixo_iguazu_cota != null ? `${fmt(ig.baixo_iguazu_cota)} msnm` : '—';
+    if (bxTimeEl) {
+      bxTimeEl.innerHTML = window.Components && typeof Components.renderFreshnessBadge === 'function'
+        ? Components.renderFreshnessBadge('ONS', ig.fecha)
+        : formatDt(ig.fecha);
+    }
 
     // 5. Tarjeta Porto Capanema (COPEL / ANA) - Solo fuente propia de Capanema
     const capCaudalEl = document.getElementById('rep-cap-caudal');
@@ -119,8 +127,12 @@ const RepresasView = {
 
     const cap = data.capanema || {};
     if (capCaudalEl) capCaudalEl.textContent = fmt(cap.caudal);
-    if (capReglaEl) capReglaEl.textContent = cap.regla ? `${Number(cap.regla).toFixed(2)} m` : '-- m';
-    if (capTimeEl) capTimeEl.textContent = formatDt(cap.fecha);
+    if (capReglaEl) capReglaEl.textContent = cap.regla != null ? `${Number(cap.regla).toFixed(2)} m` : '—';
+    if (capTimeEl) {
+      capTimeEl.innerHTML = window.Components && typeof Components.renderFreshnessBadge === 'function'
+        ? Components.renderFreshnessBadge('COPEL', cap.fecha)
+        : formatDt(cap.fecha);
+    }
 
     // 6. Tarjeta Cataratas (COPEL / Parques) - Solo fuente propia de Cataratas
     const catCaudalEl = document.getElementById('rep-cat-caudal');
@@ -128,13 +140,17 @@ const RepresasView = {
     const catTimeEl = document.getElementById('rep-cat-time');
 
     const cat = data.centrales_lista ? data.centrales_lista.find(c => c.codigo === 'CATARATAS') : null;
-    const catCaudal = (cat && cat.caudal) ? cat.caudal : (data.cataratas ? data.cataratas.caudal : null);
-    const catRegla = (cat && cat.regla) ? cat.regla : (data.cataratas ? data.cataratas.regla : null);
+    const catCaudal = (cat && cat.caudal != null) ? cat.caudal : (data.cataratas ? data.cataratas.caudal : null);
+    const catRegla = (cat && cat.regla != null) ? cat.regla : (data.cataratas ? data.cataratas.regla : null);
     const catFecha = (cat && cat.fecha) ? cat.fecha : (data.cataratas ? data.cataratas.fecha : null);
 
     if (catCaudalEl) catCaudalEl.textContent = fmt(catCaudal);
-    if (catReglaEl) catReglaEl.textContent = catRegla ? `${Number(catRegla).toFixed(2)} m` : '-- m';
-    if (catTimeEl) catTimeEl.textContent = formatDt(catFecha);
+    if (catReglaEl) catReglaEl.textContent = catRegla != null ? `${Number(catRegla).toFixed(2)} m` : '—';
+    if (catTimeEl) {
+      catTimeEl.innerHTML = window.Components && typeof Components.renderFreshnessBadge === 'function'
+        ? Components.renderFreshnessBadge('COPEL', catFecha)
+        : formatDt(catFecha);
+    }
 
     // 7. Etiqueta de actualización ONS
     const syncLabel = document.getElementById('rep-sync-label');
@@ -153,25 +169,33 @@ const RepresasView = {
     const ig = data.iguazu || {};
     const bal = data.balance_yacyreta || {};
     const centrales = data.centrales_lista || [];
-    const fmt = (v) => (v !== undefined && v !== null && v > 0 ? Number(v).toLocaleString('es-AR') : '--');
+    const fmt = (v) => (v !== undefined && v !== null && !isNaN(v) && v > 0 ? Number(v).toLocaleString('es-AR') : '—');
 
     // Mapeo por clave tolerante a acentos
     const norm = (str) => (str || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
     const getFlow = (claveSubstr) => {
       const target = norm(claveSubstr);
       const match = centrales.find(c => norm(c.nombre).includes(target) || norm(c.clave || '').includes(target) || norm(c.codigo || '').includes(target));
-      return match ? fmt(match.defluente || match.caudal) : '--';
+      if (match) {
+        const val = match.defluente ?? match.caudal ?? match.flow_out_m3s;
+        if (val !== undefined && val !== null && !isNaN(val)) return fmt(val);
+      }
+      return '—';
     };
 
-    const jupiaFlow = getFlow('jupi') || (data.jupia ? fmt(data.jupia.defluente) : '--');
-    const primaveraFlow = getFlow('primavera') || (data.porto_primavera ? fmt(data.porto_primavera.defluente) : '--');
+    const jupiaFlow = getFlow('jupi') !== '—' ? getFlow('jupi') : (data.jupia ? fmt(data.jupia.defluente ?? data.jupia.flow_out_m3s) : '—');
+    const primaveraFlow = getFlow('primavera') !== '—' ? getFlow('primavera') : (data.porto_primavera ? fmt(data.porto_primavera.defluente ?? data.porto_primavera.flow_out_m3s) : '—');
     const areiaFlow = getFlow('areia');
-    const segredoFlow = getFlow('segredo');
+    const segredoFlow = getFlow('segredo') !== '—'
+      ? getFlow('segredo')
+      : (data.segredo_copel && (data.segredo_copel.defluente != null || data.segredo_copel.flow_out_m3s != null)
+         ? fmt(data.segredo_copel.defluente ?? data.segredo_copel.flow_out_m3s)
+         : '—');
     const santiagoFlow = getFlow('santiago');
     const osorioFlow = getFlow('osorio');
     const caxiasFlow = getFlow('caxias');
     const baixoFlow = fmt(ig.baixo_iguazu_defluente);
-    const capanemaFlow = getFlow('capanema') || (data.capanema ? fmt(data.capanema.caudal) : '--');
+    const capanemaFlow = getFlow('capanema') !== '—' ? getFlow('capanema') : (data.capanema ? fmt(data.capanema.caudal) : '—');
     const cataratasFlow = fmt(ig.cataratas_caudal);
     const itaipuFlow = fmt(it.defluente);
     const totalFlow = fmt(bal.caudal_total_m3s);
@@ -189,21 +213,21 @@ const RepresasView = {
           <!-- Jupiá -->
           <div class="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 px-2 py-1 rounded-md shrink-0 text-center">
             <div class="text-[10px] text-slate-400 font-medium">Jupiá</div>
-            <div class="font-data font-bold text-slate-700 dark:text-slate-200 text-[11px]">${jupiaFlow} <span class="text-[9px] font-normal opacity-70">m³/s</span></div>
+            <div class="font-data font-bold text-slate-700 dark:text-slate-200 text-[11px] tabular-nums">${jupiaFlow} <span class="text-[9px] font-normal opacity-70">m³/s</span></div>
           </div>
           <span class="text-slate-300 dark:text-slate-600 text-[10px]">➔</span>
 
           <!-- Porto Primavera -->
           <div class="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 px-2 py-1 rounded-md shrink-0 text-center">
             <div class="text-[10px] text-slate-400 font-medium">P. Primavera</div>
-            <div class="font-data font-bold text-slate-700 dark:text-slate-200 text-[11px]">${primaveraFlow} <span class="text-[9px] font-normal opacity-70">m³/s</span></div>
+            <div class="font-data font-bold text-slate-700 dark:text-slate-200 text-[11px] tabular-nums">${primaveraFlow} <span class="text-[9px] font-normal opacity-70">m³/s</span></div>
           </div>
           <span class="text-slate-300 dark:text-slate-600 text-[10px]">➔</span>
 
           <!-- Itaipú (Binacional) -->
           <div class="flex items-center gap-1.5 bg-sky-50 dark:bg-sky-950/40 border border-sky-300 dark:border-sky-800/80 px-2.5 py-1 rounded-lg shrink-0">
             <div class="text-[10px] font-bold text-sky-700 dark:text-sky-300">Itaipú</div>
-            <span class="font-data font-extrabold text-sky-600 dark:text-sky-400 ml-1">${itaipuFlow}</span>
+            <span class="font-data font-extrabold text-sky-600 dark:text-sky-400 ml-1 tabular-nums">${itaipuFlow}</span>
             <span class="text-[9px] text-slate-400">m³/s</span>
           </div>
         </div>
@@ -218,56 +242,56 @@ const RepresasView = {
           <!-- Areia -->
           <div class="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 px-2 py-1 rounded-md shrink-0 text-center">
             <div class="text-[10px] text-slate-400">Areia</div>
-            <div class="font-data font-bold text-slate-700 dark:text-slate-200 text-[11px]">${areiaFlow}</div>
+            <div class="font-data font-bold text-slate-700 dark:text-slate-200 text-[11px] tabular-nums">${areiaFlow}</div>
           </div>
           <span class="text-slate-300 dark:text-slate-600 text-[10px]">➔</span>
 
           <!-- Segredo -->
           <div class="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 px-2 py-1 rounded-md shrink-0 text-center">
             <div class="text-[10px] text-slate-400">Segredo</div>
-            <div class="font-data font-bold text-slate-700 dark:text-slate-200 text-[11px]">${segredoFlow}</div>
+            <div class="font-data font-bold text-slate-700 dark:text-slate-200 text-[11px] tabular-nums">${segredoFlow}</div>
           </div>
           <span class="text-slate-300 dark:text-slate-600 text-[10px]">➔</span>
 
           <!-- Santiago -->
           <div class="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 px-2 py-1 rounded-md shrink-0 text-center">
             <div class="text-[10px] text-slate-400">Santiago</div>
-            <div class="font-data font-bold text-slate-700 dark:text-slate-200 text-[11px]">${santiagoFlow}</div>
+            <div class="font-data font-bold text-slate-700 dark:text-slate-200 text-[11px] tabular-nums">${santiagoFlow}</div>
           </div>
           <span class="text-slate-300 dark:text-slate-600 text-[10px]">➔</span>
 
           <!-- Osório -->
           <div class="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 px-2 py-1 rounded-md shrink-0 text-center">
             <div class="text-[10px] text-slate-400">Osório</div>
-            <div class="font-data font-bold text-slate-700 dark:text-slate-200 text-[11px]">${osorioFlow}</div>
+            <div class="font-data font-bold text-slate-700 dark:text-slate-200 text-[11px] tabular-nums">${osorioFlow}</div>
           </div>
           <span class="text-slate-300 dark:text-slate-600 text-[10px]">➔</span>
 
           <!-- Caxias -->
           <div class="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 px-2 py-1 rounded-md shrink-0 text-center">
             <div class="text-[10px] text-slate-400">Caxias</div>
-            <div class="font-data font-bold text-slate-700 dark:text-slate-200 text-[11px]">${caxiasFlow}</div>
+            <div class="font-data font-bold text-slate-700 dark:text-slate-200 text-[11px] tabular-nums">${caxiasFlow}</div>
           </div>
           <span class="text-slate-300 dark:text-slate-600 text-[10px]">➔</span>
 
           <!-- Baixo Iguaçu (Destacada) -->
           <div class="bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-300 dark:border-emerald-800 px-2.5 py-1 rounded-md shrink-0 text-center">
             <div class="text-[10px] font-bold text-emerald-700 dark:text-emerald-400">Baixo Iguaçu</div>
-            <div class="font-data font-extrabold text-emerald-600 dark:text-emerald-300 text-[11px]">${baixoFlow} <span class="text-[9px] font-normal opacity-70">m³/s</span></div>
+            <div class="font-data font-extrabold text-emerald-600 dark:text-emerald-300 text-[11px] tabular-nums">${baixoFlow} <span class="text-[9px] font-normal opacity-70">m³/s</span></div>
           </div>
           <span class="text-slate-300 dark:text-slate-600 text-[10px]">➔</span>
 
           <!-- Porto Capanema -->
           <div class="bg-amber-50/70 dark:bg-amber-950/40 border border-amber-300/80 dark:border-amber-800/60 px-2 py-1 rounded-md shrink-0 text-center">
             <div class="text-[10px] font-semibold text-amber-800 dark:text-amber-300">Capanema</div>
-            <div class="font-data font-bold text-amber-600 dark:text-amber-300 text-[11px]">${capanemaFlow} <span class="text-[9px] font-normal opacity-70">m³/s</span></div>
+            <div class="font-data font-bold text-amber-600 dark:text-amber-300 text-[11px] tabular-nums">${capanemaFlow} <span class="text-[9px] font-normal opacity-70">m³/s</span></div>
           </div>
           <span class="text-slate-300 dark:text-slate-600 text-[10px]">➔</span>
 
           <!-- Cataratas (Destacada) -->
           <div class="bg-amber-50 dark:bg-amber-950/50 border border-amber-300 dark:border-amber-800 px-2.5 py-1 rounded-md shrink-0 text-center">
             <div class="text-[10px] font-bold text-amber-700 dark:text-amber-400">Cataratas</div>
-            <div class="font-data font-extrabold text-amber-600 dark:text-amber-300 text-[11px]">${cataratasFlow} <span class="text-[9px] font-normal opacity-70">m³/s</span></div>
+            <div class="font-data font-extrabold text-amber-600 dark:text-amber-300 text-[11px] tabular-nums">${cataratasFlow} <span class="text-[9px] font-normal opacity-70">m³/s</span></div>
           </div>
         </div>
 
@@ -304,7 +328,7 @@ const RepresasView = {
       filtered = centrales.filter(c => c.rio && (c.rio.toLowerCase().includes('jord') || c.rio.toLowerCase().includes('afluente')));
     }
 
-    const fmt = (v) => (v !== undefined && v !== null && v > 0 ? Number(v).toLocaleString('es-AR', { maximumFractionDigits: 1 }) : (v === 0 ? '0' : '--'));
+    const fmt = (v) => (v !== undefined && v !== null && !isNaN(v) ? Number(v).toLocaleString('es-AR', { maximumFractionDigits: 1 }) : '—');
 
     tbody.innerHTML = filtered.map(c => {
       const isItaipu = c.nombre.toLowerCase().includes('itaip');
@@ -325,17 +349,27 @@ const RepresasView = {
       else if (isJupia || isPrimavera) damBadge = '<span class="text-[9px] px-1.5 py-0.5 rounded bg-sky-100/70 dark:bg-sky-950 text-sky-700 dark:text-sky-400 font-sans font-semibold border border-sky-300/50">Alto Paraná</span>';
       else if (isCapanema || isCataratas) damBadge = '<span class="text-[9px] px-1.5 py-0.5 rounded bg-amber-100/80 dark:bg-amber-950 text-amber-700 dark:text-amber-400 font-sans font-semibold border border-amber-300/60">Medición</span>';
 
-      const cotaStr = c.cota ? `${c.cota} m` : (c.nivel ? `${c.nivel} m` : (c.regla ? `${c.regla} m` : '--'));
-      const volStr = c.vol_pct ? `${c.vol_pct}%` : '--';
-      const afluStr = fmt(c.afluente);
-      const turbStr = fmt(c.turbinada);
-      const vertNum = Number(c.vertida || 0);
+      const cotaVal = c.cota ?? c.level_m ?? c.nivel ?? c.regla;
+      const cotaStr = cotaVal !== undefined && cotaVal !== null ? `${Number(cotaVal).toFixed(2)} m` : '—';
+      const volStr = c.vol_pct ? `${c.vol_pct}%` : '—';
+      const afluVal = c.afluente ?? c.flow_in_m3s;
+      const afluStr = afluVal !== undefined && afluVal !== null ? fmt(afluVal) : '—';
+      const turbVal = c.turbinada ?? c.flow_turbined_m3s;
+      const turbStr = turbVal !== undefined && turbVal !== null ? fmt(turbVal) : '—';
+      const vertNum = Number(c.vertida ?? c.flow_spilled_m3s ?? 0);
       const vertStr = fmt(vertNum);
-      const deflStr = fmt(c.defluente || c.caudal);
+      const deflVal = c.defluente ?? c.caudal ?? c.flow_out_m3s;
+      const deflStr = deflVal !== undefined && deflVal !== null ? fmt(deflVal) : '—';
 
       const vertBadge = vertNum > 0
-        ? `<span class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-100 dark:bg-amber-950 text-amber-700 dark:text-amber-400 border border-amber-300 dark:border-amber-800">${vertStr}</span>`
-        : `<span class="text-slate-400">0</span>`;
+        ? `<span class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-100 dark:bg-amber-950 text-amber-700 dark:text-amber-400 border border-amber-300 dark:border-amber-800 tabular-nums">${vertStr}</span>`
+        : `<span class="text-slate-400 tabular-nums">0</span>`;
+
+      const damDate = c.fecha || c.measured_at;
+      const damSrc = c.fuente || c.source || 'ONS';
+      const freshnessBadge = window.Components && typeof Components.renderFreshnessBadge === 'function'
+        ? Components.renderFreshnessBadge(damSrc, damDate)
+        : ((window.Components && typeof Components.formatDateTime === 'function' ? Components.formatDateTime(damDate) : damDate) || '—');
 
       return `
         <tr class="border-b border-slate-100 dark:border-slate-800/60 hover:bg-slate-50/80 dark:hover:bg-slate-800/40 transition ${rowHighlight}">
@@ -344,15 +378,15 @@ const RepresasView = {
               <span>${c.nombre}</span>
               ${damBadge}
             </div>
-            <div class="text-[10px] text-slate-400">${c.operador} • ${c.rio}${c.fuente ? ` • <span class="text-sky-600 dark:text-sky-400 font-medium">${c.fuente}</span>` : ''}</div>
+            <div class="text-[10px] text-slate-400">${c.operador} • ${c.rio}</div>
           </td>
-          <td class="py-2.5 px-3 font-mono">${cotaStr}</td>
-          <td class="py-2.5 px-3 font-mono text-slate-500">${volStr}</td>
-          <td class="py-2.5 px-3 font-mono text-slate-700 dark:text-slate-300">${afluStr}</td>
-          <td class="py-2.5 px-3 font-mono text-sky-600 dark:text-sky-400 font-semibold">${turbStr}</td>
-          <td class="py-2.5 px-3 font-mono">${vertBadge}</td>
-          <td class="py-2.5 px-3 font-mono text-emerald-600 dark:text-emerald-400 font-bold">${deflStr}</td>
-          <td class="py-2.5 px-3 font-mono text-[11px] text-slate-400">${(window.Components && typeof Components.formatDateTime === 'function' ? Components.formatDateTime(c.fecha) : c.fecha) || '--'}</td>
+          <td class="py-2.5 px-3 font-mono tabular-nums">${cotaStr}</td>
+          <td class="py-2.5 px-3 font-mono tabular-nums text-slate-500">${volStr}</td>
+          <td class="py-2.5 px-3 font-mono tabular-nums text-slate-700 dark:text-slate-300">${afluStr}</td>
+          <td class="py-2.5 px-3 font-mono tabular-nums text-sky-600 dark:text-sky-400 font-semibold">${turbStr}</td>
+          <td class="py-2.5 px-3 font-mono tabular-nums">${vertBadge}</td>
+          <td class="py-2.5 px-3 font-mono tabular-nums text-emerald-600 dark:text-emerald-400 font-bold">${deflStr}</td>
+          <td class="py-2.5 px-3 font-mono tabular-nums text-[11px] text-slate-400">${freshnessBadge}</td>
         </tr>
       `;
     }).join('');
@@ -414,11 +448,13 @@ const RepresasView = {
       labels.push(displayLabel);
       const isoT = raw.replace(' ', 'T');
 
-      const tot = p.total_yacyreta !== undefined ? Number(p.total_yacyreta) : null;
-      const itDef = p.itaipu_defluente !== undefined ? Number(p.itaipu_defluente) : null;
-      const igDef = p.iguazu_defluente !== undefined ? Number(p.iguazu_defluente) : null;
-      const itTurb = p.itaipu_turbinada !== undefined ? Number(p.itaipu_turbinada) : null;
-      const itVert = p.itaipu_vertida !== undefined ? Number(p.itaipu_vertida) : null;
+      const parseVal = (v) => (v !== undefined && v !== null && !isNaN(Number(v))) ? Number(v) : null;
+
+      const tot = parseVal(p.total_yacyreta);
+      const itDef = parseVal(p.itaipu_defluente);
+      const igDef = parseVal(p.iguazu_defluente);
+      const itTurb = parseVal(p.itaipu_turbinada);
+      const itVert = parseVal(p.itaipu_vertida);
 
       timeTotal.push({ x: isoT, y: tot });
       timeItaipu.push({ x: isoT, y: itDef });
@@ -473,120 +509,130 @@ const RepresasView = {
     // 1. Gráfico de Caudal Total a Yacyretá vs Aportes (Estilo PNA)
     const canvasCaudales = document.getElementById('chartCaudalesYacyreta');
     if (canvasCaudales) {
-      if (this.caudalesChart) this.caudalesChart.destroy();
-      const ctxC = canvasCaudales.getContext('2d');
-      const hC = canvasCaudales.clientHeight || 250;
-
-      const gradTotal = ctxC.createLinearGradient(0, 0, 0, hC);
-      if (isDark) {
-        gradTotal.addColorStop(0, 'rgba(16, 185, 129, 0.32)');
-        gradTotal.addColorStop(0.7, 'rgba(16, 185, 129, 0.06)');
-        gradTotal.addColorStop(1, 'rgba(16, 185, 129, 0.00)');
+      if (this.caudalesChart && this._caudalesIsDark === isDark && this.caudalesChart.data.datasets.length === 3) {
+        if (!useTimeScale) this.caudalesChart.data.labels = labels;
+        this.caudalesChart.data.datasets[0].data = useTimeScale ? timeTotal : scalarTotal;
+        this.caudalesChart.data.datasets[1].data = useTimeScale ? timeItaipu : scalarItaipu;
+        this.caudalesChart.data.datasets[2].data = useTimeScale ? timeIguazu : scalarIguazu;
+        this.caudalesChart.data.datasets[2].label = 'Río Iguazú';
+        this.caudalesChart.update('none');
       } else {
-        gradTotal.addColorStop(0, 'rgba(16, 185, 129, 0.28)');
-        gradTotal.addColorStop(0.7, 'rgba(16, 185, 129, 0.04)');
-        gradTotal.addColorStop(1, 'rgba(16, 185, 129, 0.00)');
-      }
+        if (this.caudalesChart) this.caudalesChart.destroy();
+        const ctxC = canvasCaudales.getContext('2d');
+        const hC = canvasCaudales.clientHeight || 250;
 
-      const gradItaipu = ctxC.createLinearGradient(0, 0, 0, hC);
-      if (isDark) {
-        gradItaipu.addColorStop(0, 'rgba(56, 189, 248, 0.20)');
-        gradItaipu.addColorStop(1, 'rgba(56, 189, 248, 0.00)');
-      } else {
-        gradItaipu.addColorStop(0, 'rgba(2, 132, 199, 0.18)');
-        gradItaipu.addColorStop(1, 'rgba(2, 132, 199, 0.00)');
-      }
+        const gradTotal = ctxC.createLinearGradient(0, 0, 0, hC);
+        if (isDark) {
+          gradTotal.addColorStop(0, 'rgba(16, 185, 129, 0.32)');
+          gradTotal.addColorStop(0.7, 'rgba(16, 185, 129, 0.06)');
+          gradTotal.addColorStop(1, 'rgba(16, 185, 129, 0.00)');
+        } else {
+          gradTotal.addColorStop(0, 'rgba(16, 185, 129, 0.28)');
+          gradTotal.addColorStop(0.7, 'rgba(16, 185, 129, 0.04)');
+          gradTotal.addColorStop(1, 'rgba(16, 185, 129, 0.00)');
+        }
 
-      this.caudalesChart = new Chart(ctxC, {
-        type: 'line',
-        data: {
-          labels: useTimeScale ? undefined : labels,
-          datasets: [
-            {
-              label: 'Total Hacia Yacyretá',
-              data: useTimeScale ? timeTotal : scalarTotal,
-              borderColor: '#10b981',
-              backgroundColor: gradTotal,
-              fill: 'start',
-              borderWidth: 2.2,
-              tension: 0.12,
-              pointRadius: scalarTotal.length > 100 ? 0 : 2,
-              pointHoverRadius: 5,
-              pointBackgroundColor: '#10b981',
-              spanGaps: true
-            },
-            {
-              label: 'Aporte Itaipú (Río Paraná)',
-              data: useTimeScale ? timeItaipu : scalarItaipu,
-              borderColor: isDark ? '#38bdf8' : '#0284c7',
-              backgroundColor: gradItaipu,
-              fill: 'start',
-              borderWidth: 2,
-              tension: 0.12,
-              pointRadius: scalarItaipu.length > 100 ? 0 : 2,
-              pointHoverRadius: 5,
-              spanGaps: true
-            },
-            {
-              label: 'Aporte Cascada Río Iguazú',
-              data: useTimeScale ? timeIguazu : scalarIguazu,
-              borderColor: '#f59e0b',
-              backgroundColor: 'transparent',
-              fill: false,
-              borderWidth: 2,
-              borderDash: [6, 4],
-              tension: 0.12,
-              pointRadius: scalarIguazu.length > 100 ? 0 : 2,
-              pointHoverRadius: 5,
-              spanGaps: true
-            }
-          ]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          animation: { duration: 300 },
-          interaction: { mode: 'index', intersect: false },
-          plugins: {
-            legend: {
-              position: 'top',
-              labels: {
-                color: textColor,
-                font: { size: 11, family: 'Inter', weight: 'bold' },
-                boxWidth: 12
+        const gradItaipu = ctxC.createLinearGradient(0, 0, 0, hC);
+        if (isDark) {
+          gradItaipu.addColorStop(0, 'rgba(56, 189, 248, 0.20)');
+          gradItaipu.addColorStop(1, 'rgba(56, 189, 248, 0.00)');
+        } else {
+          gradItaipu.addColorStop(0, 'rgba(2, 132, 199, 0.18)');
+          gradItaipu.addColorStop(1, 'rgba(2, 132, 199, 0.00)');
+        }
+
+        this.caudalesChart = new Chart(ctxC, {
+          type: 'line',
+          data: {
+            labels: useTimeScale ? undefined : labels,
+            datasets: [
+              {
+                label: 'Total Hacia Yacyretá',
+                data: useTimeScale ? timeTotal : scalarTotal,
+                borderColor: '#10b981',
+                backgroundColor: gradTotal,
+                fill: 'start',
+                borderWidth: 2.2,
+                tension: 0.12,
+                pointRadius: scalarTotal.length > 100 ? 0 : 2,
+                pointHoverRadius: 5,
+                pointBackgroundColor: '#10b981',
+                spanGaps: true
+              },
+              {
+                label: 'Aporte Itaipú',
+                data: useTimeScale ? timeItaipu : scalarItaipu,
+                borderColor: isDark ? '#38bdf8' : '#0284c7',
+                backgroundColor: gradItaipu,
+                fill: 'start',
+                borderWidth: 2,
+                tension: 0.12,
+                pointRadius: scalarItaipu.length > 100 ? 0 : 2,
+                pointHoverRadius: 5,
+                spanGaps: true
+              },
+              {
+                label: 'Río Iguazú',
+                data: useTimeScale ? timeIguazu : scalarIguazu,
+                borderColor: '#f59e0b',
+                backgroundColor: 'transparent',
+                fill: false,
+                borderWidth: 2,
+                borderDash: [6, 4],
+                tension: 0.12,
+                pointRadius: scalarIguazu.length > 100 ? 0 : 2,
+                pointHoverRadius: 5,
+                spanGaps: true
+              }
+            ]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            animation: { duration: 300 },
+            interaction: { mode: 'index', intersect: false },
+            plugins: {
+              legend: {
+                position: 'top',
+                labels: {
+                  color: textColor,
+                  font: { size: 11, family: 'Inter', weight: 'bold' },
+                  boxWidth: 12
+                }
+              },
+              tooltip: tooltipConfig,
+              zoom: {
+                pan: { enabled: false },
+                zoom: {
+                  drag: {
+                    enabled: true,
+                    backgroundColor: isDark ? 'rgba(16, 185, 129, 0.22)' : 'rgba(16, 185, 129, 0.16)',
+                    borderColor: '#10b981',
+                    borderWidth: 1.5
+                  },
+                  pinch: { enabled: true },
+                  mode: 'x',
+                  onZoomComplete: () => {
+                    RepresasView.toggleFloatingResetBtn('floating-reset-zoom-caudales', true);
+                  }
+                }
               }
             },
-            tooltip: tooltipConfig,
-            zoom: {
-              pan: { enabled: false },
-              zoom: {
-                drag: {
-                  enabled: true,
-                  backgroundColor: isDark ? 'rgba(16, 185, 129, 0.22)' : 'rgba(16, 185, 129, 0.16)',
-                  borderColor: '#10b981',
-                  borderWidth: 1.5
-                },
-                pinch: { enabled: true },
-                mode: 'x',
-                onZoomComplete: () => {
-                  RepresasView.toggleFloatingResetBtn('floating-reset-zoom-caudales', true);
+            scales: {
+              x: xScaleConfig,
+              y: {
+                grid: { color: gridColor },
+                ticks: {
+                  color: textColor,
+                  font: { family: 'Space Grotesk', size: 10, weight: '600' },
+                  callback: (v) => `${Number(v).toLocaleString('es-AR')} m³/s`
                 }
               }
             }
-          },
-          scales: {
-            x: xScaleConfig,
-            y: {
-              grid: { color: gridColor },
-              ticks: {
-                color: textColor,
-                font: { family: 'Space Grotesk', size: 10, weight: '600' },
-                callback: (v) => `${Number(v).toLocaleString('es-AR')} m³/s`
-              }
-            }
           }
-        }
-      });
+        });
+        this._caudalesIsDark = isDark;
+      }
 
       this.toggleFloatingResetBtn('floating-reset-zoom-caudales', false);
     }
@@ -594,108 +640,116 @@ const RepresasView = {
     // 2. Gráfico Desglose Itaipú (Turbinado vs Vertido)
     const canvasItaipu = document.getElementById('chartItaipuTurbinado');
     if (canvasItaipu) {
-      if (this.itaipuChart) this.itaipuChart.destroy();
-      const ctxI = canvasItaipu.getContext('2d');
-      const hI = canvasItaipu.clientHeight || 250;
-
-      const gradTurb = ctxI.createLinearGradient(0, 0, 0, hI);
-      if (isDark) {
-        gradTurb.addColorStop(0, 'rgba(56, 189, 248, 0.32)');
-        gradTurb.addColorStop(0.7, 'rgba(56, 189, 248, 0.05)');
-        gradTurb.addColorStop(1, 'rgba(56, 189, 248, 0.00)');
+      if (this.itaipuChart && this._itaipuIsDark === isDark && this.itaipuChart.data.datasets.length === 2) {
+        if (!useTimeScale) this.itaipuChart.data.labels = labels;
+        this.itaipuChart.data.datasets[0].data = useTimeScale ? timeTurbinada : scalarTurbinada;
+        this.itaipuChart.data.datasets[1].data = useTimeScale ? timeVertida : scalarVertida;
+        this.itaipuChart.update('none');
       } else {
-        gradTurb.addColorStop(0, 'rgba(2, 132, 199, 0.28)');
-        gradTurb.addColorStop(0.7, 'rgba(2, 132, 199, 0.04)');
-        gradTurb.addColorStop(1, 'rgba(2, 132, 199, 0.00)');
-      }
+        if (this.itaipuChart) this.itaipuChart.destroy();
+        const ctxI = canvasItaipu.getContext('2d');
+        const hI = canvasItaipu.clientHeight || 250;
 
-      const gradVert = ctxI.createLinearGradient(0, 0, 0, hI);
-      if (isDark) {
-        gradVert.addColorStop(0, 'rgba(249, 115, 22, 0.32)');
-        gradVert.addColorStop(0.7, 'rgba(249, 115, 22, 0.05)');
-        gradVert.addColorStop(1, 'rgba(249, 115, 22, 0.00)');
-      } else {
-        gradVert.addColorStop(0, 'rgba(249, 115, 22, 0.26)');
-        gradVert.addColorStop(0.7, 'rgba(249, 115, 22, 0.04)');
-        gradVert.addColorStop(1, 'rgba(249, 115, 22, 0.00)');
-      }
+        const gradTurb = ctxI.createLinearGradient(0, 0, 0, hI);
+        if (isDark) {
+          gradTurb.addColorStop(0, 'rgba(56, 189, 248, 0.32)');
+          gradTurb.addColorStop(0.7, 'rgba(56, 189, 248, 0.05)');
+          gradTurb.addColorStop(1, 'rgba(56, 189, 248, 0.00)');
+        } else {
+          gradTurb.addColorStop(0, 'rgba(2, 132, 199, 0.28)');
+          gradTurb.addColorStop(0.7, 'rgba(2, 132, 199, 0.04)');
+          gradTurb.addColorStop(1, 'rgba(2, 132, 199, 0.00)');
+        }
 
-      this.itaipuChart = new Chart(ctxI, {
-        type: 'line',
-        data: {
-          labels: useTimeScale ? undefined : labels,
-          datasets: [
-            {
-              label: 'Caudal Turbinado',
-              data: useTimeScale ? timeTurbinada : scalarTurbinada,
-              borderColor: isDark ? '#38bdf8' : '#0284c7',
-              backgroundColor: gradTurb,
-              fill: 'start',
-              borderWidth: 2,
-              tension: 0.12,
-              pointRadius: scalarTurbinada.length > 100 ? 0 : 2,
-              pointHoverRadius: 5,
-              spanGaps: true
-            },
-            {
-              label: 'Caudal Vertido (Vertedero)',
-              data: useTimeScale ? timeVertida : scalarVertida,
-              borderColor: '#f97316',
-              backgroundColor: gradVert,
-              fill: 'start',
-              borderWidth: 2,
-              tension: 0.12,
-              pointRadius: scalarVertida.length > 100 ? 0 : 2,
-              pointHoverRadius: 5,
-              spanGaps: true
-            }
-          ]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          animation: { duration: 300 },
-          interaction: { mode: 'index', intersect: false },
-          plugins: {
-            legend: {
-              position: 'top',
-              labels: {
-                color: textColor,
-                font: { size: 11, family: 'Inter', weight: 'bold' },
-                boxWidth: 12
+        const gradVert = ctxI.createLinearGradient(0, 0, 0, hI);
+        if (isDark) {
+          gradVert.addColorStop(0, 'rgba(249, 115, 22, 0.32)');
+          gradVert.addColorStop(0.7, 'rgba(249, 115, 22, 0.05)');
+          gradVert.addColorStop(1, 'rgba(249, 115, 22, 0.00)');
+        } else {
+          gradVert.addColorStop(0, 'rgba(249, 115, 22, 0.26)');
+          gradVert.addColorStop(0.7, 'rgba(249, 115, 22, 0.04)');
+          gradVert.addColorStop(1, 'rgba(249, 115, 22, 0.00)');
+        }
+
+        this.itaipuChart = new Chart(ctxI, {
+          type: 'line',
+          data: {
+            labels: useTimeScale ? undefined : labels,
+            datasets: [
+              {
+                label: 'Caudal Turbinado',
+                data: useTimeScale ? timeTurbinada : scalarTurbinada,
+                borderColor: isDark ? '#38bdf8' : '#0284c7',
+                backgroundColor: gradTurb,
+                fill: 'start',
+                borderWidth: 2,
+                tension: 0.12,
+                pointRadius: scalarTurbinada.length > 100 ? 0 : 2,
+                pointHoverRadius: 5,
+                spanGaps: true
+              },
+              {
+                label: 'Caudal Vertido',
+                data: useTimeScale ? timeVertida : scalarVertida,
+                borderColor: '#f97316',
+                backgroundColor: gradVert,
+                fill: 'start',
+                borderWidth: 2,
+                tension: 0.12,
+                pointRadius: scalarVertida.length > 100 ? 0 : 2,
+                pointHoverRadius: 5,
+                spanGaps: true
+              }
+            ]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            animation: { duration: 300 },
+            interaction: { mode: 'index', intersect: false },
+            plugins: {
+              legend: {
+                position: 'top',
+                labels: {
+                  color: textColor,
+                  font: { size: 11, family: 'Inter', weight: 'bold' },
+                  boxWidth: 12
+                }
+              },
+              tooltip: tooltipConfig,
+              zoom: {
+                pan: { enabled: false },
+                zoom: {
+                  drag: {
+                    enabled: true,
+                    backgroundColor: isDark ? 'rgba(56, 189, 248, 0.22)' : 'rgba(2, 132, 199, 0.18)',
+                    borderColor: isDark ? '#38bdf8' : '#0284c7',
+                    borderWidth: 1.5
+                  },
+                  pinch: { enabled: true },
+                  mode: 'x',
+                  onZoomComplete: () => {
+                    RepresasView.toggleFloatingResetBtn('floating-reset-zoom-itaipu', true);
+                  }
+                }
               }
             },
-            tooltip: tooltipConfig,
-            zoom: {
-              pan: { enabled: false },
-              zoom: {
-                drag: {
-                  enabled: true,
-                  backgroundColor: isDark ? 'rgba(56, 189, 248, 0.22)' : 'rgba(2, 132, 199, 0.18)',
-                  borderColor: isDark ? '#38bdf8' : '#0284c7',
-                  borderWidth: 1.5
-                },
-                pinch: { enabled: true },
-                mode: 'x',
-                onZoomComplete: () => {
-                  RepresasView.toggleFloatingResetBtn('floating-reset-zoom-itaipu', true);
+            scales: {
+              x: xScaleConfig,
+              y: {
+                grid: { color: gridColor },
+                ticks: {
+                  color: textColor,
+                  font: { family: 'Space Grotesk', size: 10, weight: '600' },
+                  callback: (v) => `${Number(v).toLocaleString('es-AR')} m³/s`
                 }
               }
             }
-          },
-          scales: {
-            x: xScaleConfig,
-            y: {
-              grid: { color: gridColor },
-              ticks: {
-                color: textColor,
-                font: { family: 'Space Grotesk', size: 10, weight: '600' },
-                callback: (v) => `${Number(v).toLocaleString('es-AR')} m³/s`
-              }
-            }
           }
-        }
-      });
+        });
+        this._itaipuIsDark = isDark;
+      }
 
       this.toggleFloatingResetBtn('floating-reset-zoom-itaipu', false);
     }
@@ -705,11 +759,11 @@ const RepresasView = {
     const icon = document.getElementById('sync-represas-icon');
     if (icon) icon.classList.add('animate-spin');
 
-    Components.showToast('ONS S3', 'Descargando dataset hidrológico oficial de ONS (Itaipú + Cuenca Iguazú)...');
+    Components.showToast('ONS S3', 'Descargando dataset hidrológico oficial de ONS: Itaipú y Cuenca Iguazú...');
     try {
       const res = await API.syncRepresas();
       if (res && res.success) {
-        const total = res.total_yacyreta ? Number(res.total_yacyreta).toLocaleString('es-AR') : '--';
+        const total = res.total_yacyreta ? Number(res.total_yacyreta).toLocaleString('es-AR') : '—';
         Components.showToast('ONS Actualizado', `Datos hidrológicos sincronizados. Caudal a Yacyretá: ${total} m³/s.`);
         await this.loadData();
       } else {

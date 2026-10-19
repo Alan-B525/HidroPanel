@@ -573,45 +573,79 @@
   display: block;
   animation: slide-in 0.2s var(--ease);
 }
-.cal-grid {
-  display: grid;
-  grid-template-columns: repeat(7, 1fr);
-  gap: 4px;
-  text-align: center;
-}
-.cal-day-cell {
-  aspect-ratio: 1;
-  border-radius: var(--radius-sm);
+/* ============================================================
+   MINI-CALENDARIO SIMEPAR
+   ============================================================ */
+.cal-day-btn {
+  width: 2rem;
+  height: 2rem;
+  margin: 0 auto;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  font-size: 0.72rem;
+  border-radius: 0.5rem;
+  font-size: 0.75rem;
   font-weight: 500;
   cursor: pointer;
   position: relative;
-  transition: all var(--dur-fast) var(--ease);
-  color: var(--ink-700);
+  transition: background-color 0.15s ease, color 0.15s ease;
+  user-select: none;
+  background: transparent;
+  border: none;
+  padding: 0;
+  line-height: 1;
+  color: var(--ink-800, #1e293b);
 }
-.cal-day-cell:hover:not(.disabled) {
-  background: var(--surface-100);
+.dark .cal-day-btn {
+  color: #f1f5f9;
 }
-.cal-day-cell.selected {
-  background: var(--accent);
-  color: #ffffff;
-  font-weight: 700;
+.cal-day-btn.has-map {
+  font-weight: 600;
 }
-.cal-day-cell.has-map::after {
-  content: '';
-  position: absolute;
-  bottom: 2px;
+.cal-day-btn.has-map:hover {
+  background: rgba(14, 165, 233, 0.12);
+  color: #0284c7;
+}
+.dark .cal-day-btn.has-map:hover {
+  background: rgba(56, 189, 248, 0.18);
+  color: #38bdf8;
+}
+.cal-day-btn.has-map .map-dot {
   width: 4px;
   height: 4px;
   border-radius: 50%;
-  background: var(--gold-500);
+  background-color: #0284c7;
+  position: absolute;
+  bottom: 3px;
 }
-.cal-day-cell.disabled {
-  opacity: 0.25;
-  cursor: not-allowed;
+.dark .cal-day-btn.has-map .map-dot {
+  background-color: #38bdf8;
+}
+.cal-day-btn.selected {
+  background-color: #0284c7 !important;
+  color: #ffffff !important;
+  font-weight: 700;
+}
+.cal-day-btn.selected .map-dot {
+  background-color: #ffffff !important;
+}
+.cal-day-empty, .cal-day-disabled {
+  width: 2rem;
+  height: 2rem;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  color: #94a3b8;
+  opacity: 0.45;
+  user-select: none;
+  cursor: default;
+}
+.dark .cal-day-disabled {
+  color: #64748b;
+  opacity: 0.4;
 }
 
 /* ============================================================
@@ -652,3 +686,185 @@
   font-size: 0.72rem;
   color: var(--ink-500);
 }
+
+/* ============================================================
+   CABECERA DE ESTADO DE FUENTES (SALA DE CONTROL)
+   ============================================================ */
+.source-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 7px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  font-family: var(--font-mono, monospace);
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+  color: rgba(255, 255, 255, 0.85);
+  cursor: help;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+  white-space: nowrap;
+}
+.source-chip:hover {
+  background: rgba(255, 255, 255, 0.14);
+  border-color: rgba(255, 255, 255, 0.28);
+  color: #ffffff;
+}
+.source-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  background: #64748b; /* Neutro por defecto */
+}
+.source-chip.status-ok .source-dot {
+  background: #10b981;
+}
+.source-chip.status-stale .source-dot {
+  background: #f59e0b;
+}
+.source-chip.status-error .source-dot {
+  background: #ef4444;
+}
+.source-chip.status-pending .source-dot {
+  background: #94a3b8;
+}
+
+.source-chip.has-error {
+  background: rgba(239, 68, 68, 0.15);
+  border-color: rgba(239, 68, 68, 0.45);
+  color: #fca5a5;
+}
+.source-chip.is-stale {
+  background: rgba(245, 158, 11, 0.12);
+  border-color: rgba(245, 158, 11, 0.40);
+  color: #fde68a;
+}
+
+/* ============================================================
+   TRAZABILIDAD Y ANTIGÜEDAD DEL DATO (FRESHNESS BADGE)
+   ============================================================ */
+.badge-freshness {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-family: var(--font-mono, monospace);
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+  background: #f1f5f9;
+  border: 1px solid #cbd5e1;
+  color: #334155;
+  white-space: nowrap;
+  transition: opacity 0.2s ease, border-color 0.2s ease;
+}
+.dark .badge-freshness {
+  background: #0d1e33;
+  border-color: #1e3654;
+  color: #cbd5e1;
+}
+
+.badge-freshness .source-tag {
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  padding: 1px 4px;
+  border-radius: 3px;
+  font-size: 9px;
+  background: rgba(2, 132, 199, 0.12);
+  color: #0284c7;
+}
+.dark .badge-freshness .source-tag {
+  background: rgba(56, 189, 248, 0.15);
+  color: #38bdf8;
+}
+.badge-freshness .source-tag.src-pna {
+  background: rgba(217, 119, 6, 0.14);
+  color: #b45309;
+}
+.dark .badge-freshness .source-tag.src-pna {
+  background: rgba(251, 191, 36, 0.16);
+  color: #fbbf24;
+}
+.badge-freshness .source-tag.src-ons {
+  background: rgba(16, 185, 129, 0.14);
+  color: #059669;
+}
+.dark .badge-freshness .source-tag.src-ons {
+  background: rgba(52, 211, 153, 0.16);
+  color: #34d399;
+}
+.badge-freshness .source-tag.src-copel {
+  background: rgba(99, 102, 241, 0.14);
+  color: #4f46e5;
+}
+.dark .badge-freshness .source-tag.src-copel {
+  background: rgba(129, 140, 248, 0.16);
+  color: #818cf8;
+}
+.badge-freshness .source-tag.src-engie {
+  background: rgba(14, 165, 233, 0.14);
+  color: #0284c7;
+}
+.dark .badge-freshness .source-tag.src-engie {
+  background: rgba(56, 189, 248, 0.16);
+  color: #38bdf8;
+}
+.badge-freshness .source-tag.src-itaipu {
+  background: rgba(16, 185, 129, 0.14);
+  color: #059669;
+}
+.dark .badge-freshness .source-tag.src-itaipu {
+  background: rgba(52, 211, 153, 0.16);
+  color: #34d399;
+}
+
+/* Regla CSS .is-stale (> 3 horas de antigüedad) */
+.is-stale {
+  opacity: 0.72;
+  border-color: #d97706 !important;
+  background-color: rgba(217, 119, 6, 0.08) !important;
+}
+.dark .is-stale {
+  opacity: 0.75;
+  border-color: #f59e0b !important;
+  background-color: rgba(245, 158, 11, 0.10) !important;
+}
+.is-stale .stale-clock {
+  color: #d97706;
+  font-weight: 700;
+  font-size: 10px;
+}
+.dark .is-stale .stale-clock {
+  color: #fbbf24;
+}
+
+/* Sobriedad: Números en tablas de sala de control */
+table td, table th {
+  font-variant-numeric: tabular-nums;
+}
+
+/* ============================================================
+   SELECTOR DE VISTAS (TABS DEL ENCABEZADO)
+   ============================================================ */
+.view-btn {
+  user-select: none;
+  cursor: pointer;
+  outline: none;
+  transition: all 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.view-btn:focus-visible {
+  box-shadow: 0 0 0 2px rgba(0, 131, 72, 0.4);
+}
+.view-btn.active {
+  background-color: var(--eby-green, #008348);
+  color: #ffffff;
+  border-color: rgba(52, 211, 153, 0.35);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
+}
+.view-btn:not(.active):hover {
+  background-color: rgba(255, 255, 255, 0.08);
+  color: #ffffff;
+}
+

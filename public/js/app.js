@@ -21,11 +21,29 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Aplicar estado inicial de selector de curva
   updateChartSourceUI();
 
-  // Iniciar monitoreo de sincronización automática
+  // Iniciar monitoreo de sincronización automática y ciclo de polling en tiempo real
   initSyncTicker();
+  startPollingCycle();
 
   // Atajos de teclado
   initShortcuts();
+
+  // Botones de cambio de vista principales
+  const viewNavMap = [
+    { id: 'btn-view-caudales', mode: 'caudales' },
+    { id: 'btn-view-charts', mode: 'charts' },
+    { id: 'btn-view-map', mode: 'map' },
+    { id: 'btn-view-simepar', mode: 'simepar' }
+  ];
+  viewNavMap.forEach(({ id, mode }) => {
+    const btn = document.getElementById(id);
+    if (btn) {
+      btn.addEventListener('click', (e) => {
+        e.preventDefault();
+        setViewMode(mode);
+      });
+    }
+  });
 
   // Botón modal de umbrales en cabecera
   const btnUmbrales = document.getElementById('btn-header-umbrales');
@@ -54,6 +72,9 @@ async function loadInitialData() {
     const sitData = await API.getSituation();
     if (sitData && sitData.success) {
       State.situation = sitData;
+      if (sitData.sources_status && window.Components && typeof Components.renderSourcesHeader === 'function') {
+        Components.renderSourcesHeader(sitData.sources_status);
+      }
       Components.renderAlertBanner('alert-banner-container', sitData.alertas_activas, window.selectStation, sitData.estaciones_falla_reporte);
     }
 
@@ -78,8 +99,8 @@ async function loadInitialData() {
           const k = clean.toLowerCase();
           if (seenMap.has(k)) continue;
           seenMap.add(k);
-          const altStr = (s.ultima_altura !== null && s.ultima_altura !== undefined) ? `${s.ultima_altura.toFixed(2)}m` : '--';
-          const pnaStr = (s.pna_altura !== null && s.pna_altura !== undefined) ? ` | ⚓ ${s.pna_altura.toFixed(2)}m` : '';
+          const altStr = (s.ultima_altura !== null && s.ultima_altura !== undefined) ? `${Number(s.ultima_altura).toFixed(2)}m` : '—';
+          const pnaStr = (s.pna_altura !== null && s.pna_altura !== undefined) ? ` | ⚓ ${Number(s.pna_altura).toFixed(2)}m` : '';
           mapOptions.push(`<option value="${s.id}">${clean} (${altStr}${pnaStr})</option>`);
         }
         mapSelect.innerHTML = mapOptions.join('');
@@ -290,10 +311,14 @@ async function setViewMode(mode) {
   Object.entries(viewBtns).forEach(([viewKey, btn]) => {
     if (!btn) return;
     const isActive = viewKey === mode;
+    btn.setAttribute('aria-selected', isActive ? 'true' : 'false');
+    const svg = btn.querySelector('svg');
     if (isActive) {
-      btn.className = 'view-btn flex items-center space-x-1.5 px-3 py-1.5 rounded-lg font-bold transition bg-[#008348] text-white shadow-sm';
+      btn.className = 'view-btn active flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold text-white bg-[#008348] border border-emerald-400/30 shadow-xs transition-all duration-150 cursor-pointer';
+      if (svg) svg.className.baseVal = 'w-3.5 h-3.5 text-emerald-200';
     } else {
-      btn.className = 'view-btn flex items-center space-x-1.5 px-3 py-1.5 rounded-lg font-medium transition text-white/80 hover:text-white hover:bg-white/10';
+      btn.className = 'view-btn flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium text-slate-300 hover:text-white hover:bg-white/[0.08] border border-transparent transition-all duration-150 cursor-pointer';
+      if (svg) svg.className.baseVal = 'w-3.5 h-3.5 text-slate-400';
     }
   });
 
@@ -342,14 +367,16 @@ async function setViewMode(mode) {
     if (State.layout > 1) {
       setLayout(State.layout);
     } else {
+      const targetId = State.selectedStationId || (State.stations && State.stations[0] ? State.stations[0].id : null);
+      if (targetId) {
+        selectStation(targetId, false);
+      }
       setTimeout(() => {
         if (Charts.mainChart) {
           Charts.mainChart.resize();
           Charts.mainChart.update('none');
-        } else if (State.selectedStationId) {
-          selectStation(State.selectedStationId, false);
         }
-      }, 50);
+      }, 60);
     }
   } else if (mode === 'map') {
     MapView.init('map-leaflet', State.theme === 'dark');
@@ -529,8 +556,8 @@ function populateChartsStationSelect() {
     if (seen.has(key)) continue;
     seen.add(key);
 
-    const altStr = (s.ultima_altura !== null && s.ultima_altura !== undefined) ? `${s.ultima_altura.toFixed(2)}m` : '--';
-    const pnaStr = (s.pna_altura !== null && s.pna_altura !== undefined) ? ` | ⚓ ${s.pna_altura.toFixed(2)}m` : '';
+    const altStr = (s.ultima_altura !== null && s.ultima_altura !== undefined) ? `${Number(s.ultima_altura).toFixed(2)}m` : '—';
+    const pnaStr = (s.pna_altura !== null && s.pna_altura !== undefined) ? ` | ⚓ ${Number(s.pna_altura).toFixed(2)}m` : '';
     const failNotice = s.falla_reporte ? ' ⚠️' : '';
     const label = `${cleanName} — AGP: ${altStr}${pnaStr}${failNotice}`;
     options.push(`<option value="${s.id}">${label}</option>`);
@@ -615,8 +642,8 @@ function populateThresholdsEditor(station) {
         if (seen.has(key)) continue;
         seen.add(key);
 
-        const altStr = (s.ultima_altura !== null && s.ultima_altura !== undefined) ? `${s.ultima_altura.toFixed(2)}m` : '--';
-        const pnaStr = (s.pna_altura !== null && s.pna_altura !== undefined) ? ` | ⚓ PNA: ${s.pna_altura.toFixed(2)}m` : '';
+        const altStr = (s.ultima_altura !== null && s.ultima_altura !== undefined) ? `${Number(s.ultima_altura).toFixed(2)}m` : '—';
+        const pnaStr = (s.pna_altura !== null && s.pna_altura !== undefined) ? ` | ⚓ PNA: ${Number(s.pna_altura).toFixed(2)}m` : '';
         const failNotice = s.falla_reporte ? ' ⚠️' : '';
         options.push(`<option value="${s.id}">${cleanName} (AGP: ${altStr}${pnaStr})${failNotice}</option>`);
       }
@@ -639,15 +666,15 @@ function populateThresholdsEditor(station) {
   }
   if (heightEl) {
     const agpStr = (station.ultima_altura !== null && station.ultima_altura !== undefined)
-      ? `${station.ultima_altura.toFixed(2)} m`
-      : '-- m';
+      ? `${Number(station.ultima_altura).toFixed(2)} m`
+      : '—';
     const pnaStr = (station.pna_altura !== null && station.pna_altura !== undefined)
-      ? `${station.pna_altura.toFixed(2)} m`
+      ? `${Number(station.pna_altura).toFixed(2)} m`
       : null;
     if (pnaStr !== null) {
-      heightEl.innerHTML = `<span class="text-sky-600 dark:text-sky-400 font-bold">${agpStr}</span> <span class="text-slate-400 font-normal">|</span> <span class="text-amber-600 dark:text-amber-400 font-bold" title="Prefectura">⚓ ${pnaStr}</span>`;
+      heightEl.innerHTML = `<span class="text-sky-600 dark:text-sky-400 font-bold tabular-nums">${agpStr}</span> <span class="text-slate-400 font-normal">|</span> <span class="text-amber-600 dark:text-amber-400 font-bold tabular-nums" title="Prefectura">⚓ ${pnaStr}</span>`;
     } else {
-      heightEl.innerHTML = `<span class="text-sky-600 dark:text-sky-400 font-bold">${agpStr}</span>`;
+      heightEl.innerHTML = `<span class="text-sky-600 dark:text-sky-400 font-bold tabular-nums">${agpStr}</span>`;
     }
   }
 
@@ -756,8 +783,8 @@ function renderThresholdModalQuickList(query = '', activeStationId = null) {
             ${isAct ? '🔔 Activa' : '🔕 Desactivada'}
           </button>
         </td>
-        <td class="py-2 px-2 text-center text-orange-600 dark:text-orange-400 font-mono">${u.alerta !== null && u.alerta !== undefined ? u.alerta : '--'}</td>
-        <td class="py-2 px-2 text-center text-rose-600 dark:text-rose-400 font-mono">${u.evacuacion !== null && u.evacuacion !== undefined ? u.evacuacion : '--'}</td>
+        <td class="py-2 px-2 text-center text-orange-600 dark:text-orange-400 font-mono tabular-nums">${u.alerta !== null && u.alerta !== undefined ? Number(u.alerta).toFixed(2) : '—'}</td>
+        <td class="py-2 px-2 text-center text-rose-600 dark:text-rose-400 font-mono tabular-nums">${u.evacuacion !== null && u.evacuacion !== undefined ? Number(u.evacuacion).toFixed(2) : '—'}</td>
         <td class="py-2 px-2 text-center">
           <button type="button" onclick="onThresholdStationSelected(${s.id})" class="px-2 py-0.5 rounded text-[11px] font-semibold bg-slate-100 hover:bg-sky-100 dark:bg-slate-800 dark:hover:bg-sky-950/60 text-slate-700 dark:text-slate-300 hover:text-sky-700 dark:hover:text-sky-400 transition cursor-pointer">
             ${isCur ? 'Editando' : 'Editar'}
@@ -1077,56 +1104,131 @@ function downloadCSV() {
 }
 
 /**
- * Sincronización Global Unificada (Telemetría Fluvial, Represas y Umbrales)
+ * Polling en Tiempo Real (cada 60s) y Gestión de Visibilidad
+ */
+let _pollTimer = null;
+let _isPolling = false;
+const POLL_INTERVAL_MS = 60000;
+
+async function pollRealtimeData() {
+  if (document.hidden || _isPolling) return;
+  _isPolling = true;
+
+  try {
+    // 1. Recargar situación general, alertas y estado de fuentes
+    const sitData = await API.getSituation();
+    if (sitData && sitData.success) {
+      State.situation = sitData;
+      if (sitData.sources_status && window.Components && typeof Components.renderSourcesHeader === 'function') {
+        Components.renderSourcesHeader(sitData.sources_status);
+      }
+      Components.renderAlertBanner('alert-banner-container', sitData.alertas_activas, window.selectStation, sitData.estaciones_falla_reporte);
+    }
+
+    // 2. Recargar catálogo de estaciones (actualiza alturas en memoria)
+    const estData = await API.getStations();
+    if (estData && estData.success) {
+      State.stations = estData.estaciones || [];
+      const searchInput = document.getElementById('search-station');
+      if (!searchInput || !searchInput.value.trim()) {
+        filterStations();
+      }
+    }
+
+    // 3. Actualizar la vista activa de forma suave sin destruir componentes
+    if (State.viewMode === 'caudales') {
+      if (window.RepresasView && typeof RepresasView.loadData === 'function') {
+        await RepresasView.loadData();
+      }
+    } else if (State.viewMode === 'charts') {
+      if (State.layout === 1 && State.selectedStationId) {
+        await selectStation(State.selectedStationId, false);
+      } else if (State.layout > 1) {
+        for (let i = 0; i < State.layout; i++) {
+          if (State.subplotStationIds[i]) {
+            Charts.loadSubplotData(i, State.subplotStationIds[i], true);
+          }
+        }
+      }
+    } else if (State.viewMode === 'map') {
+      if (window.MapView && MapView.map) {
+        MapView.renderStations(State.stations, State.selectedStationId, window.selectStation);
+        if (window.RepresasView && RepresasView.data) {
+          MapView.renderDams(RepresasView.data);
+        }
+      }
+    }
+  } catch (err) {
+    console.warn('Advertencia en ciclo de polling:', err);
+  } finally {
+    _isPolling = false;
+  }
+}
+
+function startPollingCycle() {
+  stopPollingCycle();
+  _pollTimer = setInterval(() => {
+    if (!document.hidden) {
+      pollRealtimeData();
+    }
+  }, POLL_INTERVAL_MS);
+}
+
+function stopPollingCycle() {
+  if (_pollTimer) {
+    clearInterval(_pollTimer);
+    _pollTimer = null;
+  }
+}
+
+// Escuchar cambios de visibilidad para suspender y reactivar peticiones sin desperdicio
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden) {
+    pollRealtimeData();
+    startPollingCycle();
+  } else {
+    stopPollingCycle();
+  }
+});
+
+/**
+ * Sincronización Global Unificada bajo demanda (invoca POST /api/sync)
  */
 async function syncAll() {
   const syncBtn = document.getElementById('btn-sync-all');
   const syncIcon = document.getElementById('sync-icon');
+  const syncText = document.getElementById('sync-btn-label') || document.getElementById('sync-text');
+
   if (syncIcon) syncIcon.classList.add('animate-spin');
   if (syncBtn) syncBtn.disabled = true;
-  Components.showToast('Sincronizando', 'Actualizando telemetría, represas y caudales...');
+  if (syncText) syncText.textContent = 'Actualizando...';
+
+  Components.showToast('Sincronizando', 'Consultando telemetría oficial y fuentes en paralelo...');
 
   try {
-    await API.syncAll();
+    const res = await API.syncAll();
 
-    // 1. Recargar situación general y alertas
-    const sitData = await API.getSituation();
-    if (sitData && sitData.success) {
-      State.situation = sitData;
-      Components.renderAlertBanner('alert-banner-container', sitData.alertas_activas, window.selectStation, sitData.estaciones_falla_reporte);
+    if (res && res.cooldown) {
+      const waitSec = res.wait_seconds || 60;
+      Components.showToast('Enfriamiento', res.message || `Espera ${waitSec}s antes de otra sincronización manual.`);
+      return;
     }
 
-    // 2. Recargar catálogo de estaciones
-    const estData = await API.getStations();
-    if (estData && estData.success) {
-      State.stations = estData.estaciones || [];
-      State.filteredStations = [...State.stations];
-      populateChartsStationSelect();
+    // Refrescar todas las vistas de forma inmediata
+    await pollRealtimeData();
+
+    if (window.RepresasView && typeof RepresasView.loadData === 'function') {
+      await RepresasView.loadData();
     }
 
-    // 3. Recargar vista de represas/caudales
-    if (window.RepresasView && typeof RepresasView.syncRepresasData === 'function') {
-      await RepresasView.syncRepresasData();
-    }
-
-    // 4. Si hay una estación activa, recargarla
-    if (State.layout === 1 && State.selectedStationId) {
-      await selectStation(State.selectedStationId, false);
-    } else if (State.layout > 1) {
-      for (let i = 0; i < State.layout; i++) {
-        if (State.subplotStationIds[i]) {
-          Charts.loadSubplotData(i, State.subplotStationIds[i], true);
-        }
-      }
-    }
-
-    Components.showToast('Sincronización completa', 'Todos los datos se han actualizado correctamente');
+    Components.showToast('Actualizado', 'Datos sincronizados exitosamente.');
   } catch (err) {
     console.error('Error durante sincronización global:', err);
     Components.showToast('Error de sincronización', err.message || 'No se pudieron actualizar los datos', true);
   } finally {
     if (syncIcon) syncIcon.classList.remove('animate-spin');
     if (syncBtn) syncBtn.disabled = false;
+    if (syncText) syncText.textContent = 'Actualizar';
   }
 }
 
@@ -1139,7 +1241,7 @@ async function syncAllStations() {
 }
 
 /**
- * Monitoreo de Sincronización Automática
+ * Monitoreo de Sincronización Automática y Fuentes
  */
 function initSyncTicker() {
   const updateTicker = async () => {
@@ -1151,9 +1253,12 @@ function initSyncTicker() {
         if (syncBadge && data.next_auto_sync) {
           syncBadge.textContent = `Próx. Auto-Sync: ${data.next_auto_sync}`;
         }
+        if (data.sources_status && window.Components && typeof Components.renderSourcesHeader === 'function') {
+          Components.renderSourcesHeader(data.sources_status);
+        }
       }
     } catch (e) {
-      // Ignorar errores de red transitorios
+      // Ignorar errores transitorios de red
     }
   };
 
@@ -1312,6 +1417,8 @@ window.focusStationInSingleMode = window.goToStationCharts;
 // SIMEPAR
 window.selectSimeparDate = (dateStr) => {
   SimeparView.selectedDate = dateStr;
+  const parts = dateStr.split('-');
+  SimeparView.currentCalendarMonth = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, 1);
   SimeparView.renderImage();
   SimeparView.updateControls();
   SimeparView.closeCalendar();
@@ -1362,4 +1469,4 @@ window.filterThresholdModalTable = filterThresholdModalTable;
 window.toggleStationAlerts = toggleStationAlerts;
 window.renderThresholdModalQuickList = renderThresholdModalQuickList;
 window.setChartSource = setChartSource;
-
+window.pollRealtimeData = pollRealtimeData;

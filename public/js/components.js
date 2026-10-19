@@ -7,12 +7,15 @@
 const Components = {
   /**
    * Formateador unificado de fechas y horas para toda la plataforma
-   * Normaliza formatos heterogéneos ('2026-10-16 11:00:00', '16/10/26 08h', '16/10/2026 08:00', ISO)
-   * a un formato estándar argentino: DD/MM/YYYY HH:mm (con opción 'hs')
+   * Normaliza formatos heterogéneos a un formato estándar argentino: DD/MM/YYYY HH:mm (con opción 'hs')
+   * Si el valor es nulo o inválido, retorna estrictamente '—' (em-dash).
    */
   formatDateTime(val, showHs = false) {
-    if (!val || val === '--' || val === 'Sin datos' || val === 'None' || val === 'null') return '--';
+    if (val === null || val === undefined || val === '' || val === '--' || val === '—' || val === 'Sin datos' || val === 'None' || val === 'null') {
+      return '—';
+    }
     const s = String(val).trim();
+    if (s === '-' || s === 'S/D' || s === 'NaN') return '—';
 
     // 1. Caso '16/10/26 08h', '16/10/2026 08h', '16/10/2026 08:00'
     let m = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})(?:[T\s](\d{1,2})(?::(\d{2}))?(?::\d{2})?)?h?$/);
@@ -41,6 +44,231 @@ const Components = {
   },
 
   /**
+   * Formateador estricto para valores numéricos con regla de integridad de nulos.
+   * Si es null, undefined, NaN, "-", "S/D", etc., retorna estrictamente "—".
+   * Jamás retorna 0, 0.00, NaN ni null.
+   */
+  formatNumber(val, decimals = 2) {
+    if (val === null || val === undefined || val === '' || val === '--' || val === '—' || val === 'Sin datos' || val === 'None' || val === 'null' || val === '-' || val === 'S/D') {
+      return '—';
+    }
+    const num = Number(val);
+    if (isNaN(num)) return '—';
+    return num.toFixed(decimals);
+  },
+
+  /**
+   * Formateador estricto para caudales (m³/s) con separadores de miles argentinos.
+   * Si es null, undefined o NaN, retorna estrictamente "—".
+   */
+  formatFlow(val, decimals = 1) {
+    if (val === null || val === undefined || val === '' || val === '--' || val === '—' || val === 'Sin datos' || val === 'None' || val === 'null' || val === '-' || val === 'S/D') {
+      return '—';
+    }
+    const num = Number(val);
+    if (isNaN(num)) return '—';
+    return num.toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: decimals });
+  },
+
+  /**
+   * Calcula la antigüedad temporal relativa de un registro medido en origen (measured_at).
+   * Identifica si el dato supera las 3 horas de antigüedad (isStale).
+   */
+  formatRelativeAge(dateStr) {
+    if (!dateStr || dateStr === '—' || dateStr === '--') {
+      return {
+        formattedTime: '—',
+        relativeStr: 'sin datos',
+        fullStr: '—',
+        isStale: true,
+        hoursDiff: 999
+      };
+    }
+
+    let dt = null;
+    const s = String(dateStr).trim();
+
+    // Intentar parsear ISO o YYYY-MM-DD HH:MM:SS
+    const isoClean = s.includes('T') ? s : s.replace(' ', 'T');
+    const parsedTs = Date.parse(isoClean);
+    if (!isNaN(parsedTs)) {
+      dt = new Date(parsedTs);
+    } else {
+      // Intentar DD/MM/YYYY
+      const m = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})(?:[T\s](\d{1,2}):(\d{2}))?/);
+      if (m) {
+        let y = parseInt(m[3], 10);
+        if (y < 100) y += 2000;
+        dt = new Date(y, parseInt(m[2], 10) - 1, parseInt(m[1], 10), parseInt(m[4] || '0', 10), parseInt(m[5] || '0', 10));
+      }
+    }
+
+    if (!dt || isNaN(dt.getTime())) {
+      return {
+        formattedTime: Components.formatDateTime(dateStr, true),
+        relativeStr: 'hora registrada',
+        fullStr: Components.formatDateTime(dateStr, true),
+        isStale: false,
+        hoursDiff: 0
+      };
+    }
+
+    const now = new Date();
+    const diffSec = Math.max(0, Math.floor((now.getTime() - dt.getTime()) / 1000));
+    const hoursDiff = diffSec / 3600.0;
+    const isStale = hoursDiff > 3.0;
+
+    let relativeStr = '';
+    if (diffSec < 60) {
+      relativeStr = 'hace instantes';
+    } else if (diffSec < 3600) {
+      const min = Math.floor(diffSec / 60);
+      relativeStr = min === 1 ? 'hace 1 minuto' : `hace ${min} minutos`;
+    } else if (diffSec < 86400) {
+      const h = Math.floor(diffSec / 3600);
+      relativeStr = h === 1 ? 'hace 1 hora' : `hace ${h} horas`;
+    } else {
+      const d = Math.floor(diffSec / 86400);
+      relativeStr = d === 1 ? 'hace 1 día' : `hace ${d} días`;
+    }
+
+    const hh = String(dt.getHours()).padStart(2, '0');
+    const mm = String(dt.getMinutes()).padStart(2, '0');
+    const formattedTime = `${hh}:${mm} hs`;
+
+    return {
+      formattedTime,
+      relativeStr,
+      fullStr: `${formattedTime} · ${relativeStr}`,
+      isStale,
+      hoursDiff
+    };
+  },
+
+  /**
+   * Renderiza el badge sobrio de trazabilidad y frescura del dato (PNA, COPEL, ENGIE, ONS, etc.)
+   * Aplica la clase CSS .is-stale si measured_at tiene más de 3 horas de antigüedad.
+   */
+  renderFreshnessBadge(source, measuredAt, extraClass = '') {
+    const srcUpper = String(source || 'ORIGEN').toUpperCase().trim();
+    const info = Components.formatRelativeAge(measuredAt);
+    const staleClass = info.isStale ? 'is-stale' : '';
+    const srcClass = `src-${srcUpper.toLowerCase().replace(/[^a-z]/g, '')}`;
+
+    const titleTooltip = `Fuente: ${srcUpper} | Medición: ${Components.formatDateTime(measuredAt, true)} - ${info.relativeStr}${info.isStale ? ' - Sin renovación reciente' : ''}`;
+
+    return `
+      <span class="badge-freshness ${staleClass} ${extraClass}" title="${titleTooltip}">
+        <span class="source-tag ${srcClass}">${srcUpper}</span>
+        <span class="tabular-nums">${info.relativeStr}</span>
+        ${info.isStale ? '<span class="stale-clock" title="Más de 3h de antigüedad">⏱</span>' : ''}
+      </span>
+    `;
+  },
+
+  /**
+   * Renderiza los indicadores compactos en la barra superior por cada una de las 6 fuentes:
+   * COPEL, ENGIE, ONS, PNA, ITAIPU, SIMEPAR.
+   * Muestra la hora de última lectura exitosa y advertencia si falló (indicando que se exhiben datos de BD).
+   */
+  renderSourcesHeader(sourcesStatus) {
+    if (!sourcesStatus) return;
+
+    // Normalizar fuentes según el contrato de la API
+    // fuentes disponibles: stations, represas, prefectura, simepar
+    const repStatus = sourcesStatus.represas || {};
+    const pnaStatus = sourcesStatus.prefectura || sourcesStatus.pna || {};
+    const simeparStatus = sourcesStatus.simepar || {};
+
+    const sourcesConfig = [
+      {
+        id: 'copel',
+        name: 'COPEL',
+        info: sourcesStatus.copel || repStatus,
+        label: 'COPEL (Iguazú)'
+      },
+      {
+        id: 'engie',
+        name: 'ENGIE',
+        info: sourcesStatus.engie || repStatus,
+        label: 'ENGIE (Iguazú)'
+      },
+      {
+        id: 'ons',
+        name: 'ONS',
+        info: sourcesStatus.ons || repStatus,
+        label: 'ONS (Brasil S3)'
+      },
+      {
+        id: 'pna',
+        name: 'PNA',
+        info: pnaStatus,
+        label: 'PNA (Prefectura)'
+      },
+      {
+        id: 'itaipu',
+        name: 'ITAIPU',
+        info: sourcesStatus.itaipu || repStatus,
+        label: 'ITAIPÚ Binacional'
+      },
+      {
+        id: 'simepar',
+        name: 'SIMEPAR',
+        info: simeparStatus,
+        label: 'SIMEPAR (Radar/Precipitación)'
+      }
+    ];
+
+    sourcesConfig.forEach(cfg => {
+      const chip = document.getElementById(`source-chip-${cfg.id}`);
+      if (!chip) return;
+
+      const raw = cfg.info || {};
+      const status = (raw.status || 'OK').toUpperCase();
+      const lastSuccess = raw.last_success_at || raw.last_attempt_at;
+      const records = raw.records_count !== undefined ? raw.records_count : null;
+      const errorMsg = raw.error_message;
+
+      // Evaluar antigüedad si hay timestamp
+      const age = Components.formatRelativeAge(lastSuccess);
+      const isError = status === 'ERROR' || Boolean(errorMsg);
+      const isStale = status === 'STALE' || age.isStale;
+
+      // Limpiar clases previas
+      chip.classList.remove('status-ok', 'status-stale', 'status-error', 'status-pending', 'is-stale', 'has-error');
+
+      let stateBadge = 'OK';
+      let tooltipText = '';
+
+      if (isError) {
+        chip.classList.add('status-error', 'has-error');
+        stateBadge = 'ERROR';
+        tooltipText = `${cfg.label} • ESTADO: ERROR EN RECOLECCIÓN\n` +
+                      `Última lectura exitosa: ${Components.formatDateTime(lastSuccess, true)} · ${age.relativeStr}\n` +
+                      `Aviso: ${errorMsg || 'Fallo de red en origen'}.\n` +
+                      `⚠️ Se exhiben los últimos datos válidos almacenados en BD.`;
+      } else if (isStale) {
+        chip.classList.add('status-stale', 'is-stale');
+        stateBadge = 'DEMORA';
+        tooltipText = `${cfg.label} • ESTADO: DEMORA EN RENOVACIÓN: >3h\n` +
+                      `Última lectura exitosa: ${Components.formatDateTime(lastSuccess, true)} · ${age.relativeStr}\n` +
+                      `Registros almacenados: ${records !== null ? records : '—'}\n` +
+                      `Aviso: El origen oficial no ha emitido lecturas nuevas. Se exhiben los datos disponibles en BD.`;
+      } else {
+        chip.classList.add('status-ok');
+        stateBadge = 'ACTIVA';
+        tooltipText = `${cfg.label} • ESTADO: ACTIVA: OK\n` +
+                      `Última lectura exitosa: ${Components.formatDateTime(lastSuccess, true)} · ${age.relativeStr}\n` +
+                      `Registros procesados: ${records !== null ? records : '—'}`;
+      }
+
+      chip.setAttribute('title', tooltipText);
+      chip.setAttribute('aria-label', tooltipText);
+    });
+  },
+
+
+  /**
    * Renderiza la barra superior de alertas estilo Ticker / Carrusel Continuo
    * y el botón desplegable con el detalle completo de alertas y fallas de telemetría.
    */
@@ -67,14 +295,14 @@ const Components = {
     let badgeClass = '';
 
     if (hasAlerts) {
-      badgeText = `ALERTAS CUENCA (${sorted.length})`;
+      badgeText = `ALERTAS CUENCA: ${sorted.length}`;
       badgeClass = 'text-rose-400 border-rose-500/30';
 
       const renderItem = (a) => {
         const stateClass = `item-${a.estado}`;
         const dotColor = a.estado === 'evacuacion' ? 'bg-red-500 animate-pulse' : 'bg-amber-400';
         const valStr = (a.altura !== null && a.altura !== undefined) ? `${a.altura.toFixed(2)}m` : '--';
-        const umbStr = a.umbrales && a.umbrales[a.estado] ? `(Umbral: ${a.umbrales[a.estado]}m)` : '';
+        const umbStr = a.umbrales && a.umbrales[a.estado] ? `· Umbral ${a.umbrales[a.estado]}m` : '';
         const trendIcon = a.tendencia === 'creciente' ? '▲' : (a.tendencia === 'bajante' ? '▼' : '―');
         const trendCol = a.tendencia === 'creciente' ? 'text-rose-400' : (a.tendencia === 'bajante' ? 'text-emerald-400' : 'text-slate-400');
 
@@ -390,12 +618,12 @@ const Components = {
 
     // 1. Valor actual AGP
     let val = kpis.ultima_altura;
-    if (isCota && val !== null) {
+    if (isCota && val !== null && val !== undefined) {
       val = val + offset;
     }
 
     if (currentValElem) {
-      currentValElem.textContent = val !== null ? val.toFixed(2) : '--';
+      currentValElem.textContent = Components.formatNumber(val, 2);
     }
 
     // 2. Tendencia AGP
@@ -416,26 +644,33 @@ const Components = {
     // 3. Velocidad cm/h
     if (currentRateElem) {
       const v = kpis.velocidad_cm_hora;
-      if (v !== undefined && v !== 0) {
+      if (v !== undefined && v !== null && v !== 0) {
         const sign = v > 0 ? '+' : '';
-        currentRateElem.textContent = `(${sign}${v} cm/h)`;
+        currentRateElem.textContent = `· ${sign}${v} cm/h`;
       } else {
         currentRateElem.textContent = '';
       }
     }
 
+    // Antigüedad y frescura de telemetría AGP
+    const agpAge = Components.formatRelativeAge(kpis.ultimo_timestamp);
     if (currentTimeElem) {
       const formattedAgpTime = Components.formatDateTime(kpis.ultimo_timestamp, true);
-      if (kpis.falla_reporte) {
-        currentTimeElem.innerHTML = `<span class="text-slate-500 dark:text-slate-400 font-mono" title="Última actualización">${formattedAgpTime}</span> <span class="text-amber-500 font-bold ml-1" title="Retraso en actualización">⚠️</span>`;
+      const titleAttr = formattedAgpTime !== '—' ? `Última telemetría: ${formattedAgpTime}` : 'Sin datos';
+      if (agpAge.isStale) {
+        currentTimeElem.innerHTML = `
+          <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-semibold text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/50 border border-amber-300/60 dark:border-amber-800/60" title="${titleAttr}">
+            <span class="text-[11px]">⏱</span>
+            <span>${agpAge.relativeStr}</span>
+          </span>
+        `;
       } else {
-        currentTimeElem.textContent = kpis.ultimo_timestamp ? `Lectura: ${formattedAgpTime}` : 'Sin datos';
+        currentTimeElem.innerHTML = `
+          <span class="inline-flex items-center text-xs font-medium text-slate-500 dark:text-slate-400" title="${titleAttr}">
+            <span>${agpAge.relativeStr}</span>
+          </span>
+        `;
       }
-    }
-
-    const warnBox = document.getElementById('sit-transmission-warning');
-    if (warnBox) {
-      warnBox.classList.add('hidden');
     }
 
     // 4. Medición Oficial Prefectura Naval Argentina (PNA)
@@ -444,16 +679,13 @@ const Components = {
       pnaVal = pnaVal + offset;
     }
     if (pnaValElem) {
-      pnaValElem.textContent = (pnaVal !== null && pnaVal !== undefined) ? pnaVal.toFixed(2) : '--';
+      pnaValElem.textContent = Components.formatNumber(pnaVal, 2);
     }
 
     const pnaTitleElem = document.getElementById('sit-pna-title');
     if (pnaTitleElem) {
-      if (kpis.pna_puerto) {
-        pnaTitleElem.innerHTML = `<span>⚓ Prefectura (${kpis.pna_puerto})</span>`;
-      } else {
-        pnaTitleElem.innerHTML = `<span>⚓ Prefectura Naval</span>`;
-      }
+      const puerto = kpis.pna_puerto ? ` · ${kpis.pna_puerto}` : '';
+      pnaTitleElem.innerHTML = `<span>⚓ Prefectura${puerto}</span>`;
     }
 
     if (pnaTrendElem) {
@@ -472,12 +704,32 @@ const Components = {
         pnaTrendElem.textContent = pnaState;
       } else {
         pnaTrendElem.className = 'text-[10px] px-1.5 py-0.5 rounded font-bold bg-slate-100 dark:bg-slate-800 text-slate-400';
-        pnaTrendElem.textContent = '--';
+        pnaTrendElem.textContent = '—';
       }
     }
 
+    const pnaAge = Components.formatRelativeAge(kpis.pna_timestamp);
     if (pnaTimeElem) {
-      pnaTimeElem.textContent = kpis.pna_timestamp ? Components.formatDateTime(kpis.pna_timestamp, true) : 'Sin reporte PNA';
+      if (kpis.pna_timestamp) {
+        const pnaFormatted = Components.formatDateTime(kpis.pna_timestamp, true);
+        const pnaTooltip = `Reporte oficial PNA: ${pnaFormatted}`;
+        if (pnaAge.isStale) {
+          pnaTimeElem.innerHTML = `
+            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-semibold text-amber-800 dark:text-amber-200 bg-amber-100/70 dark:bg-amber-950/60 border border-amber-300/60 dark:border-amber-800/60" title="${pnaTooltip}">
+              <span class="text-[11px]">⏱</span>
+              <span>${pnaAge.relativeStr}</span>
+            </span>
+          `;
+        } else {
+          pnaTimeElem.innerHTML = `
+            <span class="inline-flex items-center text-xs font-medium text-amber-700/90 dark:text-amber-400" title="${pnaTooltip}">
+              <span>${pnaAge.relativeStr}</span>
+            </span>
+          `;
+        }
+      } else {
+        pnaTimeElem.innerHTML = `<span class="text-xs text-slate-400 font-medium">Sin reporte PNA</span>`;
+      }
     }
 
     // 5. Diferencia Delta (AGP − PNA)
@@ -497,7 +749,7 @@ const Components = {
           colorCls = 'text-amber-600 dark:text-amber-400';
           tag = '<span class="text-[9px] px-1.5 py-0.5 rounded font-sans font-semibold bg-amber-100 dark:bg-amber-950/70 text-amber-700 dark:text-amber-300 ml-1.5">Cero distinto</span>';
         }
-        diffValElem.innerHTML = `<span class="${colorCls} font-bold font-data">${sign}${diff.toFixed(2)} ${isCota ? 'msnm' : 'm'}</span>${tag}`;
+        diffValElem.innerHTML = `<span class="${colorCls} font-bold font-data tabular-nums">${sign}${diff.toFixed(2)} ${isCota ? 'msnm' : 'm'}</span>${tag}`;
       } else {
         diffValElem.innerHTML = '<span class="text-slate-400 font-sans text-[11px]">Sin puerto PNA emparejado</span>';
       }
@@ -508,15 +760,15 @@ const Components = {
       if (kpis.variacion_24h !== null && kpis.variacion_24h !== undefined) {
         const sign = kpis.variacion_24h > 0 ? '+' : '';
         const colorCls = kpis.variacion_24h > 0 ? 'text-rose-600 dark:text-rose-400' : (kpis.variacion_24h < 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-700 dark:text-slate-200');
-        var24ValElem.innerHTML = `<span class="${colorCls}">${sign}${kpis.variacion_24h.toFixed(2)} m</span>`;
+        var24ValElem.innerHTML = `<span class="${colorCls} tabular-nums">${sign}${kpis.variacion_24h.toFixed(2)} m</span>`;
       } else {
-        var24ValElem.textContent = '--';
+        var24ValElem.textContent = '—';
       }
     }
 
     if (varRangeElem) {
-      const minStr = kpis.min_altura !== null ? `${kpis.min_altura.toFixed(2)} m` : '--';
-      const maxStr = kpis.max_altura !== null ? `${kpis.max_altura.toFixed(2)} m` : '--';
+      const minStr = kpis.min_altura !== null && kpis.min_altura !== undefined ? `${kpis.min_altura.toFixed(2)} m` : '—';
+      const maxStr = kpis.max_altura !== null && kpis.max_altura !== undefined ? `${kpis.max_altura.toFixed(2)} m` : '—';
       varRangeElem.textContent = `Mín: ${minStr} | Máx: ${maxStr}`;
     }
 
@@ -599,8 +851,8 @@ const Components = {
     const alertaEl = document.getElementById('lbl-val-alerta');
     const evacEl = document.getElementById('lbl-val-evac');
 
-    if (alertaEl) alertaEl.textContent = alerta ? `${alerta.toFixed(2)} m` : '--';
-    if (evacEl) evacEl.textContent = evac ? `${evac.toFixed(2)} m` : '--';
+    if (alertaEl) alertaEl.textContent = alerta ? `${Components.formatNumber(alerta, 2)} m` : '—';
+    if (evacEl) evacEl.textContent = evac ? `${Components.formatNumber(evac, 2)} m` : '—';
   },
 
   /**
@@ -625,13 +877,13 @@ const Components = {
         badgeClass = 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300 border-amber-300 dark:border-amber-800';
       } else if (agpList.length > 0) {
         targetPoints = agpList;
-        sourceLabel = 'AGP (Sin PNA)';
+        sourceLabel = 'AGP · Sin PNA';
         badgeClass = 'bg-sky-100 text-sky-800 dark:bg-sky-950 dark:text-sky-300 border-sky-300 dark:border-sky-800';
       }
     } else if (source === 'ambas') {
       if (agpList.length > 0 && pnaList.length > 0) {
         targetPoints = [...agpList, ...pnaList];
-        sourceLabel = 'Unificada (AGP + PNA)';
+        sourceLabel = 'Unificada · AGP + PNA';
         badgeClass = 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 border-emerald-300 dark:border-emerald-800';
       } else if (pnaList.length > 0) {
         targetPoints = pnaList;
@@ -650,7 +902,7 @@ const Components = {
         badgeClass = 'bg-sky-100 text-sky-800 dark:bg-sky-950 dark:text-sky-300 border-sky-300 dark:border-sky-800';
       } else if (pnaList.length > 0) {
         targetPoints = pnaList;
-        sourceLabel = 'Prefectura PNA (Sin AGP)';
+        sourceLabel = 'Prefectura PNA · Sin AGP';
         badgeClass = 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300 border-amber-300 dark:border-amber-800';
       }
     }
@@ -719,10 +971,10 @@ const Components = {
 
     const setVal = (id, val) => {
       const el = document.getElementById(id);
-      if (el) el.textContent = val !== null && val !== undefined ? val.toFixed(2) : '--';
+      if (el) el.textContent = Components.formatNumber(val, 2);
     };
 
-    setVal('kpi-val-current', (kpis && kpis.ultima_altura !== null) ? (isCota ? kpis.ultima_altura + offset : kpis.ultima_altura) : null);
+    setVal('kpi-val-current', (kpis && kpis.ultima_altura !== null && kpis.ultima_altura !== undefined) ? (isCota ? kpis.ultima_altura + offset : kpis.ultima_altura) : null);
     setVal('kpi-val-max', max);
     setVal('kpi-val-min', min);
     setVal('kpi-val-avg', avg);
@@ -733,9 +985,9 @@ const Components = {
       if (var24 !== null && var24 !== undefined && !isNaN(var24)) {
         const sign = var24 > 0 ? '+' : '';
         const colorCls = var24 > 0 ? 'text-rose-600 dark:text-rose-400' : (var24 < 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-700 dark:text-slate-200');
-        var24ValElem.innerHTML = `<span class="${colorCls}">${sign}${var24.toFixed(2)} m</span>`;
+        var24ValElem.innerHTML = `<span class="${colorCls} tabular-nums">${sign}${var24.toFixed(2)} m</span>`;
       } else {
-        var24ValElem.textContent = '--';
+        var24ValElem.textContent = '—';
       }
     }
 
@@ -749,14 +1001,14 @@ const Components = {
     document.querySelectorAll('.kpi-unit-label').forEach(el => el.textContent = unit);
 
     const timeEl = document.getElementById('kpi-time-current');
-    if (timeEl) timeEl.textContent = Components.formatDateTime(kpis && kpis.ultimo_timestamp, true) || 'Sin datos';
+    if (timeEl) timeEl.textContent = Components.formatDateTime(kpis && kpis.ultimo_timestamp, true);
 
     const countEl = document.getElementById('kpi-points-count');
-    if (countEl) countEl.textContent = `${totalPoints} mediciones (${sourceLabel})`;
+    if (countEl) countEl.textContent = `${totalPoints} mediciones · ${sourceLabel}`;
   },
 
   /**
-   * Renderiza la tabla de mediciones recientes
+   * Renderiza la tabla de mediciones recientes con tabular-nums y em-dash estricto
    */
   renderRecentTable(recientes, isCota, offset) {
     const tbody = document.getElementById('readings-table-body');
@@ -771,43 +1023,43 @@ const Components = {
 
     tbody.innerHTML = recientes.map(r => {
       // 1. Columna AGP (Telemetría directa)
-      let agpStr = '<span class="text-slate-400">--</span>';
+      let agpStr = '<span class="text-slate-400 tabular-nums">—</span>';
       const aVal = (r.altura_agp !== null && r.altura_agp !== undefined) ? r.altura_agp 
                  : ((r.altura !== null && r.altura !== undefined && (r.altura_pna === null || r.altura_pna === undefined)) ? r.altura : null);
-      if (aVal !== null) {
-        let v = aVal;
+      if (aVal !== null && aVal !== undefined) {
+        let v = Number(aVal);
         if (isCota) v += offset;
-        agpStr = `<span class="font-data font-bold text-sky-600 dark:text-sky-400">${v.toFixed(2)} <span class="text-[10px] text-slate-400 font-normal">${unitSuffix}</span></span>`;
+        agpStr = `<span class="font-data font-bold text-sky-600 dark:text-sky-400 tabular-nums">${v.toFixed(2)} <span class="text-[10px] text-slate-400 font-normal">${unitSuffix}</span></span>`;
       }
 
       // 2. Columna Prefectura PNA (Guardias oficiales)
-      let pnaStr = '<span class="text-slate-400">--</span>';
+      let pnaStr = '<span class="text-slate-400 tabular-nums">—</span>';
       if (r.altura_pna !== null && r.altura_pna !== undefined) {
-        let pv = r.altura_pna;
+        let pv = Number(r.altura_pna);
         if (isCota) pv += offset;
-        const estStr = r.estado_pna ? ` <span class="text-[10px] font-sans font-bold text-amber-700 dark:text-amber-300">(${r.estado_pna})</span>` : '';
-        pnaStr = `<span class="font-mono font-semibold text-amber-600 dark:text-amber-400" title="Prefectura Naval Argentina">⚓ ${pv.toFixed(2)} <span class="text-[10px] text-slate-400 font-normal">${unitSuffix}</span>${estStr}</span>`;
+        const estStr = r.estado_pna ? ` <span class="text-[10px] font-sans font-bold text-amber-700 dark:text-amber-300">· ${r.estado_pna}</span>` : '';
+        pnaStr = `<span class="font-mono font-semibold text-amber-600 dark:text-amber-400 tabular-nums" title="Prefectura Naval Argentina">⚓ ${pv.toFixed(2)} <span class="text-[10px] text-slate-400 font-normal">${unitSuffix}</span>${estStr}</span>`;
       }
 
       // 3. Columna Variación / Discrepancia
-      let diffStr = '<span class="text-slate-400">▬ 0.00</span>';
+      let diffStr = '<span class="text-slate-400 tabular-nums">▬ 0.00</span>';
       let diffCls = 'text-slate-400';
       if (r.variacion !== undefined && r.variacion !== null && Math.abs(r.variacion) >= 0.01) {
         const sign = r.variacion > 0 ? '+' : '';
-        diffStr = `${sign}${r.variacion.toFixed(2)} m`;
+        diffStr = `${sign}${Number(r.variacion).toFixed(2)} m`;
         diffCls = r.variacion > 0 ? 'text-rose-600 dark:text-rose-400 font-bold' : 'text-emerald-600 dark:text-emerald-400 font-bold';
       } else if (r.diferencia !== undefined && r.diferencia !== null) {
         const sign = r.diferencia > 0 ? '+' : '';
-        diffStr = `<span class="text-[10px] text-slate-500 dark:text-slate-400 font-mono" title="Diferencia telemétrica AGP - PNA">Δ ${sign}${r.diferencia.toFixed(2)}m</span>`;
+        diffStr = `<span class="text-[10px] text-slate-500 dark:text-slate-400 font-mono tabular-nums" title="Diferencia telemétrica AGP - PNA">Δ ${sign}${Number(r.diferencia).toFixed(2)}m</span>`;
         diffCls = 'text-slate-500';
       }
 
       return `
         <tr class="hover:bg-slate-50/80 dark:hover:bg-slate-800/40 transition">
-          <td class="py-1.5 px-2.5 font-mono text-[11px] sm:text-xs text-slate-600 dark:text-slate-300">${Components.formatDateTime(r.timestamp)}</td>
-          <td class="py-1.5 px-2.5 text-[11px] sm:text-xs">${agpStr}</td>
-          <td class="py-1.5 px-2.5 text-[11px] sm:text-xs">${pnaStr}</td>
-          <td class="py-1.5 px-2.5 font-mono text-[11px] sm:text-xs ${diffCls}">${diffStr}</td>
+          <td class="py-1.5 px-2.5 font-mono text-[11px] sm:text-xs text-slate-600 dark:text-slate-300 tabular-nums">${Components.formatDateTime(r.timestamp)}</td>
+          <td class="py-1.5 px-2.5 text-[11px] sm:text-xs tabular-nums">${agpStr}</td>
+          <td class="py-1.5 px-2.5 text-[11px] sm:text-xs tabular-nums">${pnaStr}</td>
+          <td class="py-1.5 px-2.5 font-mono text-[11px] sm:text-xs tabular-nums ${diffCls}">${diffStr}</td>
         </tr>
       `;
     }).join('');
@@ -815,6 +1067,7 @@ const Components = {
 
   /**
    * Renderiza la lista de estaciones en la barra lateral con estilo Tailwind limpio
+   * Incluye badge de trazabilidad, indicación de antigüedad y clase .is-stale
    */
   renderStationList(stations, activeId, onSelectStation) {
     const container = document.getElementById('stations-list');
@@ -836,46 +1089,51 @@ const Components = {
       const isActive = s.id === activeId;
       const isSilenced = s.alertas_activas === false;
       const st = s.estado_hidrologico || 'normal';
-      const valStr = s.ultima_altura !== null ? s.ultima_altura.toFixed(2) : '--';
-      const pnaValStr = (s.pna_altura !== null && s.pna_altura !== undefined) ? s.pna_altura.toFixed(2) : null;
+      const valStr = Components.formatNumber(s.ultima_altura, 2);
+      const pnaValStr = (s.pna_altura !== null && s.pna_altura !== undefined) ? Components.formatNumber(s.pna_altura, 2) : null;
       const freq = s.frecuencia_minutos || 20;
 
       const activeBg = isActive
         ? 'bg-emerald-50 dark:bg-emerald-950/60 border-[#008348] dark:border-emerald-500 shadow-sm'
         : 'hover:bg-slate-100/70 dark:hover:bg-slate-800/60 border-transparent';
 
-      const isFailed = s.falla_reporte === true;
+      const ageInfo = Components.formatRelativeAge(s.ultimo_timestamp);
+      const isFailed = s.falla_reporte === true || ageInfo.isStale;
+      const staleClass = ageInfo.isStale ? 'is-stale' : '';
+
       const dotClass = isSilenced 
         ? 'bg-slate-400 ring-1 ring-slate-400/50' 
         : (isFailed ? 'bg-amber-500 animate-pulse' : (statusDots[st] || 'bg-emerald-500'));
       const dotTitle = isSilenced 
         ? 'Alertas silenciadas/desactivadas' 
-        : (isFailed ? `Falla de reporte (${s.tiempo_sin_reportar_str || 'sin datos'})` : `Estado: ${st}`);
+        : (isFailed ? `Falla de reporte: ${s.tiempo_sin_reportar_str || ageInfo.relativeStr}` : `Estado: ${st}`);
 
       return `
-        <div class="group flex items-center justify-between p-2 rounded-lg cursor-pointer border transition ${activeBg}" onclick="window.selectStation(${s.id})">
+        <div class="group flex items-center justify-between p-2 rounded-lg cursor-pointer border transition ${activeBg} ${staleClass}" onclick="window.selectStation(${s.id})">
           <div class="flex items-center space-x-2.5 min-w-0">
             <span class="w-2.5 h-2.5 rounded-full shrink-0 ${dotClass}" title="${dotTitle}"></span>
             <div class="min-w-0">
               <div class="text-xs font-semibold text-slate-800 dark:text-slate-100 truncate group-hover:text-[#008348] dark:group-hover:text-emerald-400 transition" title="${s.nombre}">
                 ${s.nombre}
-                ${isSilenced ? '<span class="text-[9px] text-slate-400 ml-1 font-normal font-mono">(silenciada)</span>' : ''}
-                ${isFailed ? '<span class="text-amber-500 text-xs ml-1" title="Retraso en reporte">⚠️</span>' : ''}
+                ${isSilenced ? '<span class="text-[9px] text-slate-400 ml-1 font-normal font-mono">· silenciada</span>' : ''}
+                ${ageInfo.isStale ? '<span class="text-amber-500 text-xs ml-1" title="Dato no renovado: >3h">⏱</span>' : ''}
               </div>
-              <div class="text-[10px] text-slate-400 flex items-center space-x-1.5 mt-0.5">
-                <span>${freq} min</span>
+              <div class="text-[10px] text-slate-400 flex items-center space-x-1.5 mt-0.5 tabular-nums">
+                <span>${s.source || 'AGP'}</span>
                 <span>•</span>
-                <span>${s.ultimo_timestamp ? s.ultimo_timestamp.slice(11, 16) : '--:--'}</span>
+                <span>${s.ultimo_timestamp ? s.ultimo_timestamp.slice(11, 16) : '—:—'}</span>
+                <span>•</span>
+                <span class="${ageInfo.isStale ? 'text-amber-600 dark:text-amber-400 font-semibold' : ''}">${ageInfo.relativeStr}</span>
               </div>
             </div>
           </div>
           <div class="text-right shrink-0 pl-2">
             <div class="flex items-baseline justify-end gap-0.5">
-              <span class="font-data font-bold text-xs ${isActive ? 'text-[#008348] dark:text-emerald-400' : 'text-slate-700 dark:text-slate-200'}">${valStr}</span>
+              <span class="font-data font-bold text-xs tabular-nums ${isActive ? 'text-[#008348] dark:text-emerald-400' : 'text-slate-700 dark:text-slate-200'}">${valStr}</span>
               <span class="text-[10px] text-slate-400 font-medium">m</span>
             </div>
             ${pnaValStr !== null ? `
-              <div class="text-[10px] font-mono text-amber-600 dark:text-amber-400 font-semibold" title="Prefectura: ${pnaValStr}m (${s.pna_estado_rio || ''})">
+              <div class="text-[10px] font-mono text-amber-600 dark:text-amber-400 font-semibold tabular-nums" title="Prefectura: ${pnaValStr}m · ${s.pna_estado_rio || ''}">
                 ⚓ ${pnaValStr}m
               </div>
             ` : ''}

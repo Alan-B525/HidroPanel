@@ -144,6 +144,10 @@ const MapView = {
     const el = document.getElementById(containerId);
     if (!el) return;
 
+    if (el._leaflet_id) {
+      el._leaflet_id = null;
+    }
+
     this.map = L.map(containerId, {
       center: [-26.5, -55.5],
       zoom: 7,
@@ -230,7 +234,9 @@ const MapView = {
 
   renderStations(stations, selectedId, onSelectStation) {
     if (!this.markersGroup) return;
-    this.markersGroup.clearLayers();
+
+    this._stationMarkers = this._stationMarkers || new Map();
+    const currentIds = new Set();
 
     const statusColors = {
       normal: '#10b981',
@@ -243,6 +249,7 @@ const MapView = {
 
     stations.forEach(s => {
       if (!s.latitud || !s.longitud) return;
+      currentIds.add(s.id);
 
       const st = s.estado_hidrologico || 'normal';
       const color = statusColors[st] || statusColors.normal;
@@ -250,18 +257,8 @@ const MapView = {
       const isFailed = s.falla_reporte === true;
       const radius = isSelected ? 8 : (isFailed ? 6.5 : 5.5);
 
-      const marker = L.circleMarker([s.latitud, s.longitud], {
-        radius: radius,
-        fillColor: color,
-        color: isSelected ? '#ffffff' : (isFailed ? '#f59e0b' : '#071c33'),
-        weight: isSelected ? 2.5 : (isFailed ? 2.0 : 1.2),
-        dashArray: isFailed && !isSelected ? '3, 3' : null,
-        opacity: 1,
-        fillOpacity: 0.95
-      });
-
-      const valStr = s.ultima_altura !== null ? `${s.ultima_altura.toFixed(2)} m` : 'Sin datos';
-      const timeStr = s.ultimo_timestamp || '';
+      const valStr = (s.ultima_altura !== null && s.ultima_altura !== undefined) ? `${Number(s.ultima_altura).toFixed(2)} m` : '—';
+      const timeStr = (window.Components && typeof Components.formatDateTime === 'function' ? Components.formatDateTime(s.ultimo_timestamp, true) : (s.ultimo_timestamp || '—'));
 
       const failNotice = isFailed
         ? `<div style="font-size: 0.72rem; font-weight: 600; color: #b45309; margin-bottom: 4px;">⚠️ Actualización demorada</div>`
@@ -275,9 +272,9 @@ const MapView = {
           </div>
           ${failNotice}
           <div style="display: flex; align-items: baseline; gap: 4px; margin-bottom: 4px;">
-            <span style="font-family: var(--font-value); font-size: 1.25rem; font-weight: 800; color: #0f172a;">${valStr}</span>
+            <span style="font-family: var(--font-value); font-size: 1.25rem; font-weight: 800; color: #0f172a; font-variant-numeric: tabular-nums;">${valStr}</span>
           </div>
-          <div style="font-size: 0.68rem; color: #64748b; margin-bottom: 6px;">Lectura: ${timeStr}</div>
+          <div style="font-size: 0.68rem; color: #64748b; margin-bottom: 6px; font-variant-numeric: tabular-nums;">Lectura: ${timeStr}</div>
           <div style="display: inline-block; font-size: 0.65rem; font-weight: 700; text-transform: uppercase; padding: 2px 6px; border-radius: 9999px; background: ${color}20; color: ${color}; border: 1px solid ${color};">
             Estado: ${st}
           </div>
@@ -289,24 +286,59 @@ const MapView = {
         </div>
       `;
 
-      marker.bindPopup(popupContent);
-      marker.bindTooltip(`<strong>${s.nombre}</strong>: ${valStr}${isFailed ? ' <span style="color:#d97706; font-weight:bold;">⚠️</span>' : ''}`, { direction: 'top', offset: [0, -6] });
+      const tooltipContent = `<strong>${s.nombre}</strong>: ${valStr}${isFailed ? ' <span style="color:#d97706; font-weight:bold;">⚠️</span>' : ''}`;
 
-      marker.on('click', () => {
-        if (onSelectStation) onSelectStation(s.id);
-      });
-      marker.on('dblclick', (e) => {
-        L.DomEvent.stop(e);
-        window.goToStationCharts(s.id);
-      });
-
-      this.markersGroup.addLayer(marker);
+      if (this._stationMarkers.has(s.id)) {
+        const marker = this._stationMarkers.get(s.id);
+        marker.setLatLng([s.latitud, s.longitud]);
+        marker.setStyle({
+          radius: radius,
+          fillColor: color,
+          color: isSelected ? '#ffffff' : (isFailed ? '#f59e0b' : '#071c33'),
+          weight: isSelected ? 2.5 : (isFailed ? 2.0 : 1.2),
+          dashArray: isFailed && !isSelected ? '3, 3' : null,
+          opacity: 1,
+          fillOpacity: 0.95
+        });
+        marker.setPopupContent(popupContent);
+        marker.setTooltipContent(tooltipContent);
+      } else {
+        const marker = L.circleMarker([s.latitud, s.longitud], {
+          radius: radius,
+          fillColor: color,
+          color: isSelected ? '#ffffff' : (isFailed ? '#f59e0b' : '#071c33'),
+          weight: isSelected ? 2.5 : (isFailed ? 2.0 : 1.2),
+          dashArray: isFailed && !isSelected ? '3, 3' : null,
+          opacity: 1,
+          fillOpacity: 0.95
+        });
+        marker.bindPopup(popupContent);
+        marker.bindTooltip(tooltipContent, { direction: 'top', offset: [0, -6] });
+        marker.on('click', () => {
+          if (onSelectStation) onSelectStation(s.id);
+        });
+        marker.on('dblclick', (e) => {
+          L.DomEvent.stop(e);
+          window.goToStationCharts(s.id);
+        });
+        this.markersGroup.addLayer(marker);
+        this._stationMarkers.set(s.id, marker);
+      }
     });
+
+    for (const [id, marker] of this._stationMarkers.entries()) {
+      if (!currentIds.has(id)) {
+        this.markersGroup.removeLayer(marker);
+        this._stationMarkers.delete(id);
+      }
+    }
   },
 
   renderDams(caudalesData = null) {
     if (!this.damsGroup) return;
-    this.damsGroup.clearLayers();
+
+    this._damMarkers = this._damMarkers || new Map();
+    const currentCodes = new Set();
 
     const damsMap = {};
     if (caudalesData && caudalesData.centrales_lista) {
@@ -316,6 +348,7 @@ const MapView = {
     }
 
     DAM_COORDINATES.forEach(d => {
+      currentCodes.add(d.codigo);
       const data = damsMap[d.codigo] || {};
       const isMeasurementStation = d.codigo === 'CATARATAS' || d.codigo === 'CAPANEMA' || (d.tipo && d.tipo.includes('Medición'));
       const isYacyreta = d.codigo === 'YACYRETA';
@@ -328,13 +361,13 @@ const MapView = {
       const defl = data.defluente !== undefined && data.defluente !== null && data.defluente > 0 ? data.defluente : null;
       const caudalMedido = data.caudal !== undefined && data.caudal !== null && data.caudal > 0 ? data.caudal : null;
 
-      const afluStr = aflu !== null ? `${Number(aflu).toLocaleString('es-AR')} m³/s` : '-- m³/s';
-      const deflStr = defl !== null ? `${Number(defl).toLocaleString('es-AR')} m³/s` : (caudalMedido !== null ? `${Number(caudalMedido).toLocaleString('es-AR')} m³/s` : '-- m³/s');
+      const afluStr = aflu !== null ? `${Number(aflu).toLocaleString('es-AR')} m³/s` : '—';
+      const deflStr = defl !== null ? `${Number(defl).toLocaleString('es-AR')} m³/s` : (caudalMedido !== null ? `${Number(caudalMedido).toLocaleString('es-AR')} m³/s` : '—');
       const caudalStr = caudalMedido !== null ? `${Number(caudalMedido).toLocaleString('es-AR')} m³/s` : deflStr;
 
-      const reglaVal = data.regla !== undefined && data.regla !== null ? `${Number(data.regla).toFixed(2)} m` : null;
-      const cotaVal = data.cota !== undefined && data.cota !== null && data.cota > 0 ? `${Number(data.cota).toFixed(2)}` : null;
-      const volPctVal = data.vol_pct !== undefined && data.vol_pct !== null && data.vol_pct > 0 ? `${Number(data.vol_pct).toFixed(1)}` : null;
+      const reglaVal = (data.regla !== undefined && data.regla !== null) ? `${Number(data.regla).toFixed(2)} m` : null;
+      const cotaVal = (data.cota !== undefined && data.cota !== null && data.cota > 0) ? `${Number(data.cota).toFixed(2)}` : null;
+      const volPctVal = (data.vol_pct !== undefined && data.vol_pct !== null && data.vol_pct > 0) ? `${Number(data.vol_pct).toFixed(1)}` : null;
 
       const vert = Number(data.vertida || 0);
       const isSpilling = vert > 0;
@@ -377,8 +410,6 @@ const MapView = {
         iconAnchor: [13, 13]
       });
 
-      const marker = L.marker([d.lat, d.lon], { icon: customIcon });
-
       let popupHtml = '';
       let tooltipText = '';
 
@@ -394,12 +425,12 @@ const MapView = {
 
             <div style="background: #fffbeb; border: 1px solid #fde68a; border-radius: 6px; padding: 8px; margin-bottom: 6px;">
               <div style="font-size: 0.65rem; text-transform: uppercase; font-weight: 700; color: #b45309;">Caudal Medido (Pasante):</div>
-              <div style="font-family: var(--font-value); font-size: 1.25rem; font-weight: 800; color: #d97706; margin-top: 2px;">${caudalStr}</div>
-              ${reglaVal ? `<div style="font-size: 0.72rem; color: #78350f; font-weight: 600; margin-top: 4px;">Nivel de regla: ${reglaVal}</div>` : ''}
+              <div style="font-family: var(--font-value); font-size: 1.25rem; font-weight: 800; color: #d97706; margin-top: 2px; font-variant-numeric: tabular-nums;">${caudalStr}</div>
+              ${reglaVal ? `<div style="font-size: 0.72rem; color: #78350f; font-weight: 600; margin-top: 4px; font-variant-numeric: tabular-nums;">Nivel de regla: ${reglaVal}</div>` : ''}
             </div>
 
-            ${data.fecha && data.fecha !== '--' ? `
-              <div style="font-size: 0.65rem; color: #94a3b8; border-top: 1px solid #f1f5f9; padding-top: 4px; margin-top: 4px;">
+            ${data.fecha && data.fecha !== '—' && data.fecha !== '--' ? `
+              <div style="font-size: 0.65rem; color: #94a3b8; border-top: 1px solid #f1f5f9; padding-top: 4px; margin-top: 4px; font-variant-numeric: tabular-nums;">
                 Lectura de telemetría: ${data.fecha}
               </div>
             ` : ''}
@@ -425,7 +456,7 @@ const MapView = {
 
             <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 6px; padding: 8px; margin-bottom: 6px;">
               <div style="font-size: 0.65rem; text-transform: uppercase; font-weight: 700; color: #166534;">Aporte Afluente en Tránsito (Itaipú + Iguazú):</div>
-              <div style="font-family: var(--font-value); font-size: 1.25rem; font-weight: 800; color: #15803d; margin-top: 2px;">${afluStr}</div>
+              <div style="font-family: var(--font-value); font-size: 1.25rem; font-weight: 800; color: #15803d; margin-top: 2px; font-variant-numeric: tabular-nums;">${afluStr}</div>
             </div>
 
             <div style="font-size: 0.68rem; color: #64748b;">
@@ -442,7 +473,7 @@ const MapView = {
         tooltipText = `<strong>${d.nombre}</strong><br/>Aporte en tránsito: ${afluStr}`;
 
       } else {
-        // Pop-up para Centrales Hidroeléctricas: Muestra Afluentes y Defluentes (sin 'Llega' ni 'Deroga')
+        // Pop-up para Centrales Hidroeléctricas: Muestra Afluentes y Defluentes
         popupHtml = `
           <div style="font-family: var(--font-body); padding: 4px; min-width: 220px;">
             <div style="font-size: 0.65rem; font-weight: 700; text-transform: uppercase; color: #0284c7; letter-spacing: 0.05em; margin-bottom: 2px;">${d.tipo}</div>
@@ -455,29 +486,29 @@ const MapView = {
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 6px;">
               <div style="background: #f0f9ff; border: 1px solid #bae6fd; border-radius: 6px; padding: 6px;">
                 <div style="font-size: 0.62rem; text-transform: uppercase; font-weight: 700; color: #0369a1;">📥 Afluente</div>
-                <div style="font-family: var(--font-value); font-size: 1.05rem; font-weight: 800; color: #0284c7; margin-top: 2px;">${afluStr}</div>
+                <div style="font-family: var(--font-value); font-size: 1.05rem; font-weight: 800; color: #0284c7; margin-top: 2px; font-variant-numeric: tabular-nums;">${afluStr}</div>
               </div>
               <div style="background: #ecfdf5; border: 1px solid #a7f3d0; border-radius: 6px; padding: 6px;">
                 <div style="font-size: 0.62rem; text-transform: uppercase; font-weight: 700; color: #047857;">📤 Defluente</div>
-                <div style="font-family: var(--font-value); font-size: 1.05rem; font-weight: 800; color: #059669; margin-top: 2px;">${deflStr}</div>
+                <div style="font-family: var(--font-value); font-size: 1.05rem; font-weight: 800; color: #059669; margin-top: 2px; font-variant-numeric: tabular-nums;">${deflStr}</div>
               </div>
             </div>
 
             ${(turb > 0 || isSpilling) ? `
-              <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 5px 6px; font-size: 0.7rem; color: #475569; margin-bottom: 6px; display: flex; justify-content: space-between;">
+              <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 5px 6px; font-size: 0.7rem; color: #475569; margin-bottom: 6px; display: flex; justify-content: space-between; font-variant-numeric: tabular-nums;">
                 <span>Turbinado: <strong>${Number(turb).toLocaleString('es-AR')} m³/s</strong></span>
                 ${isSpilling ? `<span style="color: #ea580c; font-weight: 700;">Vertedero: ${Number(vert).toLocaleString('es-AR')} m³/s</span>` : '<span style="color: #94a3b8;">Vertedero: 0</span>'}
               </div>
             ` : ''}
 
             ${cotaVal ? `
-              <div style="font-size: 0.7rem; color: #64748b; margin-bottom: 4px;">
+              <div style="font-size: 0.7rem; color: #64748b; margin-bottom: 4px; font-variant-numeric: tabular-nums;">
                 Nivel Embalse: <strong style="color: #0f172a;">${cotaVal} msnm</strong> ${volPctVal ? `(${volPctVal}% útil)` : ''}
               </div>
             ` : ''}
 
-            ${data.fecha && data.fecha !== '--' ? `
-              <div style="font-size: 0.65rem; color: #94a3b8; border-top: 1px solid #f1f5f9; padding-top: 4px; margin-top: 4px;">
+            ${data.fecha && data.fecha !== '—' && data.fecha !== '--' ? `
+              <div style="font-size: 0.65rem; color: #94a3b8; border-top: 1px solid #f1f5f9; padding-top: 4px; margin-top: 4px; font-variant-numeric: tabular-nums;">
                 Último registro ONS: ${data.fecha}
               </div>
             ` : ''}
@@ -492,16 +523,30 @@ const MapView = {
         tooltipText = `<strong>${d.nombre}</strong><br/>📥 Afluente: ${afluStr}<br/>📤 Defluente: ${deflStr}`;
       }
 
-      marker.bindPopup(popupHtml);
-      marker.bindTooltip(tooltipText, { direction: 'top', offset: [0, -10] });
-
-      marker.on('dblclick', (e) => {
-        L.DomEvent.stop(e);
-        window.goToStationCharts(d.codigo);
-      });
-
-      this.damsGroup.addLayer(marker);
+      if (this._damMarkers.has(d.codigo)) {
+        const marker = this._damMarkers.get(d.codigo);
+        marker.setIcon(customIcon);
+        marker.setPopupContent(popupHtml);
+        marker.setTooltipContent(tooltipText);
+      } else {
+        const marker = L.marker([d.lat, d.lon], { icon: customIcon });
+        marker.bindPopup(popupHtml);
+        marker.bindTooltip(tooltipText, { direction: 'top', offset: [0, -10] });
+        marker.on('dblclick', (e) => {
+          L.DomEvent.stop(e);
+          window.goToStationCharts(d.codigo);
+        });
+        this.damsGroup.addLayer(marker);
+        this._damMarkers.set(d.codigo, marker);
+      }
     });
+
+    for (const [code, marker] of this._damMarkers.entries()) {
+      if (!currentCodes.has(code)) {
+        this.damsGroup.removeLayer(marker);
+        this._damMarkers.delete(code);
+      }
+    }
   },
 
   flyToStation(station) {

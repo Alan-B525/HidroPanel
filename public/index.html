@@ -49,7 +49,8 @@
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
   <!-- Tokens & Estilos Propios -->
-  <link rel="stylesheet" href="css/tokens.css?v=12">
+  <link rel="stylesheet" href="css/tokens.css?v=30">
+  <link rel="stylesheet" href="css/components.css?v=30">
 
   <style>
     /* Scrollbars elegantes */
@@ -133,76 +134,61 @@
   <!-- ============================================================
        ENCABEZADO INSTITUCIONAL OFICIAL (Entidad Binacional Yacyretá)
        ============================================================ -->
-  <!-- ============================================================
-       ENCABEZADO INSTITUCIONAL OFICIAL (Entidad Binacional Yacyretá)
-       ============================================================ -->
-  <header class="bg-[#0f294a] border-b-[3px] border-[#008348] text-white px-3 sm:px-6 py-2 flex items-center justify-between z-30 shrink-0 gap-2 sm:gap-4 shadow-md">
+  <header class="bg-[#0b1f38] border-b-2 border-[#008348] text-white px-3 sm:px-6 py-2 flex items-center justify-between z-30 shrink-0 gap-2 sm:gap-4 shadow-sm select-none">
     
-    <div class="flex items-center space-x-3">
-      <div class="flex items-center space-x-2.5 cursor-pointer select-none" onclick="setViewMode('caudales')">
-        <img src="icon_eby.svg" alt="Entidad Binacional Yacyretá" class="h-8 sm:h-9 w-auto object-contain" />
-        <div class="flex flex-col">
-          <span class="font-bold text-sm tracking-tight text-white leading-none">HidroPanel</span>
-          <span class="text-[9px] text-emerald-400 font-semibold tracking-wider uppercase mt-0.5">Yacyretá • Hidrología</span>
-        </div>
+    <!-- IDENTIDAD INSTITUCIONAL (Logo EBY Oficial y Título del Sistema) -->
+    <div class="flex items-center gap-2.5 sm:gap-3 shrink-0">
+      <div class="flex items-center gap-2.5 sm:gap-3 cursor-pointer select-none group" onclick="setViewMode('caudales')" title="Ir a Vista de Caudales">
+        <img src="icon_eby.svg" alt="Entidad Binacional Yacyretá" class="h-8 sm:h-9 w-auto object-contain transition-opacity group-hover:opacity-90" />
+        <div class="h-5 w-px bg-white/20 hidden sm:block"></div>
+        <span class="font-bold text-sm tracking-wide text-white/95 leading-none">HidroPanel</span>
       </div>
     </div>
 
-    <!-- SELECTOR DE VISTAS (Segmented Tabs Modernizadas) -->
-    <nav class="flex items-center bg-[#07172b]/90 backdrop-blur-md p-1 rounded-xl border border-white/10 text-xs shadow-inner gap-1">
+    <!-- SELECTOR DE VISTAS (Segmented Tabs de Alta Sobriedad) -->
+    <nav class="flex items-center bg-[#051120]/80 backdrop-blur-md p-1 rounded-lg border border-slate-700/60 shadow-inner gap-1" role="tablist" aria-label="Vistas del sistema">
       
       <!-- VISTA 1: CAUDALES -->
-      <button id="btn-view-caudales" onclick="setViewMode('caudales')" class="view-btn flex items-center space-x-1.5 px-3 py-1.5 rounded-lg font-bold transition bg-[#008348] text-white shadow-sm" title="Balance de erogaciones de Itaipú, cascada del Iguazú y aporte a Yacyretá">
-        <svg class="w-3.5 h-3.5 text-emerald-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <button id="btn-view-caudales" onclick="setViewMode('caudales')" role="tab" aria-selected="true" class="view-btn active flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold text-white bg-[#008348] border border-emerald-400/30 shadow-xs transition-all duration-150 cursor-pointer" title="Balance de erogaciones de Itaipú, cascada del Iguazú y aporte a Yacyretá">
+        <svg class="w-3.5 h-3.5 text-emerald-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
         </svg>
         <span>Caudales</span>
       </button>
 
-      <!-- VISTA 2: GRÁFICOS & ALTURAS -->
-      <button id="btn-view-charts" onclick="setViewMode('charts')" class="view-btn flex items-center space-x-1.5 px-3 py-1.5 rounded-lg font-medium transition text-white/80 hover:text-white hover:bg-white/10" title="55 estaciones hidrométricas de la Cuenca del Plata">
-        <svg class="w-3.5 h-3.5 text-sky-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <!-- VISTA 2: HIDRÓMETROS -->
+      <button id="btn-view-charts" onclick="setViewMode('charts')" role="tab" aria-selected="false" class="view-btn flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium text-slate-300 hover:text-white hover:bg-white/[0.08] border border-transparent transition-all duration-150 cursor-pointer" title="55 estaciones hidrométricas de la Cuenca del Plata">
+        <svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z"/>
         </svg>
         <span>Hidrómetros</span>
       </button>
 
-      <!-- VISTA 3: MAPA & RADAR EN VIVO -->
-      <button id="btn-view-map" onclick="setViewMode('map')" class="view-btn flex items-center space-x-1.5 px-3 py-1.5 rounded-lg font-medium transition text-white/80 hover:text-white hover:bg-white/10" title="Mapa con capas CARTO Voyager/Dark, presas y radar RainViewer">
-        <svg class="w-3.5 h-3.5 text-sky-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <!-- VISTA 3: MAPA & RADAR -->
+      <button id="btn-view-map" onclick="setViewMode('map')" role="tab" aria-selected="false" class="view-btn flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium text-slate-300 hover:text-white hover:bg-white/[0.08] border border-transparent transition-all duration-150 cursor-pointer" title="Mapa con capas CARTO Voyager/Dark, presas y radar RainViewer">
+        <svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"/>
         </svg>
         <span>Mapa & Radar</span>
       </button>
 
       <!-- VISTA 4: SIMEPAR (Lluvias) -->
-      <button id="btn-view-simepar" onclick="setViewMode('simepar')" class="view-btn flex items-center space-x-1.5 px-3 py-1.5 rounded-lg font-medium transition text-white/80 hover:text-white hover:bg-white/10" title="Precipitación acumulada diaria SIMEPAR">
-        <svg class="w-3.5 h-3.5 text-blue-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <button id="btn-view-simepar" onclick="setViewMode('simepar')" role="tab" aria-selected="false" class="view-btn flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium text-slate-300 hover:text-white hover:bg-white/[0.08] border border-transparent transition-all duration-150 cursor-pointer" title="Precipitación acumulada diaria SIMEPAR">
+        <svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 00-9.78 2.096A4.001 4.001 0 003 15z"/>
         </svg>
-        <span class="hidden md:inline">Lluvias</span>
+        <span class="hidden sm:inline">Lluvias</span>
       </button>
     </nav>
 
-    <!-- ACCIONES DE DERECHA: TEMA, STATUS, REFRESH -->
-    <div class="flex items-center space-x-2 shrink-0">
-
-      <!-- Alternador Tema Claro / Oscuro -->
-      <button id="btn-theme-toggle" type="button" onclick="toggleTheme()" title="Cambiar tema (Claro / Oscuro)" class="p-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-white/90 border border-white/20 transition shadow-xs cursor-pointer">
-        <svg id="theme-icon-sun" class="w-4 h-4 hidden text-amber-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
-        </svg>
-        <svg id="theme-icon-moon" class="w-4 h-4 hidden text-sky-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
-        </svg>
-      </button>
-
-      <!-- Botón Sincronizar Global -->
-      <button id="btn-sync-all" type="button" onclick="syncAll()" class="flex items-center space-x-1.5 bg-[#008348] hover:bg-[#006e3c] active:bg-[#005a31] text-white text-xs font-bold px-3 py-1.5 rounded-lg transition shadow-xs border border-emerald-400/30 cursor-pointer" title="Sincronizar telemetría fluvial, represas y caudales">
-        <svg id="sync-icon" class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <!-- ACCIONES DE CABECERA -->
+    <div class="flex items-center gap-2 sm:gap-3 shrink-0">
+      <!-- Botón Actualizar Sincronización -->
+      <button id="btn-sync-all" type="button" onclick="syncAll()" class="flex items-center gap-1.5 bg-[#008348] hover:bg-[#006e3c] active:bg-[#005a31] text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition-all duration-150 shadow-xs border border-emerald-400/30 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed select-none" title="Actualizar datos bajo demanda (POST /api/sync)">
+        <svg id="sync-icon" class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
         </svg>
-        <span class="hidden sm:inline">Sincronizar</span>
+        <span id="sync-btn-label">Actualizar</span>
       </button>
     </div>
   </header>
@@ -251,19 +237,17 @@
           <!-- TARJETAS DE CENTRALES PRINCIPALES -->
           <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3.5">
             <!-- ITAIPÚ BINACIONAL -->
+            <!-- ITAIPÚ -->
             <div class="card-panel p-3.5 flex flex-col justify-between space-y-2.5">
-              <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-800/80 pb-2">
-                <div class="flex items-center gap-2">
-                  <span class="w-2 h-2 rounded-full bg-sky-500"></span>
-                  <h4 class="font-bold text-slate-900 dark:text-white text-sm">Itaipú Binacional</h4>
-                </div>
-                <span id="rep-it-time" class="text-[10px] font-mono text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800/80 px-2 py-0.5 rounded border border-slate-200 dark:border-slate-700">--</span>
+              <div class="flex items-center gap-2 border-b border-slate-100 dark:border-slate-800/80 pb-2">
+                <span class="w-2 h-2 rounded-full bg-sky-500"></span>
+                <h4 class="font-bold text-slate-900 dark:text-white text-sm">Itaipú Binacional</h4>
               </div>
 
               <div>
                 <div class="text-[10px] font-bold uppercase tracking-wider text-slate-500">Caudal Defluente Total:</div>
                 <div class="flex items-baseline space-x-1.5 mt-0.5">
-                  <span id="rep-it-defl" class="text-2xl sm:text-3xl font-extrabold font-data text-sky-600 dark:text-sky-400">--</span>
+                  <span id="rep-it-defl" class="text-2xl sm:text-3xl font-extrabold font-data text-sky-600 dark:text-sky-400 tabular-nums">—</span>
                   <span class="text-xs font-bold text-slate-400">m³/s</span>
                 </div>
               </div>
@@ -271,34 +255,31 @@
               <div class="grid grid-cols-2 gap-2 text-xs">
                 <div class="bg-slate-50 dark:bg-slate-900/80 p-2 rounded-lg border border-slate-200 dark:border-slate-800">
                   <div class="text-[10px] font-bold text-slate-500 uppercase">Turbinada</div>
-                  <div id="rep-it-turb" class="font-mono font-bold text-sky-600 dark:text-sky-400">-- m³/s</div>
+                  <div id="rep-it-turb" class="font-mono font-bold text-sky-600 dark:text-sky-400 tabular-nums">— m³/s</div>
                 </div>
                 <div class="bg-slate-50 dark:bg-slate-900/80 p-2 rounded-lg border border-slate-200 dark:border-slate-800">
                   <div class="text-[10px] font-bold text-slate-500 uppercase">Vertida</div>
-                  <div id="rep-it-vert" class="font-mono font-bold text-amber-600 dark:text-amber-400">-- m³/s</div>
+                  <div id="rep-it-vert" class="font-mono font-bold text-amber-600 dark:text-amber-400 tabular-nums">— m³/s</div>
                 </div>
               </div>
 
               <div class="flex items-center justify-between text-xs text-slate-500 pt-1.5 border-t border-slate-100 dark:border-slate-800/80">
-                <span>Afluente: <strong id="rep-it-aflu" class="text-slate-800 dark:text-slate-200 font-mono">--</strong></span>
-                <span>Cota: <strong id="rep-it-cota" class="text-slate-800 dark:text-slate-200 font-mono">--</strong></span>
+                <span>Afluente: <strong id="rep-it-aflu" class="text-slate-800 dark:text-slate-200 font-mono tabular-nums">—</strong></span>
+                <span>Cota: <strong id="rep-it-cota" class="text-slate-800 dark:text-slate-200 font-mono tabular-nums">—</strong></span>
               </div>
             </div>
 
             <!-- BAIXO IGUAÇU -->
             <div class="card-panel p-3.5 flex flex-col justify-between space-y-2.5">
-              <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-800/80 pb-2">
-                <div class="flex items-center gap-2">
-                  <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
-                  <h4 class="font-bold text-slate-900 dark:text-white text-sm">Baixo Iguaçu</h4>
-                </div>
-                <span id="rep-bx-time" class="text-[10px] font-mono text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800/80 px-2 py-0.5 rounded border border-slate-200 dark:border-slate-700">--</span>
+              <div class="flex items-center gap-2 border-b border-slate-100 dark:border-slate-800/80 pb-2">
+                <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+                <h4 class="font-bold text-slate-900 dark:text-white text-sm">Baixo Iguaçu</h4>
               </div>
 
               <div>
                 <div class="text-[10px] font-bold uppercase tracking-wider text-slate-500">Caudal Defluente Total:</div>
                 <div class="flex items-baseline space-x-1.5 mt-0.5">
-                  <span id="rep-bx-defl" class="text-2xl sm:text-3xl font-extrabold font-data text-emerald-600 dark:text-emerald-400">--</span>
+                  <span id="rep-bx-defl" class="text-2xl sm:text-3xl font-extrabold font-data text-emerald-600 dark:text-emerald-400 tabular-nums">—</span>
                   <span class="text-xs font-bold text-slate-400">m³/s</span>
                 </div>
               </div>
@@ -306,34 +287,31 @@
               <div class="grid grid-cols-2 gap-2 text-xs">
                 <div class="bg-slate-50 dark:bg-slate-900/80 p-2 rounded-lg border border-slate-200 dark:border-slate-800">
                   <div class="text-[10px] font-bold text-slate-500 uppercase">Turbinada</div>
-                  <div id="rep-bx-turb" class="font-mono font-bold text-sky-600 dark:text-sky-400">-- m³/s</div>
+                  <div id="rep-bx-turb" class="font-mono font-bold text-sky-600 dark:text-sky-400 tabular-nums">— m³/s</div>
                 </div>
                 <div class="bg-slate-50 dark:bg-slate-900/80 p-2 rounded-lg border border-slate-200 dark:border-slate-800">
                   <div class="text-[10px] font-bold text-slate-500 uppercase">Vertida</div>
-                  <div id="rep-bx-vert" class="font-mono font-bold text-amber-600 dark:text-amber-400">-- m³/s</div>
+                  <div id="rep-bx-vert" class="font-mono font-bold text-amber-600 dark:text-amber-400 tabular-nums">— m³/s</div>
                 </div>
               </div>
 
               <div class="flex items-center justify-between text-xs text-slate-500 pt-1.5 border-t border-slate-100 dark:border-slate-800/80">
-                <span>Afluente: <strong id="rep-bx-aflu" class="text-slate-800 dark:text-slate-200 font-mono">--</strong></span>
-                <span>Cota: <strong id="rep-bx-cota" class="text-slate-800 dark:text-slate-200 font-mono">--</strong></span>
+                <span>Afluente: <strong id="rep-bx-aflu" class="text-slate-800 dark:text-slate-200 font-mono tabular-nums">—</strong></span>
+                <span>Cota: <strong id="rep-bx-cota" class="text-slate-800 dark:text-slate-200 font-mono tabular-nums">—</strong></span>
               </div>
             </div>
 
             <!-- PORTO CAPANEMA -->
             <div class="card-panel p-3.5 flex flex-col justify-between space-y-2.5">
-              <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-800/80 pb-2">
-                <div class="flex items-center gap-2">
-                  <span class="w-2 h-2 rounded-full bg-amber-500"></span>
-                  <h4 class="font-bold text-slate-900 dark:text-white text-sm">Porto Capanema</h4>
-                </div>
-                <span id="rep-cap-time" class="text-[10px] font-mono text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800/80 px-2 py-0.5 rounded border border-slate-200 dark:border-slate-700">--</span>
+              <div class="flex items-center gap-2 border-b border-slate-100 dark:border-slate-800/80 pb-2">
+                <span class="w-2 h-2 rounded-full bg-amber-500"></span>
+                <h4 class="font-bold text-slate-900 dark:text-white text-sm">Porto Capanema</h4>
               </div>
 
               <div>
                 <div class="text-[10px] font-bold uppercase tracking-wider text-slate-500">Caudal Pasante:</div>
                 <div class="flex items-baseline space-x-1.5 mt-0.5">
-                  <span id="rep-cap-caudal" class="text-2xl sm:text-3xl font-extrabold font-data text-amber-600 dark:text-amber-400">--</span>
+                  <span id="rep-cap-caudal" class="text-2xl sm:text-3xl font-extrabold font-data text-amber-600 dark:text-amber-400 tabular-nums">—</span>
                   <span class="text-xs font-bold text-slate-400">m³/s</span>
                 </div>
               </div>
@@ -341,7 +319,7 @@
               <div class="grid grid-cols-2 gap-2 text-xs">
                 <div class="bg-slate-50 dark:bg-slate-900/80 p-2 rounded-lg border border-slate-200 dark:border-slate-800">
                   <div class="text-[10px] font-bold text-slate-500 uppercase">Nivel de Regla</div>
-                  <div id="rep-cap-regla" class="font-mono font-bold text-sky-600 dark:text-sky-400">-- m</div>
+                  <div id="rep-cap-regla" class="font-mono font-bold text-sky-600 dark:text-sky-400 tabular-nums">— m</div>
                 </div>
                 <div class="bg-slate-50 dark:bg-slate-900/80 p-2 rounded-lg border border-slate-200 dark:border-slate-800">
                   <div class="text-[10px] font-bold text-slate-500 uppercase">Estación</div>
@@ -357,18 +335,15 @@
 
             <!-- ESTACIÓN CATARATAS -->
             <div class="card-panel p-3.5 flex flex-col justify-between space-y-2.5">
-              <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-800/80 pb-2">
-                <div class="flex items-center gap-2">
-                  <span class="w-2 h-2 rounded-full bg-amber-500"></span>
-                  <h4 class="font-bold text-slate-900 dark:text-white text-sm">Cataratas</h4>
-                </div>
-                <span id="rep-cat-time" class="text-[10px] font-mono text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800/80 px-2 py-0.5 rounded border border-slate-200 dark:border-slate-700">--</span>
+              <div class="flex items-center gap-2 border-b border-slate-100 dark:border-slate-800/80 pb-2">
+                <span class="w-2 h-2 rounded-full bg-amber-500"></span>
+                <h4 class="font-bold text-slate-900 dark:text-white text-sm">Cataratas</h4>
               </div>
 
               <div>
                 <div class="text-[10px] font-bold uppercase tracking-wider text-slate-500">Caudal Pasante:</div>
                 <div class="flex items-baseline space-x-1.5 mt-0.5">
-                  <span id="rep-cat-caudal" class="text-2xl sm:text-3xl font-extrabold font-data text-amber-600 dark:text-amber-400">--</span>
+                  <span id="rep-cat-caudal" class="text-2xl sm:text-3xl font-extrabold font-data text-amber-600 dark:text-amber-400 tabular-nums">—</span>
                   <span class="text-xs font-bold text-slate-400">m³/s</span>
                 </div>
               </div>
@@ -376,7 +351,7 @@
               <div class="grid grid-cols-2 gap-2 text-xs">
                 <div class="bg-slate-50 dark:bg-slate-900/80 p-2 rounded-lg border border-slate-200 dark:border-slate-800">
                   <div class="text-[10px] font-bold text-slate-500 uppercase">Nivel de Regla</div>
-                  <div id="rep-cat-regla" class="font-mono font-bold text-sky-600 dark:text-sky-400">-- m</div>
+                  <div id="rep-cat-regla" class="font-mono font-bold text-sky-600 dark:text-sky-400 tabular-nums">— m</div>
                 </div>
                 <div class="bg-slate-50 dark:bg-slate-900/80 p-2 rounded-lg border border-slate-200 dark:border-slate-800">
                   <div class="text-[10px] font-bold text-slate-500 uppercase">Estación</div>
@@ -468,7 +443,7 @@
               <div class="flex items-center gap-1 text-xs">
                 <button onclick="setDamTableFilter('todas')" class="btn-dam-filter px-2.5 py-1 rounded-md font-semibold transition active bg-emerald-600 text-white" data-filter="todas">Todas</button>
                 <button onclick="setDamTableFilter('parana')" class="btn-dam-filter px-2.5 py-1 rounded-md font-medium transition text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800" data-filter="parana">Río Paraná</button>
-                <button onclick="setDamTableFilter('iguazu')" class="btn-dam-filter px-2.5 py-1 rounded-md font-medium transition text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800" data-filter="iguazu">Cascada Iguazú</button>
+                <button onclick="setDamTableFilter('iguazu')" class="btn-dam-filter px-2.5 py-1 rounded-md font-medium transition text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800" data-filter="iguazu">Río Iguazú</button>
                 <button onclick="setDamTableFilter('afluentes')" class="btn-dam-filter px-2.5 py-1 rounded-md font-medium transition text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800" data-filter="afluentes">Afluentes</button>
               </div>
             </div>
@@ -582,8 +557,8 @@
                   <!-- Botones Rápidos de Referencia -->
                   <div class="hidden sm:flex items-center space-x-1 text-xs">
                     <span class="text-[10px] text-slate-400 font-medium mr-0.5">Rápidos:</span>
-                    <button type="button" onclick="selectStationByCode('PNJUPI')" class="px-2 py-0.5 rounded text-[11px] font-semibold bg-slate-100 hover:bg-sky-100 dark:bg-slate-800 dark:hover:bg-sky-950/60 text-slate-700 dark:text-slate-300 hover:text-sky-700 dark:hover:text-sky-400 transition" title="Jupiá (Eng. Souza Dias - ONS)">Jupiá</button>
-                    <button type="button" onclick="selectStationByCode('PNPPRI')" class="px-2 py-0.5 rounded text-[11px] font-semibold bg-slate-100 hover:bg-sky-100 dark:bg-slate-800 dark:hover:bg-sky-950/60 text-slate-700 dark:text-slate-300 hover:text-sky-700 dark:hover:text-sky-400 transition" title="Porto Primavera (Eng. Sérgio Motta - ONS)">P. Primavera</button>
+                    <button type="button" onclick="selectStationByCode('PNJUPI')" class="px-2 py-0.5 rounded text-[11px] font-semibold bg-slate-100 hover:bg-sky-100 dark:bg-slate-800 dark:hover:bg-sky-950/60 text-slate-700 dark:text-slate-300 hover:text-sky-700 dark:hover:text-sky-400 transition" title="Jupiá · Eng. Souza Dias - ONS">Jupiá</button>
+                    <button type="button" onclick="selectStationByCode('PNPPRI')" class="px-2 py-0.5 rounded text-[11px] font-semibold bg-slate-100 hover:bg-sky-100 dark:bg-slate-800 dark:hover:bg-sky-950/60 text-slate-700 dark:text-slate-300 hover:text-sky-700 dark:hover:text-sky-400 transition" title="Porto Primavera · Eng. Sérgio Motta - ONS">P. Primavera</button>
                     <button type="button" onclick="selectStationByCode('PUERTO_IGUAZU')" class="px-2 py-0.5 rounded text-[11px] font-semibold bg-slate-100 hover:bg-sky-100 dark:bg-slate-800 dark:hover:bg-sky-950/60 text-slate-700 dark:text-slate-300 hover:text-sky-700 dark:hover:text-sky-400 transition">Iguazú</button>
                     <button type="button" onclick="selectStationByCode('POSADAS')" class="px-2 py-0.5 rounded text-[11px] font-semibold bg-slate-100 hover:bg-sky-100 dark:bg-slate-800 dark:hover:bg-sky-950/60 text-slate-700 dark:text-slate-300 hover:text-sky-700 dark:hover:text-sky-400 transition">Posadas</button>
                     <button type="button" onclick="selectStationByCode('ITUZAINGO')" class="px-2 py-0.5 rounded text-[11px] font-semibold bg-slate-100 hover:bg-sky-100 dark:bg-slate-800 dark:hover:bg-sky-950/60 text-slate-700 dark:text-slate-300 hover:text-sky-700 dark:hover:text-sky-400 transition">Ituzaingó</button>
@@ -689,21 +664,13 @@
                       </span>
                       <span id="sit-current-trend" class="text-[10px] px-1.5 py-0.5 rounded font-bold bg-slate-200/70 dark:bg-slate-800 text-slate-700 dark:text-slate-300">▬ Estable</span>
                     </div>
-                    <div class="flex items-baseline justify-between">
-                      <div class="flex items-baseline space-x-1">
-                        <span id="sit-current-val" class="text-2xl sm:text-3xl font-extrabold text-[#0080c8] dark:text-sky-400 font-data">--</span>
+                    <div class="flex items-baseline justify-between gap-2">
+                      <div class="flex items-baseline space-x-1 shrink-0">
+                        <span id="sit-current-val" class="text-2xl sm:text-3xl font-extrabold text-[#0080c8] dark:text-sky-400 font-data tabular-nums">—</span>
                         <span class="kpi-unit-label text-xs font-bold text-slate-400">m</span>
-                        <span id="sit-current-rate" class="text-[10px] font-mono font-bold text-slate-500 ml-1"></span>
+                        <span id="sit-current-rate" class="text-[10px] font-mono font-bold text-slate-500 ml-1 tabular-nums"></span>
                       </div>
-                      <span id="sit-current-time" class="text-[10px] text-slate-400 font-mono text-right truncate max-w-[140px]">--:--</span>
-                    </div>
-
-                    <!-- Alerta de falta de reporte -->
-                    <div id="sit-transmission-warning" class="hidden mt-2 p-2 rounded-lg bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/80 text-amber-800 dark:text-amber-300 text-[11px] font-semibold flex items-center space-x-2">
-                      <svg class="w-4 h-4 shrink-0 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
-                      </svg>
-                      <span id="sit-transmission-warning-text">Estación sin reporte reciente</span>
+                      <div id="sit-current-time" class="text-xs text-right whitespace-nowrap">—:—</div>
                     </div>
                   </div>
 
@@ -713,14 +680,14 @@
                       <span id="sit-pna-title" class="flex items-center gap-1.5 text-amber-800 dark:text-amber-400 font-bold">
                         <span>⚓ Prefectura Naval Argentina</span>
                       </span>
-                      <span id="sit-pna-trend" class="text-[10px] px-1.5 py-0.5 rounded font-bold bg-amber-200/60 dark:bg-amber-900/40 text-amber-900 dark:text-amber-200">--</span>
+                      <span id="sit-pna-trend" class="text-[10px] px-1.5 py-0.5 rounded font-bold bg-amber-200/60 dark:bg-amber-900/40 text-amber-900 dark:text-amber-200">—</span>
                     </div>
-                    <div class="flex items-baseline justify-between">
-                      <div class="flex items-baseline space-x-1">
-                        <span id="sit-pna-val" class="text-2xl sm:text-3xl font-extrabold text-amber-700 dark:text-amber-300 font-data">--</span>
+                    <div class="flex items-baseline justify-between gap-2">
+                      <div class="flex items-baseline space-x-1 shrink-0">
+                        <span id="sit-pna-val" class="text-2xl sm:text-3xl font-extrabold text-amber-700 dark:text-amber-300 font-data tabular-nums">—</span>
                         <span class="text-xs font-bold text-amber-600/70 dark:text-amber-400/70">m</span>
                       </div>
-                      <span id="sit-pna-time" class="text-[10px] text-amber-700/80 dark:text-amber-400/80 font-mono text-right truncate max-w-[150px]">--</span>
+                      <div id="sit-pna-time" class="text-xs text-right whitespace-nowrap">—</div>
                     </div>
                   </div>
                 </div>
@@ -740,11 +707,11 @@
                   <div class="flex items-center justify-around text-[10px] sm:text-[11px] text-slate-500 dark:text-slate-400 font-mono pt-1 border-t border-slate-100 dark:border-slate-800/80 gap-2 overflow-x-auto">
                     <div class="flex items-center gap-1.5 shrink-0 whitespace-nowrap">
                       <span class="w-2 h-2 rounded-full bg-orange-500"></span>
-                      <span>Alerta: <strong id="lbl-val-alerta" class="text-orange-600 dark:text-orange-400 font-bold">--</strong></span>
+                      <span>Alerta: <strong id="lbl-val-alerta" class="text-orange-600 dark:text-orange-400 font-bold tabular-nums">—</strong></span>
                     </div>
                     <div class="flex items-center gap-1.5 shrink-0 whitespace-nowrap">
                       <span class="w-2 h-2 rounded-full bg-red-600"></span>
-                      <span>Evacuación: <strong id="lbl-val-evac" class="text-red-600 dark:text-red-400 font-bold">--</strong></span>
+                      <span>Evacuación: <strong id="lbl-val-evac" class="text-red-600 dark:text-red-400 font-bold tabular-nums">—</strong></span>
                     </div>
                   </div>
                 </div>
@@ -758,9 +725,9 @@
                   
                   <div class="grid grid-cols-2 gap-1.5 sm:gap-2 text-xs">
                     <div class="bg-slate-50 dark:bg-slate-900/60 p-1.5 sm:p-2 rounded-lg border border-slate-200 dark:border-slate-800">
-                      <div class="text-[9px] sm:text-[10px] text-slate-400 font-medium">Máxima (Pico)</div>
+                      <div class="text-[9px] sm:text-[10px] text-slate-400 font-medium">Máxima</div>
                       <div class="flex items-baseline space-x-1 mt-0.5">
-                        <span id="kpi-val-max" class="text-sm sm:text-base font-extrabold font-data text-emerald-600 dark:text-emerald-400">--</span>
+                        <span id="kpi-val-max" class="text-sm sm:text-base font-extrabold font-data text-emerald-600 dark:text-emerald-400 tabular-nums">—</span>
                         <span class="kpi-unit-label text-[10px] text-slate-400">m</span>
                       </div>
                     </div>
@@ -768,7 +735,7 @@
                     <div class="bg-slate-50 dark:bg-slate-900/60 p-1.5 sm:p-2 rounded-lg border border-slate-200 dark:border-slate-800">
                       <div class="text-[9px] sm:text-[10px] text-slate-400 font-medium">Mínima</div>
                       <div class="flex items-baseline space-x-1 mt-0.5">
-                        <span id="kpi-val-min" class="text-sm sm:text-base font-extrabold font-data text-amber-600 dark:text-amber-400">--</span>
+                        <span id="kpi-val-min" class="text-sm sm:text-base font-extrabold font-data text-amber-600 dark:text-amber-400 tabular-nums">—</span>
                         <span class="kpi-unit-label text-[10px] text-slate-400">m</span>
                       </div>
                     </div>
@@ -777,13 +744,13 @@
                   <div class="grid grid-cols-2 gap-1.5 sm:gap-2 text-xs">
                     <div class="bg-slate-50 dark:bg-slate-900/60 p-1.5 sm:p-2 rounded-lg border border-slate-200 dark:border-slate-800">
                       <div class="text-[9px] sm:text-[10px] text-slate-400 font-medium">Variación 24h</div>
-                      <div id="sit-24h-val" class="text-sm sm:text-base font-extrabold font-data text-slate-800 dark:text-slate-200 mt-0.5">--</div>
+                      <div id="sit-24h-val" class="text-sm sm:text-base font-extrabold font-data text-slate-800 dark:text-slate-200 mt-0.5 tabular-nums">—</div>
                     </div>
 
                     <div class="bg-slate-50 dark:bg-slate-900/60 p-1.5 sm:p-2 rounded-lg border border-slate-200 dark:border-slate-800">
                       <div class="text-[9px] sm:text-[10px] text-slate-400 font-medium">Promedio</div>
                       <div class="flex items-baseline space-x-1 mt-0.5">
-                        <span id="kpi-val-avg" class="text-sm sm:text-base font-extrabold font-data text-slate-700 dark:text-slate-300">--</span>
+                        <span id="kpi-val-avg" class="text-sm sm:text-base font-extrabold font-data text-slate-700 dark:text-slate-300 tabular-nums">—</span>
                         <span class="kpi-unit-label text-[10px] text-slate-400">m</span>
                       </div>
                     </div>
@@ -828,7 +795,7 @@
             <!-- Zonas Rápidas -->
             <div class="flex items-center space-x-1 text-xs">
               <span class="text-slate-400 text-[10px] hidden md:inline">Zonas:</span>
-              <button onclick="zoomMapToRegion('alto_parana')" class="bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 px-2 py-0.5 rounded text-[11px] transition font-semibold text-sky-600 dark:text-sky-400">Alto Paraná (Jupiá/Primavera)</button>
+              <button onclick="zoomMapToRegion('alto_parana')" class="bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 px-2 py-0.5 rounded text-[11px] transition font-semibold text-sky-600 dark:text-sky-400">Alto Paraná</button>
               <button onclick="zoomMapToRegion('iguazu')" class="bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 px-2 py-0.5 rounded text-[11px] transition">Iguazú / Itaipú</button>
               <button onclick="zoomMapToRegion('represas')" class="bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 px-2 py-0.5 rounded text-[11px] transition font-semibold text-emerald-600 dark:text-emerald-400">Cascada Completa</button>
               <button onclick="zoomMapToRegion('paraguay')" class="bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 px-2 py-0.5 rounded text-[11px] transition">Río Paraguay</button>
@@ -892,43 +859,57 @@
           
           <div class="card-panel p-3 flex flex-wrap items-center justify-between gap-3 shrink-0">
             <div class="flex items-center space-x-3">
-              <span class="text-xs font-bold text-slate-800 dark:text-slate-200">Precipitación Acumulada Diaria (SIMEPAR):</span>
-              
-              <div class="flex items-center space-x-1.5 relative">
-                <button id="btn-simepar-prev-day" onclick="stepSimeparDate(-1)" title="Día anterior" class="w-8 h-8 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 rounded-lg flex items-center justify-center transition">◀</button>
+              <span class="text-xs font-bold text-slate-800 dark:text-slate-200">Precipitación Acumulada Diaria SIMEPAR:</span>
+            </div>
 
-                <button id="simepar-calendar-btn" onclick="toggleSimeparCalendar()" class="flex items-center space-x-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 rounded-lg px-2.5 py-1.5 text-xs font-bold transition">
-                  <span>📅</span>
+            <!-- Navegador de Fecha y Calendario Interactivo Centrado -->
+            <div class="flex items-center space-x-1.5">
+              <!-- Botón Play/Pausa Animación -->
+              <button id="btn-simepar-play" type="button" onclick="SimeparView.togglePlay()" title="Reproducir secuencia de mapas · Espacio" class="px-2.5 py-1.5 bg-sky-600 hover:bg-sky-500 active:bg-sky-700 text-white rounded-lg flex items-center justify-center transition text-xs font-bold gap-1 shadow-xs cursor-pointer">
+                <span id="simepar-play-icon">▶</span>
+                <span class="hidden sm:inline" id="simepar-play-text">Animar</span>
+              </button>
+
+              <button id="btn-simepar-prev-day" type="button" onclick="stepSimeparDate(-1)" title="Día anterior · Flecha Izquierda" class="w-8 h-8 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 rounded-lg flex items-center justify-center transition text-xs font-bold text-slate-700 dark:text-slate-300 cursor-pointer">◀</button>
+
+              <div class="relative">
+                <button id="simepar-calendar-btn" onclick="toggleSimeparCalendar()" class="flex items-center space-x-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 rounded-lg px-3 py-1.5 text-xs font-semibold text-slate-800 dark:text-slate-100 transition border border-transparent hover:border-slate-300 dark:hover:border-slate-700">
+                  <span class="text-sky-600 dark:text-sky-400">📅</span>
                   <span id="simepar-calendar-display">Cargando fecha...</span>
-                  <span>▼</span>
+                  <span class="text-[10px] text-slate-400">▼</span>
                 </button>
 
-                <!-- Popover Mini-Calendario -->
-                <div id="simepar-calendar-popover" class="hidden absolute left-0 top-full mt-1.5 z-40 w-64 card-panel shadow-xl p-3">
-                  <div class="flex items-center justify-between mb-2">
-                    <button onclick="changeSimeparMonth(-1); event.stopPropagation();" class="p-1 rounded text-slate-500 hover:text-slate-900">◀</button>
-                    <span id="simepar-month-label" class="text-xs font-semibold capitalize text-slate-800 dark:text-slate-200">--</span>
-                    <button onclick="changeSimeparMonth(1); event.stopPropagation();" class="p-1 rounded text-slate-500 hover:text-slate-900">▶</button>
+                <!-- Popover Mini-Calendario Moderno Centrado -->
+                <div id="simepar-calendar-popover" class="hidden absolute left-1/2 -translate-x-1/2 top-full mt-2 z-50 w-72 bg-white dark:bg-[#0c1a2b] border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl p-3.5">
+                  <div class="flex items-center justify-between pb-2 mb-2 border-b border-slate-100 dark:border-slate-800">
+                    <button onclick="changeSimeparMonth(-1); event.stopPropagation();" title="Mes anterior" class="w-7 h-7 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 hover:text-slate-800 dark:hover:text-white flex items-center justify-center font-bold transition">‹</button>
+                    <span id="simepar-month-label" class="text-xs font-bold capitalize text-slate-800 dark:text-slate-100 tracking-wide">—</span>
+                    <button onclick="changeSimeparMonth(1); event.stopPropagation();" title="Mes siguiente" class="w-7 h-7 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 hover:text-slate-800 dark:hover:text-white flex items-center justify-center font-bold transition">›</button>
                   </div>
-                  <div class="grid grid-cols-7 gap-1 text-center mb-1 text-[10px] font-semibold text-slate-400">
+                  <div class="grid grid-cols-7 gap-1 text-center mb-1 text-[11px] font-semibold text-slate-400 dark:text-slate-500 select-none">
                     <div>Lu</div><div>Ma</div><div>Mi</div><div>Ju</div><div>Vi</div><div>Sá</div><div>Do</div>
                   </div>
-                  <div id="simepar-days-grid" class="grid grid-cols-7 gap-1 text-xs"></div>
-                  <div class="mt-2 pt-2 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-[10px]">
-                    <span class="text-slate-400">• Con mapa</span>
-                    <button onclick="goToLatestSimeparDate(); event.stopPropagation();" class="text-sky-600 hover:underline font-bold">Último disponible</button>
+                  <div id="simepar-days-grid" class="grid grid-cols-7 gap-1 text-center"></div>
+                  <div class="mt-2.5 pt-2 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-[11px]">
+                    <span class="flex items-center gap-1.5 text-slate-400"><span class="w-1.5 h-1.5 rounded-full bg-sky-500"></span> Con mapa</span>
+                    <button onclick="goToLatestSimeparDate(); event.stopPropagation();" class="text-sky-600 dark:text-sky-400 font-semibold hover:underline">Último mapa</button>
                   </div>
                 </div>
-
-                <button id="btn-simepar-next-day" onclick="stepSimeparDate(1)" title="Día posterior" class="w-8 h-8 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 rounded-lg flex items-center justify-center transition">▶</button>
               </div>
+
+              <button id="btn-simepar-next-day" type="button" onclick="stepSimeparDate(1)" title="Día posterior · Flecha Derecha" class="w-8 h-8 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 rounded-lg flex items-center justify-center transition text-xs font-bold text-slate-700 dark:text-slate-300 cursor-pointer">▶</button>
+
+              <!-- Indicador N / Total Fotogramas -->
+              <span id="simepar-frame-counter" class="text-xs font-mono font-bold px-2 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 tabular-nums" title="Fotograma actual / Total disponibles">
+                —/—
+              </span>
             </div>
 
             <div class="flex items-center space-x-2">
-              <button onclick="syncSimeparMap()" class="bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 px-3 py-1.5 rounded-lg text-xs font-medium transition">
+              <button onclick="syncSimeparMap()" class="bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 px-3 py-1.5 rounded-lg text-xs font-medium transition cursor-pointer">
                 Descargar mapa de ayer
               </button>
-              <a id="btn-download-simepar-img" href="#" target="_blank" download class="bg-sky-600 hover:bg-sky-500 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center space-x-1">
+              <a id="btn-download-simepar-img" href="#" target="_blank" download class="bg-sky-600 hover:bg-sky-500 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center space-x-1 cursor-pointer">
                 <span>Guardar PNG</span>
               </a>
             </div>
@@ -960,7 +941,7 @@
           </div>
           <div>
             <h3 class="text-base font-bold text-slate-900 dark:text-white">Configuración de Umbrales Hidrológicos</h3>
-            <p class="text-xs text-slate-500 dark:text-slate-400">Niveles de Prefectura Naval Argentina (Alerta y Evacuación)</p>
+            <p class="text-xs text-slate-500 dark:text-slate-400">Niveles de Prefectura Naval Argentina: Alerta y Evacuación</p>
           </div>
         </div>
         <button onclick="closeThresholdsModal()" class="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition">
@@ -1046,7 +1027,7 @@
               <div class="flex items-center justify-between">
                 <span class="text-xs font-bold text-orange-800 dark:text-orange-300 flex items-center gap-1.5">
                   <span class="w-2.5 h-2.5 rounded-full bg-orange-500"></span>
-                  <span>1. Nivel de Alerta (m)</span>
+                  <span>1. Nivel de Alerta m</span>
                 </span>
                 <span class="text-[10px] text-orange-600/80 font-mono font-semibold">Aviso preventivo PNA</span>
               </div>
@@ -1059,7 +1040,7 @@
               <div class="flex items-center justify-between">
                 <span class="text-xs font-bold text-rose-800 dark:text-rose-300 flex items-center gap-1.5">
                   <span class="w-2.5 h-2.5 rounded-full bg-rose-600"></span>
-                  <span>2. Nivel de Evacuación (m)</span>
+                  <span>2. Nivel de Evacuación m</span>
                 </span>
                 <span class="text-[10px] text-rose-600/80 font-mono font-semibold">Afectación costera PNA</span>
               </div>
@@ -1091,7 +1072,7 @@
                 Control de Alertas y Umbrales por Estación:
               </span>
               <span class="block text-[10px] text-slate-500 dark:text-slate-400">
-                Active o desactive las alertas de cada hidrómetro con 1 clic (ej. estaciones aguas abajo).
+                Active o desactive las alertas de cada hidrómetro con 1 clic · ej. estaciones aguas abajo.
               </span>
             </div>
             <div class="relative">
@@ -1104,8 +1085,8 @@
                 <tr>
                   <th class="py-2 px-3">Estación</th>
                   <th class="py-2 px-2 text-center">Alertas</th>
-                  <th class="py-2 px-2 text-center text-orange-600 dark:text-orange-400">Alerta (m)</th>
-                  <th class="py-2 px-2 text-center text-rose-600 dark:text-rose-400">Evacuación (m)</th>
+                  <th class="py-2 px-2 text-center text-orange-600 dark:text-orange-400">Alerta m</th>
+                  <th class="py-2 px-2 text-center text-rose-600 dark:text-rose-400">Evacuación m</th>
                   <th class="py-2 px-2 text-center">Acción</th>
                 </tr>
               </thead>
@@ -1159,13 +1140,13 @@
   </script>
 
   <!-- SCRIPTS MODULARES -->
-  <script src="js/api.js?v=16"></script>
-  <script src="js/state.js?v=16"></script>
-  <script src="js/components.js?v=16"></script>
-  <script src="js/charts.js?v=16"></script>
-  <script src="js/represas.js?v=16"></script>
-  <script src="js/map.js?v=16"></script>
-  <script src="js/simepar.js?v=16"></script>
-  <script src="js/app.js?v=16"></script>
+  <script src="js/api.js?v=35"></script>
+  <script src="js/state.js?v=35"></script>
+  <script src="js/components.js?v=35"></script>
+  <script src="js/charts.js?v=35"></script>
+  <script src="js/represas.js?v=35"></script>
+  <script src="js/map.js?v=35"></script>
+  <script src="js/simepar.js?v=35"></script>
+  <script src="js/app.js?v=35"></script>
 </body>
 </html>

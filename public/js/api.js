@@ -65,8 +65,10 @@ const API = {
   },
 
   async syncAll() {
-    const res = await fetch(`${this.baseUrl}/api/sync_all`, {
-      method: 'POST'
+    const res = await fetch(`${this.baseUrl}/api/sync`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ all: true })
     });
     return await res.json();
   },

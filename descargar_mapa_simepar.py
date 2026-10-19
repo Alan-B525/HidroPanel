@@ -2,10 +2,9 @@
 """
 descargar_mapa_simepar.py
 Descarga automática diaria del mapa de precipitación acumulada de SIMEPAR.
-- Lee la URL desde mapa_simepar.txt
-- Guarda la imagen en la carpeta 'mapas_simepar/' con el nombre de la fecha de ayer: YYYY-MM-DD.png
-- Valida la integridad del archivo PNG antes de guardarlo
-- Puede ejecutarse manualmente o ser invocado por el planificador automático a las 07:00 AM
+- Lee URL desde mapa_simepar.txt
+- Valida la integridad del archivo PNG antes del guardado atómico
+- Almacena en 'mapas_simepar/YYYY-MM-DD.png'
 """
 
 import sys
@@ -34,7 +33,6 @@ SSL_CTX.verify_mode = ssl.CERT_NONE
 
 
 def get_image_url() -> str:
-    """Lee la URL del mapa desde mapa_simepar.txt."""
     if os.path.exists(URL_FILE):
         try:
             with open(URL_FILE, "r", encoding="utf-8", errors="replace") as f:
@@ -48,11 +46,6 @@ def get_image_url() -> str:
 
 
 def download_simepar_map(target_date: date = None, output_dir: str = OUTPUT_DIR, retries: int = 3) -> str:
-    """
-    Descarga la imagen de SIMEPAR y la almacena como YYYY-MM-DD.png.
-    Por defecto toma la fecha del día anterior (el mapa 'ontem' de SIMEPAR corresponde a ayer).
-    Retorna la ruta absoluta del archivo descargado o None si falló.
-    """
     if target_date is None:
         target_date = date.today() - timedelta(days=1)
     elif isinstance(target_date, datetime):
@@ -68,7 +61,7 @@ def download_simepar_map(target_date: date = None, output_dir: str = OUTPUT_DIR,
     req = urllib.request.Request(
         url,
         headers={
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) HidroPanel/1.0",
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) HidroPanel/2.0",
             "Accept": "image/png,image/*;q=0.8"
         }
     )
@@ -80,8 +73,6 @@ def download_simepar_map(target_date: date = None, output_dir: str = OUTPUT_DIR,
                 content = resp.read()
                 if len(content) > 1000 and content.startswith(b"\x89PNG\r\n\x1a\n"):
                     break
-                else:
-                    logger.warning(f"Intento {attempt}: Contenido inválido o corrupto ({len(content)} bytes)")
         except Exception as e:
             logger.warning(f"Intento {attempt}/{retries} falló: {e}")
             if attempt < retries:
@@ -91,7 +82,6 @@ def download_simepar_map(target_date: date = None, output_dir: str = OUTPUT_DIR,
         logger.error(f"Fallo al descargar imagen válida de SIMEPAR tras {retries} intentos.")
         return None
 
-    # Guardar archivo
     try:
         temp_filepath = filepath + ".tmp"
         with open(temp_filepath, "wb") as f:
@@ -100,11 +90,10 @@ def download_simepar_map(target_date: date = None, output_dir: str = OUTPUT_DIR,
             os.remove(filepath)
         os.rename(temp_filepath, filepath)
 
-        size_kb = len(content) / 1024
-        logger.info(f"Mapa guardado exitosamente: {filepath} ({size_kb:.1f} KB)")
+        logger.info(f"Mapa guardado exitosamente: {filepath} ({len(content)/1024:.1f} KB)")
         return filepath
     except Exception as e:
-        logger.error(f"Error al escribir archivo en disco: {e}")
+        logger.error(f"Error escribiendo archivo: {e}")
         return None
 
 

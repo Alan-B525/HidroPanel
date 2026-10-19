@@ -2,19 +2,43 @@ import re
 import csv
 import json
 import os
+import unicodedata
 from datetime import datetime
+from typing import Dict, Any, List, Optional
 import requests
 from bs4 import BeautifulSoup
 import urllib3
-import unicodedata
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+
+COPEL_CANONICAL_MAP = {
+    "foz do areia": ("IGGBMU", "Foz do Areia", "Iguazú", "Usina Hidrelétrica"),
+    "areia": ("IGGBMU", "Foz do Areia", "Iguazú", "Usina Hidrelétrica"),
+    "segredo": ("IGSEGR", "Segredo", "Iguazú", "Usina Hidrelétrica"),
+    "gov ney braga": ("IGSEGR", "Segredo", "Iguazú", "Usina Hidrelétrica"),
+    "salto santiago": ("IGSSAN", "Salto Santiago", "Iguazú", "Usina Hidrelétrica"),
+    "santiago": ("IGSSAN", "Salto Santiago", "Iguazú", "Usina Hidrelétrica"),
+    "salto osorio": ("IGSOSO", "Salto Osório", "Iguazú", "Usina Hidrelétrica"),
+    "osorio": ("IGSOSO", "Salto Osório", "Iguazú", "Usina Hidrelétrica"),
+    "salto caxias": ("IGSCAX", "Salto Caxias", "Iguazú", "Usina Hidrelétrica"),
+    "caxias": ("IGSCAX", "Salto Caxias", "Iguazú", "Usina Hidrelétrica"),
+    "baixo iguacu": ("IGUHBI", "Baixo Iguaçu", "Iguazú", "Usina Hidrelétrica"),
+    "baixo iguazu": ("IGUHBI", "Baixo Iguaçu", "Iguazú", "Usina Hidrelétrica"),
+    "porto capanema": ("CAPANEMA", "Porto Capanema", "Iguazú", "Posto Hidrométrico"),
+    "capanema": ("CAPANEMA", "Porto Capanema", "Iguazú", "Posto Hidrométrico"),
+    "hotel cataratas": ("CATARATAS", "Cataratas", "Iguazú", "Posto Hidrométrico"),
+    "cataratas": ("CATARATAS", "Cataratas", "Iguazú", "Posto Hidrométrico"),
+    "jordao": ("JDJORD", "Jordão", "Iguazú", "Usina Hidrelétrica"),
+    "fundao": ("IGFND", "Fundão", "Iguazú", "Usina Hidrelétrica"),
+    "santa clara": ("IGSCL", "Santa Clara", "Iguazú", "Usina Hidrelétrica")
+}
+
 
 class CopelClient:
     """
     Cliente HTTP para la extracción de datos hidrológicos de la cuenca del Río Iguazú (COPEL MHB).
-    Realiza las peticiones directamente contra el ciclo de vida de JSF / PrimeFaces
-    sin requerir navegadores embebidos ni dependencias pesadas.
+    Realiza las peticiones directamente contra el ciclo de vida de JSF / PrimeFaces.
+    Garantiza blindaje contra falsos ceros y salida normalizada al contrato DTO.
     """
     BASE_URL = "https://www.copel.com/mhbweb/paginas/bacia-iguacu.jsf"
 
@@ -88,47 +112,72 @@ class CopelClient:
             'Origin': 'https://www.copel.com'
         }
 
-    def _clean_number(self, val_str):
-        """Convierte números formateados en portugués/español (ej. 1.700 o 5,491) a float."""
-        if not val_str or not isinstance(val_str, str):
+    def _clean_number(self, val_str: Any) -> Optional[float]:
+        """
+        Convierte números formateados ('1.700', '5,491', '738,011') a float.
+        REGLA DE NEGOCIO 2: Prohibido el falso cero.
+        Valores vacíos, '-', 'S/D', 's/l', 'N/A' o errores retornan estrictamente None.
+        """
+        if val_str is None:
             return None
-        s = val_str.strip()
-        if not s or s == '-' or s == '--':
-            return None
-        # Quitar separador de miles '.' y reemplazar coma decimal ',' por '.'
-        s_clean = s.replace('.', '').replace(',', '.')
-        try:
-            return float(s_clean)
-        except ValueError:
-            return val_str
+        if isinstance(val_str, (int, float)):
+            import math
+            if math.isnan(val_str) or math.isinf(val_str):
+                return None
+            return round(float(val_str), 3)
 
-    def _clean_datetime(self, dt_str):
-        """Convierte '08/10/26 11h' a formato ISO '2026-10-08 11:00:00' si es posible."""
+        s = str(val_str).strip()
+        if not s or s.upper() in ('-', '--', 'N/A', 'NAN', 'NONE', 'NULL', 'S/D', 'S/E', 'S/L', 'S/R', 'SD', 'SE'):
+            return None
+
+        # Reemplazos numéricos según formato portugués/español
+        if ',' in s and '.' in s:
+            if s.rfind(',') > s.rfind('.'):  # 1.234,56
+                s = s.replace('.', '').replace(',', '.')
+            else:  # 1,234.56
+                s = s.replace(',', '')
+        elif ',' in s:
+            s = s.replace(',', '.')
+        elif '.' in s:
+            parts = s.split('.')
+            if len(parts) == 2 and len(parts[1]) == 3 and parts[0].isdigit() and int(parts[0]) > 0:
+                s = parts[0] + parts[1]
+
+        try:
+            return round(float(s), 3)
+        except (ValueError, TypeError):
+            return None
+
+    def _clean_datetime(self, dt_str: Any) -> Optional[str]:
+        """Convierte '08/10/26 11h' a formato ISO-8601 canónico 'YYYY-MM-DDTHH:MM:SS'."""
         if not dt_str:
-            return dt_str
-        s = dt_str.strip()
-        # Patrón típico: DD/MM/YY HHh o DD/MM/YYYY HH:MM
-        m = re.match(r'^(\d{2})/(\d{2})/(\d{2,4})\s+(\d{1,2})h?$', s)
+            return None
+        s = str(dt_str).strip()
+        m = re.match(r'^(\d{1,2})/(\d{1,2})/(\d{2,4})(?:[T\s](\d{1,2})(?::(\d{2}))?(?::\d{2})?)?h?$', s)
         if m:
-            d, mth, y, h = m.groups()
+            d, mth, y, h, mi = m.groups()
             year = int(y)
             if year < 100:
                 year += 2000
-            return f"{year:04d}-{int(mth):02d}-{int(d):02d} {int(h):02d}:00:00"
+            hour = int(h) if h is not None else 0
+            minute = int(mi) if mi is not None else 0
+            return f"{year:04d}-{int(mth):02d}-{int(d):02d}T{hour:02d}:{minute:02d}:00"
+
+        if " " in s and len(s) >= 19:
+            return s[:19].replace(" ", "T")
+        if "T" in s and len(s) >= 19:
+            return s[:19]
         return s
 
     @staticmethod
     def _normalize_string(text):
         if not text:
             return ""
-        # Quitar acentos, convertir a minúsculas
         t = ''.join(c for c in unicodedata.normalize('NFD', str(text)) if unicodedata.category(c) != 'Mn').lower()
-        # Variaciones comunes de escritura (iguazu -> iguacu, caixias -> caxias, areias -> areia)
-        t = t.replace('iguazu', 'iguacu').replace('caixias', 'caxias').replace('areias', 'areia').replace('osorio', 'osorio')
+        t = t.replace('iguazu', 'iguacu').replace('caixias', 'caxias').replace('areias', 'areia')
         return re.sub(r'[^a-z0-9]', ' ', t).strip()
 
     def find_station(self, station_identifier):
-        """Busca una estación por índice o nombre de forma tolerante a acentos y variaciones."""
         if not self._initialized:
             self.init_session()
 
@@ -141,18 +190,15 @@ class CopelClient:
         ident_norm = self._normalize_string(station_identifier)
         ident_words = ident_norm.split()
 
-        # 1. Búsqueda exacta normalizada sobre short_name o title
         for st in self.stations:
             if ident_norm == self._normalize_string(st['short_name']) or ident_norm == self._normalize_string(st['title']):
                 return st
 
-        # 2. Búsqueda de todas las palabras contenidas en el título
         for st in self.stations:
             title_norm = self._normalize_string(st['title'])
             if all(w in title_norm for w in ident_words):
                 return st
 
-        # 3. Substring simple
         for st in self.stations:
             title_norm = self._normalize_string(st['title'])
             if ident_norm in title_norm or title_norm in ident_norm:
@@ -161,12 +207,6 @@ class CopelClient:
         return None
 
     def fetch_station_data(self, station_identifier, start_date=None, end_date=None, normalize=False):
-        """
-        Descarga los registros de una estación por índice o nombre.
-        - station_identifier: int (ej. 33) o str (ej. 'União da Vitória' o 'Foz do Areia').
-        - start_date, end_date: 'DD/MM/YYYY HH' (COPEL permite hasta ~6 días previos).
-        - normalize: si True, formatea fechas a ISO y números a float.
-        """
         if not self._initialized:
             self.init_session()
 
@@ -179,7 +219,6 @@ class CopelClient:
         dialog_id = target['dialog_id']
         headers = self._ajax_headers()
 
-        # Paso 1: Activar comando de la estación en el servidor
         cmd_payload = {
             'javax.faces.partial.ajax': 'true',
             'javax.faces.source': f'form:j_idt73:{idx}:j_idt74',
@@ -191,7 +230,6 @@ class CopelClient:
         r_cmd = self.session.post(self.BASE_URL, headers=headers, data=cmd_payload, verify=False, timeout=self.timeout)
         self.view_state = self._extract_view_state(r_cmd.text)
 
-        # Paso 2: Cargar el diálogo dinámico
         load_payload = {
             'javax.faces.partial.ajax': 'true',
             'javax.faces.source': dialog_id,
@@ -205,7 +243,6 @@ class CopelClient:
         self.view_state = self._extract_view_state(r_dlg.text)
         xml_content = r_dlg.text
 
-        # Paso 3: Si se especificaron fechas personalizadas, ejecutar actualización
         if start_date and end_date:
             btn_id = f'{form_id}:j_idt173'
             update_payload = {
@@ -223,7 +260,6 @@ class CopelClient:
             self.view_state = self._extract_view_state(r_upd.text)
             xml_content = r_upd.text
 
-        # Paso 4: Extraer y procesar registros
         raw_records = self._parse_table_data(xml_content)
 
         if normalize:
@@ -231,7 +267,7 @@ class CopelClient:
             for r in raw_records:
                 norm_r = {}
                 for col, val in r.items():
-                    if 'data' in col.lower() or 'hora' in col.lower():
+                    if any(k in col.lower() for k in ('data', 'hora')):
                         norm_r[col] = self._clean_datetime(val)
                     else:
                         norm_r[col] = self._clean_number(val)
@@ -248,6 +284,84 @@ class CopelClient:
             'total_records': len(records),
             'records': records
         }
+
+    def fetch_station_dto(self, station_identifier, start_date=None, end_date=None) -> List[Dict[str, Any]]:
+        """
+        Retorna la lista de registros estructurados según el CONTRATO DTO UNIFICADO:
+        - station_id, station_name, river, source, measured_at, fetched_at,
+          level_m, variation_m, flow_in_m3s, flow_out_m3s, flow_turbined_m3s,
+          flow_spilled_m3s, rain_mm, trend, raw_status.
+        """
+        res = self.fetch_station_data(station_identifier, start_date=start_date, end_date=end_date, normalize=False)
+        short_norm = self._normalize_string(res.get('short_name', ''))
+        
+        canon_info = COPEL_CANONICAL_MAP.get(short_norm)
+        if not canon_info:
+            for k, v in COPEL_CANONICAL_MAP.items():
+                if k in short_norm or short_norm in k:
+                    canon_info = v
+                    break
+
+        if canon_info:
+            station_id, station_name, river, _ = canon_info
+        else:
+            station_id = re.sub(r'[^A-Z0-9_]', '_', res.get('short_name', 'COPEL').upper())
+            station_name = res.get('short_name', 'Estación COPEL')
+            river = "Iguazú"
+
+        fetched_at = datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
+        dto_list: List[Dict[str, Any]] = []
+
+        for row in res.get('records', []):
+            dt_raw = None
+            level_m = None
+            flow_in = None
+            flow_out = None
+            flow_turb = None
+            flow_spill = None
+            rain_mm = None
+
+            for col_name, val in row.items():
+                c_low = col_name.lower()
+                clean_v = self._clean_number(val)
+                if any(k in c_low for k in ('data', 'hora')):
+                    dt_raw = val
+                elif 'montante' in c_low or 'r\xe9gua' in c_low or 'regla' in c_low or 'n\xedvel' in c_low or 'nivel' in c_low:
+                    if 'jusante' not in c_low:
+                        level_m = clean_v
+                elif 'afluente' in c_low:
+                    flow_in = clean_v
+                elif 'defluente' in c_low or 'vaz\xe3o' in c_low or 'caudal' in c_low:
+                    flow_out = clean_v
+                elif 'turbinada' in c_low:
+                    flow_turb = clean_v
+                elif 'vertida' in c_low:
+                    flow_spill = clean_v
+                elif 'precipita\xe7\xe3o' in c_low or 'chuva' in c_low:
+                    if 'acumulada' not in c_low:
+                        rain_mm = clean_v
+
+            measured_at = self._clean_datetime(dt_raw) or fetched_at
+
+            dto_list.append({
+                "station_id": station_id,
+                "station_name": station_name,
+                "river": river,
+                "source": "COPEL",
+                "measured_at": measured_at,
+                "fetched_at": fetched_at,
+                "level_m": level_m,
+                "variation_m": None,
+                "flow_in_m3s": flow_in,
+                "flow_out_m3s": flow_out,
+                "flow_turbined_m3s": flow_turb,
+                "flow_spilled_m3s": flow_spill,
+                "rain_mm": rain_mm,
+                "trend": None,
+                "raw_status": "OPERATIVA"
+            })
+
+        return dto_list
 
     def _parse_table_data(self, xml_text):
         cdata_blocks = re.findall(r'<!\[CDATA\[(.*?)\]\]>', xml_text, re.DOTALL)
@@ -272,7 +386,6 @@ class CopelClient:
                                 row_dict = dict(zip(headers, tds))
                                 records.append(row_dict)
 
-        # Deduplicar preservando orden
         unique_records = []
         seen = set()
         for r in records:
@@ -285,11 +398,9 @@ class CopelClient:
 
     @staticmethod
     def save_csv(data_dict, file_path):
-        """Guarda los registros obtenidos en un archivo CSV UTF-8 con BOM (compatible con Excel)."""
         records = data_dict.get('records', [])
         if not records:
             return False
-        
         os.makedirs(os.path.dirname(os.path.abspath(file_path)), exist_ok=True)
         keys = list(records[0].keys())
         with open(file_path, 'w', encoding='utf-8-sig', newline='') as f:
@@ -300,7 +411,6 @@ class CopelClient:
 
     @staticmethod
     def save_json(data_dict, file_path):
-        """Guarda los datos estructurados en un archivo JSON."""
         os.makedirs(os.path.dirname(os.path.abspath(file_path)), exist_ok=True)
         with open(file_path, 'w', encoding='utf-8') as f:
             json.dump(data_dict, f, ensure_ascii=False, indent=2)
