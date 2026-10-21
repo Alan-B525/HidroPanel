@@ -212,8 +212,8 @@
       <div id="view-caudales-container" class="flex-1 flex flex-col overflow-y-auto p-2.5 sm:p-4 lg:p-5 space-y-3 sm:space-y-4">
         <div class="dashboard-container space-y-3 sm:space-y-4">
           
-          <!-- ESQUEMA FLUVIAL DE CASCADA DE CENTRALES -->
-          <div class="card-panel p-3.5 sm:p-4">
+          <!-- ESQUEMA FLUVIAL DE CASCADA DE CENTRALES (Oculto a requerimiento operativo; preservado en DOM para reactivación) -->
+          <div id="section-esquema-fluvial" class="card-panel p-3.5 sm:p-4 hidden" style="display: none;">
             <div class="flex flex-wrap items-center justify-between gap-2.5 mb-2.5 border-b border-slate-100 dark:border-slate-800 pb-2">
               <div class="flex items-center space-x-2">
                 <h3 class="text-xs sm:text-sm font-bold uppercase tracking-wider text-slate-800 dark:text-slate-200 flex items-center gap-2">
@@ -237,11 +237,13 @@
           <!-- TARJETAS DE CENTRALES PRINCIPALES -->
           <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3.5">
             <!-- ITAIPÚ BINACIONAL -->
-            <!-- ITAIPÚ -->
-            <div class="card-panel p-3.5 flex flex-col justify-between space-y-2.5">
-              <div class="flex items-center gap-2 border-b border-slate-100 dark:border-slate-800/80 pb-2">
-                <span class="w-2 h-2 rounded-full bg-sky-500"></span>
-                <h4 class="font-bold text-slate-900 dark:text-white text-sm">Itaipú Binacional</h4>
+            <div id="card-dam-itaipu" onclick="RepresasView.openDamHistoryModal('PNITAI')" onkeydown="if(event.key==='Enter'||event.key===' ')RepresasView.openDamHistoryModal('PNITAI')" class="card-panel p-3.5 flex flex-col justify-between space-y-2.5 cursor-pointer hover:border-sky-500/60 dark:hover:border-sky-500/60 hover:shadow-md transition-all group" title="Haga clic para ver el histórico de caudales y niveles" role="button" tabindex="0">
+              <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-800/80 pb-2">
+                <div class="flex items-center gap-2">
+                  <span class="w-2 h-2 rounded-full bg-sky-500"></span>
+                  <h4 class="font-bold text-slate-900 dark:text-white text-sm group-hover:text-sky-600 dark:group-hover:text-sky-400 transition-colors">Itaipú Binacional</h4>
+                </div>
+                <svg class="w-3.5 h-3.5 text-slate-400 group-hover:text-sky-500 opacity-60 group-hover:opacity-100 shrink-0 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24" title="Ver histórico"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a2 2 0 01-2 2H6a2 2 0 01-2-2V4z"/></svg>
               </div>
 
               <div>
@@ -270,10 +272,13 @@
             </div>
 
             <!-- BAIXO IGUAÇU -->
-            <div class="card-panel p-3.5 flex flex-col justify-between space-y-2.5">
-              <div class="flex items-center gap-2 border-b border-slate-100 dark:border-slate-800/80 pb-2">
-                <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
-                <h4 class="font-bold text-slate-900 dark:text-white text-sm">Baixo Iguaçu</h4>
+            <div id="card-dam-baixo" onclick="RepresasView.openDamHistoryModal('IGUHBI')" onkeydown="if(event.key==='Enter'||event.key===' ')RepresasView.openDamHistoryModal('IGUHBI')" class="card-panel p-3.5 flex flex-col justify-between space-y-2.5 cursor-pointer hover:border-emerald-500/60 dark:hover:border-emerald-500/60 hover:shadow-md transition-all group" title="Haga clic para ver el histórico de caudales y niveles" role="button" tabindex="0">
+              <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-800/80 pb-2">
+                <div class="flex items-center gap-2">
+                  <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+                  <h4 class="font-bold text-slate-900 dark:text-white text-sm group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">Baixo Iguaçu</h4>
+                </div>
+                <svg class="w-3.5 h-3.5 text-slate-400 group-hover:text-emerald-500 opacity-60 group-hover:opacity-100 shrink-0 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24" title="Ver histórico"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a2 2 0 01-2 2H6a2 2 0 01-2-2V4z"/></svg>
               </div>
 
               <div>
@@ -302,10 +307,13 @@
             </div>
 
             <!-- PORTO CAPANEMA -->
-            <div class="card-panel p-3.5 flex flex-col justify-between space-y-2.5">
-              <div class="flex items-center gap-2 border-b border-slate-100 dark:border-slate-800/80 pb-2">
-                <span class="w-2 h-2 rounded-full bg-amber-500"></span>
-                <h4 class="font-bold text-slate-900 dark:text-white text-sm">Porto Capanema</h4>
+            <div id="card-dam-capanema" onclick="RepresasView.openDamHistoryModal('CAPANEMA')" onkeydown="if(event.key==='Enter'||event.key===' ')RepresasView.openDamHistoryModal('CAPANEMA')" class="card-panel p-3.5 flex flex-col justify-between space-y-2.5 cursor-pointer hover:border-amber-500/60 dark:hover:border-amber-500/60 hover:shadow-md transition-all group" title="Haga clic para ver el histórico de caudales y niveles" role="button" tabindex="0">
+              <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-800/80 pb-2">
+                <div class="flex items-center gap-2">
+                  <span class="w-2 h-2 rounded-full bg-amber-500"></span>
+                  <h4 class="font-bold text-slate-900 dark:text-white text-sm group-hover:text-amber-600 dark:group-hover:text-amber-400 transition-colors">Porto Capanema</h4>
+                </div>
+                <svg class="w-3.5 h-3.5 text-slate-400 group-hover:text-amber-500 opacity-60 group-hover:opacity-100 shrink-0 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24" title="Ver histórico"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a2 2 0 01-2 2H6a2 2 0 01-2-2V4z"/></svg>
               </div>
 
               <div>
@@ -334,10 +342,13 @@
             </div>
 
             <!-- ESTACIÓN CATARATAS -->
-            <div class="card-panel p-3.5 flex flex-col justify-between space-y-2.5">
-              <div class="flex items-center gap-2 border-b border-slate-100 dark:border-slate-800/80 pb-2">
-                <span class="w-2 h-2 rounded-full bg-amber-500"></span>
-                <h4 class="font-bold text-slate-900 dark:text-white text-sm">Cataratas</h4>
+            <div id="card-dam-cataratas" onclick="RepresasView.openDamHistoryModal('CATARATAS')" onkeydown="if(event.key==='Enter'||event.key===' ')RepresasView.openDamHistoryModal('CATARATAS')" class="card-panel p-3.5 flex flex-col justify-between space-y-2.5 cursor-pointer hover:border-amber-500/60 dark:hover:border-amber-500/60 hover:shadow-md transition-all group" title="Haga clic para ver el histórico de caudales y niveles" role="button" tabindex="0">
+              <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-800/80 pb-2">
+                <div class="flex items-center gap-2">
+                  <span class="w-2 h-2 rounded-full bg-amber-500"></span>
+                  <h4 class="font-bold text-slate-900 dark:text-white text-sm group-hover:text-amber-600 dark:group-hover:text-amber-400 transition-colors">Cataratas</h4>
+                </div>
+                <svg class="w-3.5 h-3.5 text-slate-400 group-hover:text-amber-500 opacity-60 group-hover:opacity-100 shrink-0 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24" title="Ver histórico"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a2 2 0 01-2 2H6a2 2 0 01-2-2V4z"/></svg>
               </div>
 
               <div>
@@ -1109,6 +1120,112 @@
     </div>
   </div>
 
+  <!-- ============================================================
+       MODAL DE HISTÓRICO HIDROLÓGICO DE REPRESAS Y CENTRALES
+       ============================================================ -->
+  <div id="modal-dam-history" class="fixed inset-0 z-50 bg-slate-950/75 backdrop-blur-sm flex items-center justify-center p-1 sm:p-2.5 transition-all duration-200" style="display: none;" onclick="RepresasView.handleDamModalBackdropClick(event)">
+    <div id="modal-dam-dialog" class="bg-white dark:bg-[#0c1a2b] border border-slate-200 dark:border-[#1a2f47] rounded-2xl shadow-2xl w-[98vw] max-w-[1850px] h-[95vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-150 transition-all" onclick="event.stopPropagation()">
+
+      <!-- Modal Header -->
+      <div class="px-4 py-2.5 sm:py-3 border-b border-slate-200 dark:border-[#1a2f47] flex flex-wrap items-center justify-between gap-3 bg-slate-50/70 dark:bg-[#081525] shrink-0 select-none cursor-default" ondblclick="RepresasView.toggleDamModalFullscreen()">
+        <div class="flex items-center space-x-3">
+          <div class="w-8 h-8 rounded-xl bg-sky-500/10 dark:bg-sky-400/10 border border-sky-500/20 flex items-center justify-center text-sky-600 dark:text-sky-400">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+            </svg>
+          </div>
+          <div>
+            <div class="flex items-center gap-2">
+              <h3 id="dam-modal-title" class="text-sm sm:text-base font-bold text-slate-900 dark:text-white">Central Hidroeléctrica</h3>
+              <span id="dam-modal-source-badge" class="text-[10px] px-2 py-0.5 rounded font-sans font-bold bg-sky-100 text-sky-800 dark:bg-sky-950 dark:text-sky-300">ONS</span>
+            </div>
+            <p id="dam-modal-subtitle" class="text-[11px] text-slate-500 dark:text-slate-400 leading-tight"></p>
+          </div>
+        </div>
+
+        <!-- Selectores superiores de Central y Mes -->
+        <div class="flex items-center gap-2">
+          <div class="flex items-center gap-1.5">
+            <label for="dam-modal-station-select" class="text-[11px] font-bold text-slate-500 dark:text-slate-400">Estación:</label>
+            <select id="dam-modal-station-select" onchange="RepresasView.onDamStationSelectChange(this.value)" class="bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg px-2.5 py-1 text-xs text-slate-900 dark:text-slate-100 font-semibold focus:outline-none focus:ring-1 focus:ring-sky-500 max-w-[220px]">
+              <option value="">Cargando centrales...</option>
+            </select>
+          </div>
+
+          <div class="flex items-center gap-1.5">
+            <label for="dam-modal-month-select" class="text-[11px] font-bold text-slate-500 dark:text-slate-400">Período:</label>
+            <select id="dam-modal-month-select" onchange="RepresasView.onDamMonthSelectChange(this.value)" class="bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg px-2.5 py-1 text-xs text-slate-900 dark:text-slate-100 font-semibold focus:outline-none focus:ring-1 focus:ring-sky-500">
+              <option value="">Mes Actual</option>
+            </select>
+          </div>
+
+          <!-- Botón Pantalla Completa -->
+          <button id="dam-modal-btn-fullscreen" type="button" onclick="RepresasView.toggleDamModalFullscreen()" class="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition" title="Pantalla completa (Maximizar)">
+            <svg id="dam-modal-icon-expand" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"/></svg>
+            <svg id="dam-modal-icon-collapse" class="w-4 h-4 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 9L4 4m0 0h4m-4 0v4m11-4l-5 5m5-5h-4m4 0v4M9 15l-5 5m0 0h4m-4 0v-4m11 4l-5-5m5 5h-4m4 0v-4"/></svg>
+          </button>
+
+          <button onclick="RepresasView.closeDamHistoryModal()" class="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition" title="Cerrar modal">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- Modal Body (Sin scroll vertical, 100% visible) -->
+      <div class="flex-1 min-h-0 flex flex-col p-2.5 sm:p-3.5 space-y-2 overflow-hidden">
+
+        <!-- Toolbar: Selector de Variables y Filtro Temporal (Línea única compacta) -->
+        <div class="shrink-0 flex items-center justify-between gap-2 p-1.5 sm:p-2 bg-slate-50 dark:bg-slate-900/40 rounded-xl border border-slate-200 dark:border-slate-800 min-w-0">
+          <!-- Checkboxes de Variables disponibles en el Parquet -->
+          <div class="flex items-center gap-1.5 overflow-x-auto min-w-0 flex-1 whitespace-nowrap py-0.5" id="dam-modal-variables-container">
+            <!-- Inyectado dinámicamente según columnas disponibles -->
+          </div>
+
+          <!-- Rango Temporal y Zoom -->
+          <div class="flex items-center gap-1 shrink-0 ml-auto">
+            <div class="inline-flex rounded-lg bg-slate-200/80 dark:bg-slate-800 p-0.5 text-[11px] font-semibold">
+              <button type="button" class="btn-dam-range px-2 py-0.5 rounded-md transition text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white" data-range="48h" onclick="RepresasView.setDamTimeRange('48h')">48h</button>
+              <button type="button" class="btn-dam-range px-2 py-0.5 rounded-md transition text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white" data-range="7d" onclick="RepresasView.setDamTimeRange('7d')">7d</button>
+              <button type="button" class="btn-dam-range px-2 py-0.5 rounded-md transition text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white" data-range="30d" onclick="RepresasView.setDamTimeRange('30d')">30d</button>
+              <button type="button" class="btn-dam-range active px-2 py-0.5 rounded-md transition bg-white dark:bg-slate-700 text-sky-600 dark:text-sky-300 shadow-xs" data-range="all" onclick="RepresasView.setDamTimeRange('all')">Completo</button>
+            </div>
+
+            <button type="button" onclick="RepresasView.resetDamZoom()" class="p-1 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-800 transition text-[11px] font-semibold flex items-center gap-1 px-2" title="Restablecer zoom">
+              <span>⟲ Zoom</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Contenedor del Gráfico Interactivo Chart.js (Ocupa todo el alto restante sin scroll) -->
+        <div class="relative flex-1 min-h-0 w-full bg-slate-50/50 dark:bg-slate-950/40 rounded-xl p-2.5 border border-slate-200/80 dark:border-slate-800/80 flex flex-col justify-center">
+          <canvas id="damHistoryChart" class="w-full h-full"></canvas>
+
+          <!-- Botón flotante para restablecer zoom -->
+          <div id="dam-modal-floating-reset-zoom" class="hidden absolute top-3 right-3 z-10">
+            <button onclick="RepresasView.resetDamZoom()" class="px-2.5 py-1 text-xs font-semibold bg-sky-600 text-white rounded-md shadow-md hover:bg-sky-500 transition flex items-center gap-1">
+              <span>↺ Restablecer zoom</span>
+            </button>
+          </div>
+
+          <!-- Spinner / Loading Overlay -->
+          <div id="dam-modal-loading" class="hidden absolute inset-0 bg-white/70 dark:bg-[#0c1a2b]/70 backdrop-blur-xs flex items-center justify-center z-20 rounded-xl">
+            <div class="flex items-center gap-2.5 text-xs font-semibold text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-800 px-4 py-2 rounded-xl shadow-lg border border-slate-200 dark:border-slate-700">
+              <svg class="animate-spin w-4 h-4 text-sky-500" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+              </svg>
+              <span>Cargando datos horarios ONS...</span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+
+
+    </div>
+  </div>
+
   <!-- TOAST FLOTANTE DE NOTIFICACIONES -->
   <div id="toast" class="fixed bottom-5 right-5 card-panel px-4 py-3 shadow-xl flex items-center space-x-3 transition-all duration-300 opacity-0 pointer-events-none translate-y-3 z-50 max-w-md">
     <div id="toast-icon" class="text-emerald-500 font-bold shrink-0">✓</div>
@@ -1137,16 +1254,26 @@
     window.handleModalBackdropClick = window.handleModalBackdropClick || function(e) {
       if (e && e.target && e.target.id === 'modal-umbrales') window.closeThresholdsModal();
     };
+    window.openDamHistoryModal = function(codigo) {
+      if (window.RepresasView && typeof window.RepresasView.openDamHistoryModal === 'function') {
+        window.RepresasView.openDamHistoryModal(codigo);
+      }
+    };
+    window.closeDamHistoryModal = function() {
+      if (window.RepresasView && typeof window.RepresasView.closeDamHistoryModal === 'function') {
+        window.RepresasView.closeDamHistoryModal();
+      }
+    };
   </script>
 
   <!-- SCRIPTS MODULARES -->
-  <script src="js/api.js?v=35"></script>
-  <script src="js/state.js?v=35"></script>
-  <script src="js/components.js?v=35"></script>
-  <script src="js/charts.js?v=35"></script>
-  <script src="js/represas.js?v=35"></script>
-  <script src="js/map.js?v=35"></script>
-  <script src="js/simepar.js?v=35"></script>
-  <script src="js/app.js?v=35"></script>
+  <script src="js/api.js?v=41"></script>
+  <script src="js/state.js?v=41"></script>
+  <script src="js/components.js?v=41"></script>
+  <script src="js/charts.js?v=41"></script>
+  <script src="js/represas.js?v=41"></script>
+  <script src="js/map.js?v=41"></script>
+  <script src="js/simepar.js?v=41"></script>
+  <script src="js/app.js?v=41"></script>
 </body>
 </html>

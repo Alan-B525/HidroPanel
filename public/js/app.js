@@ -7,6 +7,7 @@
 document.addEventListener('DOMContentLoaded', async () => {
   // Aplicar tema inicial
   document.documentElement.setAttribute('data-theme', State.theme);
+  document.documentElement.classList.toggle('dark', State.theme === 'dark');
   updateThemeIcon();
 
   // Aplicar estado inicial de barra lateral
@@ -1037,6 +1038,9 @@ function toggleTheme() {
 
   if (State.viewMode === 'caudales' && window.RepresasView && RepresasView.data) {
     RepresasView.renderCharts(RepresasView.data.timeline || [], State.theme === 'dark');
+    if (RepresasView.damModalState && RepresasView.damModalState.chart) {
+      RepresasView.renderDamHistoryChart();
+    }
   } else if (State.layout === 1 && State.selectedStationId && State.selectedStationData) {
     const isPosadas = State.selectedStationData.estacion.codigo === 'POSADAS';
     const isCota = isPosadas && State.posadasMode === 'cota';

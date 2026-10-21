@@ -93,6 +93,7 @@ const State = {
     this.theme = theme;
     localStorage.setItem('hidropanel_theme', theme);
     document.documentElement.setAttribute('data-theme', theme);
+    document.documentElement.classList.toggle('dark', theme === 'dark');
     this.emit('themeChange', theme);
   },
 

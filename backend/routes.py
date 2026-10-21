@@ -90,6 +90,15 @@ def handle_get(path: str, query_params: Dict[str, list]) -> Tuple[int, str, Any]
                 data["sources_status"] = sync_service.get_sources_status_dict()
             return _respond(200, "application/json; charset=utf-8", json.dumps(data, ensure_ascii=False))
 
+        # 3b. Histórico mensual/multimensual de una central hidroeléctrica desde Parquet ONS
+        elif path in ("/api/represas/history", "/api/caudales/history"):
+            dam_code = query_params.get("codigo", [None])[0] or query_params.get("code", ["PNITAI"])[0]
+            month_req = query_params.get("mes", [None])[0] or query_params.get("month", [None])[0] or query_params.get("periodo", [None])[0] or query_params.get("period", [None])[0]
+            hist_data = represas_service.get_dam_historical_data(dam_code, month_req)
+            hist_data["sources_status"] = sync_service.get_sources_status_dict()
+            status_code = 200 if hist_data.get("success") else 404
+            return _respond(status_code, "application/json; charset=utf-8", json.dumps(hist_data, ensure_ascii=False))
+
         # 4. Mediciones históricas (y alias /api/history y /api/history/<station_id>)
         elif path == "/api/mediciones" or path == "/api/history" or path.startswith("/api/history/"):
             st_id_str = query_params.get("estacion_id", [None])[0] or query_params.get("station_id", [None])[0]

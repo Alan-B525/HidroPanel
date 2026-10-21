@@ -168,6 +168,19 @@ def is_port_available(port: int) -> bool:
         return s.connect_ex(('127.0.0.1', port)) != 0
 
 
+def get_local_ip() -> str:
+    """Detecta la dirección IP de la interfaz de red local principal."""
+    try:
+        with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
+            s.connect(('10.255.255.255', 1))
+            return s.getsockname()[0]
+    except Exception:
+        try:
+            return socket.gethostbyname(socket.gethostname())
+        except Exception:
+            return "127.0.0.1"
+
+
 def run_server(port: int = DEFAULT_PORT):
     """Inicia el servidor y los servicios en segundo plano."""
     logger.info("Asegurando esquema SQLite y modo WAL...")
@@ -195,9 +208,14 @@ def run_server(port: int = DEFAULT_PORT):
         server_address = ('', port)
         httpd = ReusableThreadingServer(server_address, HidroRequestHandler)
 
+    local_ip = get_local_ip()
+    hostname = socket.gethostname()
+
     logger.info("=" * 70)
     logger.info(" HidroPanel 2.0 Servidor Profesional Activo")
-    logger.info(f" Acceso Web: http://localhost:{port}")
+    logger.info(f" Acceso Local:      http://localhost:{port}")
+    logger.info(f" Acceso en Red LAN: http://{local_ip}:{port}")
+    logger.info(f" Acceso por Nombre: http://{hostname}:{port}")
     logger.info(f" Directorio Estáticos: {STATIC_DIR}")
     logger.info(" Sincronización programada: minutos xx:10, xx:30, xx:50")
     logger.info(" Descarga SIMEPAR: todos los días a las 07:00 AM")

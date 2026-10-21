@@ -90,6 +90,33 @@ const DAM_COORDINATES = [
     tipo: 'Central Hidroeléctrica'
   },
   {
+    codigo: 'JDJORD',
+    nombre: 'Jordão',
+    lat: -25.7533,
+    lon: -52.0525,
+    rio: 'Río Jordão (Cuenca Iguazú)',
+    operador: 'COPEL',
+    tipo: 'Central Hidroeléctrica'
+  },
+  {
+    codigo: 'IGFND',
+    nombre: 'Fundão',
+    lat: -25.7034,
+    lon: -52.0020,
+    rio: 'Río Jordão (Cuenca Iguazú)',
+    operador: 'COPEL / Elejor',
+    tipo: 'Central Hidroeléctrica'
+  },
+  {
+    codigo: 'IGSCL',
+    nombre: 'Santa Clara',
+    lat: -25.6456,
+    lon: -51.9569,
+    rio: 'Río Jordão (Cuenca Iguazú)',
+    operador: 'COPEL / Elejor',
+    tipo: 'Central Hidroeléctrica'
+  },
+  {
     codigo: 'CAPANEMA',
     nombre: 'Porto Capanema',
     lat: -25.5808,

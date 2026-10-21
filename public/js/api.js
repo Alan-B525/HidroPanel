@@ -32,6 +32,14 @@ const API = {
     return await res.json();
   },
 
+  async getDamHistory(codigo, mes = null) {
+    let url = `${this.baseUrl}/api/represas/history?codigo=${encodeURIComponent(codigo)}`;
+    if (mes) url += `&mes=${encodeURIComponent(mes)}`;
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(`HTTP ${res.status} al cargar histórico de la central`);
+    return await res.json();
+  },
+
   async getSyncStatus() {
     const res = await fetch(`${this.baseUrl}/api/status_sync`);
     if (!res.ok) throw new Error(`HTTP ${res.status} al verificar sincronización`);
