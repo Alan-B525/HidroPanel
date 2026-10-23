@@ -224,14 +224,14 @@ const RepresasView = {
             <div class="text-[10px] text-slate-400 font-medium">Jupiá</div>
             <div class="font-data font-bold text-slate-700 dark:text-slate-200 text-[11px] tabular-nums">${jupiaFlow} <span class="text-[9px] font-normal opacity-70">m³/s</span></div>
           </div>
-          <span class="text-slate-300 dark:text-slate-600 text-[10px]">➔</span>
+          <span class="text-slate-300 dark:text-slate-600 text-[11px] font-mono">→</span>
 
           <!-- Porto Primavera -->
           <div class="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 px-2 py-1 rounded-md shrink-0 text-center">
             <div class="text-[10px] text-slate-400 font-medium">P. Primavera</div>
             <div class="font-data font-bold text-slate-700 dark:text-slate-200 text-[11px] tabular-nums">${primaveraFlow} <span class="text-[9px] font-normal opacity-70">m³/s</span></div>
           </div>
-          <span class="text-slate-300 dark:text-slate-600 text-[10px]">➔</span>
+          <span class="text-slate-300 dark:text-slate-600 text-[11px] font-mono">→</span>
 
           <!-- Itaipú (Binacional) -->
           <div class="flex items-center gap-1.5 bg-sky-50 dark:bg-sky-950/40 border border-sky-300 dark:border-sky-800/80 px-2.5 py-1 rounded-lg shrink-0">
@@ -253,49 +253,49 @@ const RepresasView = {
             <div class="text-[10px] text-slate-400">Areia</div>
             <div class="font-data font-bold text-slate-700 dark:text-slate-200 text-[11px] tabular-nums">${areiaFlow}</div>
           </div>
-          <span class="text-slate-300 dark:text-slate-600 text-[10px]">➔</span>
+          <span class="text-slate-300 dark:text-slate-600 text-[11px] font-mono">→</span>
 
           <!-- Segredo -->
           <div class="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 px-2 py-1 rounded-md shrink-0 text-center">
             <div class="text-[10px] text-slate-400">Segredo</div>
             <div class="font-data font-bold text-slate-700 dark:text-slate-200 text-[11px] tabular-nums">${segredoFlow}</div>
           </div>
-          <span class="text-slate-300 dark:text-slate-600 text-[10px]">➔</span>
+          <span class="text-slate-300 dark:text-slate-600 text-[11px] font-mono">→</span>
 
           <!-- Santiago -->
           <div class="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 px-2 py-1 rounded-md shrink-0 text-center">
             <div class="text-[10px] text-slate-400">Santiago</div>
             <div class="font-data font-bold text-slate-700 dark:text-slate-200 text-[11px] tabular-nums">${santiagoFlow}</div>
           </div>
-          <span class="text-slate-300 dark:text-slate-600 text-[10px]">➔</span>
+          <span class="text-slate-300 dark:text-slate-600 text-[11px] font-mono">→</span>
 
           <!-- Osório -->
           <div class="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 px-2 py-1 rounded-md shrink-0 text-center">
             <div class="text-[10px] text-slate-400">Osório</div>
             <div class="font-data font-bold text-slate-700 dark:text-slate-200 text-[11px] tabular-nums">${osorioFlow}</div>
           </div>
-          <span class="text-slate-300 dark:text-slate-600 text-[10px]">➔</span>
+          <span class="text-slate-300 dark:text-slate-600 text-[11px] font-mono">→</span>
 
           <!-- Caxias -->
           <div class="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 px-2 py-1 rounded-md shrink-0 text-center">
             <div class="text-[10px] text-slate-400">Caxias</div>
             <div class="font-data font-bold text-slate-700 dark:text-slate-200 text-[11px] tabular-nums">${caxiasFlow}</div>
           </div>
-          <span class="text-slate-300 dark:text-slate-600 text-[10px]">➔</span>
+          <span class="text-slate-300 dark:text-slate-600 text-[11px] font-mono">→</span>
 
           <!-- Baixo Iguaçu (Destacada) -->
           <div class="bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-300 dark:border-emerald-800 px-2.5 py-1 rounded-md shrink-0 text-center">
             <div class="text-[10px] font-bold text-emerald-700 dark:text-emerald-400">Baixo Iguaçu</div>
             <div class="font-data font-extrabold text-emerald-600 dark:text-emerald-300 text-[11px] tabular-nums">${baixoFlow} <span class="text-[9px] font-normal opacity-70">m³/s</span></div>
           </div>
-          <span class="text-slate-300 dark:text-slate-600 text-[10px]">➔</span>
+          <span class="text-slate-300 dark:text-slate-600 text-[11px] font-mono">→</span>
 
           <!-- Porto Capanema -->
           <div class="bg-amber-50/70 dark:bg-amber-950/40 border border-amber-300/80 dark:border-amber-800/60 px-2 py-1 rounded-md shrink-0 text-center">
             <div class="text-[10px] font-semibold text-amber-800 dark:text-amber-300">Capanema</div>
             <div class="font-data font-bold text-amber-600 dark:text-amber-300 text-[11px] tabular-nums">${capanemaFlow} <span class="text-[9px] font-normal opacity-70">m³/s</span></div>
           </div>
-          <span class="text-slate-300 dark:text-slate-600 text-[10px]">➔</span>
+          <span class="text-slate-300 dark:text-slate-600 text-[11px] font-mono">→</span>
 
           <!-- Cataratas (Destacada) -->
           <div class="bg-amber-50 dark:bg-amber-950/50 border border-amber-300 dark:border-amber-800 px-2.5 py-1 rounded-md shrink-0 text-center">
@@ -391,12 +391,12 @@ const RepresasView = {
             <div class="text-[10px] text-slate-400">${c.operador} • ${c.rio}</div>
           </td>
           <td class="py-2.5 px-3 font-mono tabular-nums">${cotaStr}</td>
-          <td class="py-2.5 px-3 font-mono tabular-nums text-slate-500">${volStr}</td>
+          <td class="py-2.5 px-3 font-mono tabular-nums text-slate-500 hidden md:table-cell">${volStr}</td>
           <td class="py-2.5 px-3 font-mono tabular-nums text-slate-700 dark:text-slate-300">${afluStr}</td>
-          <td class="py-2.5 px-3 font-mono tabular-nums text-sky-600 dark:text-sky-400 font-semibold">${turbStr}</td>
-          <td class="py-2.5 px-3 font-mono tabular-nums">${vertBadge}</td>
+          <td class="py-2.5 px-3 font-mono tabular-nums text-sky-600 dark:text-sky-400 font-semibold hidden md:table-cell">${turbStr}</td>
+          <td class="py-2.5 px-3 font-mono tabular-nums hidden md:table-cell">${vertBadge}</td>
           <td class="py-2.5 px-3 font-mono tabular-nums text-emerald-600 dark:text-emerald-400 font-bold">${deflStr}</td>
-          <td class="py-2.5 px-3 font-mono tabular-nums text-[11px] text-slate-400">${freshnessBadge}</td>
+          <td class="py-2.5 px-3 font-mono tabular-nums text-[11px] text-slate-400 hidden md:table-cell">${freshnessBadge}</td>
         </tr>
       `;
     }).join('');
@@ -612,15 +612,25 @@ const RepresasView = {
               },
               tooltip: tooltipConfig,
               zoom: {
-                pan: { enabled: false },
+                pan: {
+                  enabled: true,
+                  mode: 'x',
+                  modifierKey: 'shift'
+                },
                 zoom: {
+                  wheel: {
+                    enabled: true,
+                    speed: 0.05,
+                    modifierKey: 'ctrl'
+                  },
+                  pinch: { enabled: true },
                   drag: {
                     enabled: true,
+                    threshold: 8,
                     backgroundColor: isDark ? 'rgba(16, 185, 129, 0.22)' : 'rgba(16, 185, 129, 0.16)',
                     borderColor: '#10b981',
                     borderWidth: 1.5
                   },
-                  pinch: { enabled: true },
                   mode: 'x',
                   onZoomComplete: () => {
                     RepresasView.toggleFloatingResetBtn('floating-reset-zoom-caudales', true);
@@ -729,15 +739,25 @@ const RepresasView = {
               },
               tooltip: tooltipConfig,
               zoom: {
-                pan: { enabled: false },
+                pan: {
+                  enabled: true,
+                  mode: 'x',
+                  modifierKey: 'shift'
+                },
                 zoom: {
+                  wheel: {
+                    enabled: true,
+                    speed: 0.05,
+                    modifierKey: 'ctrl'
+                  },
+                  pinch: { enabled: true },
                   drag: {
                     enabled: true,
+                    threshold: 8,
                     backgroundColor: isDark ? 'rgba(56, 189, 248, 0.22)' : 'rgba(2, 132, 199, 0.18)',
                     borderColor: isDark ? '#38bdf8' : '#0284c7',
                     borderWidth: 1.5
                   },
-                  pinch: { enabled: true },
                   mode: 'x',
                   onZoomComplete: () => {
                     RepresasView.toggleFloatingResetBtn('floating-reset-zoom-itaipu', true);
@@ -1279,15 +1299,25 @@ const RepresasView = {
             },
             tooltip: tooltipConfig,
             zoom: {
-              pan: { enabled: false },
+              pan: {
+                enabled: true,
+                mode: 'x',
+                modifierKey: 'shift'
+              },
               zoom: {
+                wheel: {
+                  enabled: true,
+                  speed: 0.05,
+                  modifierKey: 'ctrl'
+                },
+                pinch: { enabled: true },
                 drag: {
                   enabled: true,
+                  threshold: 8,
                   backgroundColor: isDark ? 'rgba(56, 189, 248, 0.22)' : 'rgba(2, 132, 199, 0.18)',
                   borderColor: isDark ? '#38bdf8' : '#0284c7',
                   borderWidth: 1.5
                 },
-                pinch: { enabled: true },
                 mode: 'x',
                 onZoomComplete: () => {
                   RepresasView.toggleFloatingResetBtn('dam-modal-floating-reset-zoom', true);

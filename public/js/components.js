@@ -161,7 +161,7 @@ const Components = {
       <span class="badge-freshness ${staleClass} ${extraClass}" title="${titleTooltip}">
         <span class="source-tag ${srcClass}">${srcUpper}</span>
         <span class="tabular-nums">${info.relativeStr}</span>
-        ${info.isStale ? '<span class="stale-clock" title="Más de 3h de antigüedad">⏱</span>' : ''}
+        ${info.isStale ? '<span class="inline-block w-1.5 h-1.5 rounded-full bg-amber-500 mr-1" title="Más de 3h de antigüedad"></span>' : ''}
       </span>
     `;
   },
@@ -246,7 +246,7 @@ const Components = {
         tooltipText = `${cfg.label} • ESTADO: ERROR EN RECOLECCIÓN\n` +
                       `Última lectura exitosa: ${Components.formatDateTime(lastSuccess, true)} · ${age.relativeStr}\n` +
                       `Aviso: ${errorMsg || 'Fallo de red en origen'}.\n` +
-                      `⚠️ Se exhiben los últimos datos válidos almacenados en BD.`;
+                      `Se exhiben los últimos datos válidos almacenados en BD.`;
       } else if (isStale) {
         chip.classList.add('status-stale', 'is-stale');
         stateBadge = 'DEMORA';
@@ -278,6 +278,11 @@ const Components = {
 
     container.classList.remove('hidden');
     container.classList.add('relative');
+    if (window.State && window.State.viewMode === 'map') {
+      container.style.display = 'none';
+    } else {
+      container.style.display = '';
+    }
 
     const hasAlerts = activeAlerts && activeAlerts.length > 0;
     const sorted = hasAlerts ? [...activeAlerts].sort((a, b) => {
@@ -392,10 +397,10 @@ const Components = {
         <!-- Pestañas de Selección: Alertas Hidrológicas vs Estaciones Sin Reporte -->
         <div class="flex items-center px-3 pt-2 bg-slate-50/50 dark:bg-slate-900/40 border-b border-slate-100 dark:border-slate-800/80 gap-3 text-xs font-semibold">
           <button id="tab-alerts-active" type="button" onclick="window.switchAlertsTab('active')" class="pb-2 border-b-2 border-emerald-500 text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5 cursor-pointer">
-            <span>🚨 Alertas Activas (${sorted.length})</span>
+            <span class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-rose-500 animate-pulse"></span><span>Alertas Activas (${sorted.length})</span></span>
           </button>
           <button id="tab-alerts-failed" type="button" onclick="window.switchAlertsTab('failed')" class="pb-2 border-b-2 border-transparent text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 flex items-center gap-1.5 cursor-pointer">
-            <span>⚠️ Sin Reporte (${failed.length})</span>
+            <span class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-amber-500"></span><span>Sin Reporte (${failed.length})</span></span>
           </button>
         </div>
 
@@ -438,7 +443,7 @@ const Components = {
       if (filtered.length === 0) {
         listContainer.innerHTML = `
           <div class="p-6 text-center text-xs text-slate-400 dark:text-slate-500 space-y-1">
-            <div class="text-emerald-500 font-bold text-sm">✓ Normalidad Hidrológica</div>
+            <div class="text-emerald-500 font-bold text-sm flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-emerald-500"></span><span>Normalidad Hidrológica</span></div>
             <div>${query ? 'No se encontraron alertas para esa búsqueda.' : 'No hay alertas activas en la cuenca. Todos los niveles monitoreados se encuentran en rangos normales.'}</div>
           </div>
         `;
@@ -465,7 +470,7 @@ const Components = {
                 <div class="flex items-center space-x-1.5 flex-wrap gap-y-1">
                   <span class="font-bold text-xs text-slate-900 dark:text-slate-100 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition">${a.nombre}</span>
                   <span class="text-[9px] font-bold px-1.5 py-0.2 rounded uppercase border ${badgeColors[a.estado] || badgeColors.alerta}">${a.estado}</span>
-                  ${a.falla_reporte ? '<span class="text-[9px] font-bold text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/60 px-1 rounded border border-amber-300 dark:border-amber-800">⚠️ Sin reporte</span>' : ''}
+                  ${a.falla_reporte ? '<span class="text-[9px] font-bold text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/60 px-1.5 py-0.5 rounded border border-amber-300 dark:border-amber-800">Sin reporte</span>' : ''}
                 </div>
                 <div class="text-[10px] text-slate-500 dark:text-slate-400 flex items-center space-x-1.5 mt-0.5">
                   <span>${a.codigo}</span>
@@ -481,7 +486,7 @@ const Components = {
                   <span>${valStr}</span>
                   <span class="${trendCol} text-xs font-bold">${trendIcon}</span>
                 </div>
-                ${a.pna_altura !== null && a.pna_altura !== undefined ? `<div class="text-[9px] text-amber-600 dark:text-amber-400 font-mono font-semibold">⚓ ${a.pna_altura.toFixed(2)}m</div>` : ''}
+                ${a.pna_altura !== null && a.pna_altura !== undefined ? `<div class="text-[9px] text-amber-600 dark:text-amber-400 font-mono font-semibold">PNA ${a.pna_altura.toFixed(2)}m</div>` : ''}
               </div>
               <button type="button" onclick="event.stopPropagation(); window.toggleStationAlerts(${a.id});" class="p-1 rounded text-slate-400 hover:text-rose-500 hover:bg-slate-100 dark:hover:bg-slate-800 transition" title="Silenciar / desactivar alertas para ${a.nombre}">
                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
@@ -499,7 +504,7 @@ const Components = {
       if (filtered.length === 0) {
         listContainer.innerHTML = `
           <div class="p-6 text-center text-xs text-slate-400 dark:text-slate-500 space-y-1">
-            <div class="text-emerald-500 font-bold text-sm">✓ Todas las Estaciones Reportando</div>
+            <div class="text-emerald-500 font-bold text-sm flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-emerald-500"></span><span>Todas las Estaciones Reportando</span></div>
             <div>${query ? 'No se encontraron estaciones sin reporte para esa búsqueda.' : 'Todos los hidrómetros están transmitiendo dentro de sus ventanas horarias habituales.'}</div>
           </div>
         `;
@@ -516,7 +521,7 @@ const Components = {
               <div class="min-w-0">
                 <div class="flex items-center space-x-1.5 flex-wrap gap-y-1">
                   <span class="font-bold text-xs text-slate-900 dark:text-slate-100 group-hover:text-amber-600 dark:group-hover:text-amber-400 transition">${f.nombre}</span>
-                  <span class="text-xs text-amber-500" title="Retraso en reporte">⚠️</span>
+                  <span class="inline-block w-2 h-2 rounded-full bg-amber-500" title="Retraso en reporte"></span>
                 </div>
                 <div class="text-[10px] text-slate-500 dark:text-slate-400 font-mono mt-0.5">
                   Última actualización: ${timeStr}
@@ -660,7 +665,7 @@ const Components = {
       if (agpAge.isStale) {
         currentTimeElem.innerHTML = `
           <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-semibold text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/50 border border-amber-300/60 dark:border-amber-800/60" title="${titleAttr}">
-            <span class="text-[11px]">⏱</span>
+            
             <span>${agpAge.relativeStr}</span>
           </span>
         `;
@@ -685,7 +690,7 @@ const Components = {
     const pnaTitleElem = document.getElementById('sit-pna-title');
     if (pnaTitleElem) {
       const puerto = kpis.pna_puerto ? ` · ${kpis.pna_puerto}` : '';
-      pnaTitleElem.innerHTML = `<span>⚓ Prefectura${puerto}</span>`;
+      pnaTitleElem.innerHTML = `<span>Prefectura${puerto}</span>`;
     }
 
     if (pnaTrendElem) {
@@ -698,7 +703,7 @@ const Components = {
         pnaTrendElem.innerHTML = '▼ Baja';
       } else if (pnaState.includes('ESTAC')) {
         pnaTrendElem.className = 'text-[10px] px-1.5 py-0.5 rounded font-bold bg-amber-200/70 dark:bg-amber-950/50 text-amber-900 dark:text-amber-200';
-        pnaTrendElem.innerHTML = '⏸ Estacionario';
+        pnaTrendElem.innerHTML = 'Estacionario';
       } else if (pnaState) {
         pnaTrendElem.className = 'text-[10px] px-1.5 py-0.5 rounded font-bold bg-slate-200/70 dark:bg-slate-800 text-slate-700 dark:text-slate-300';
         pnaTrendElem.textContent = pnaState;
@@ -716,7 +721,7 @@ const Components = {
         if (pnaAge.isStale) {
           pnaTimeElem.innerHTML = `
             <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-semibold text-amber-800 dark:text-amber-200 bg-amber-100/70 dark:bg-amber-950/60 border border-amber-300/60 dark:border-amber-800/60" title="${pnaTooltip}">
-              <span class="text-[11px]">⏱</span>
+              
               <span>${pnaAge.relativeStr}</span>
             </span>
           `;
@@ -1038,7 +1043,7 @@ const Components = {
         let pv = Number(r.altura_pna);
         if (isCota) pv += offset;
         const estStr = r.estado_pna ? ` <span class="text-[10px] font-sans font-bold text-amber-700 dark:text-amber-300">· ${r.estado_pna}</span>` : '';
-        pnaStr = `<span class="font-mono font-semibold text-amber-600 dark:text-amber-400 tabular-nums" title="Prefectura Naval Argentina">⚓ ${pv.toFixed(2)} <span class="text-[10px] text-slate-400 font-normal">${unitSuffix}</span>${estStr}</span>`;
+        pnaStr = `<span class="font-mono font-semibold text-amber-600 dark:text-amber-400 tabular-nums" title="Prefectura Naval Argentina">PNA ${pv.toFixed(2)} <span class="text-[10px] text-slate-400 font-normal">${unitSuffix}</span>${estStr}</span>`;
       }
 
       // 3. Columna Variación / Discrepancia
@@ -1116,7 +1121,7 @@ const Components = {
               <div class="text-xs font-semibold text-slate-800 dark:text-slate-100 truncate group-hover:text-[#008348] dark:group-hover:text-emerald-400 transition" title="${s.nombre}">
                 ${s.nombre}
                 ${isSilenced ? '<span class="text-[9px] text-slate-400 ml-1 font-normal font-mono">· silenciada</span>' : ''}
-                ${ageInfo.isStale ? '<span class="text-amber-500 text-xs ml-1" title="Dato no renovado: >3h">⏱</span>' : ''}
+                
               </div>
               <div class="text-[10px] text-slate-400 flex items-center space-x-1.5 mt-0.5 tabular-nums">
                 <span>${s.source || 'AGP'}</span>
@@ -1134,7 +1139,7 @@ const Components = {
             </div>
             ${pnaValStr !== null ? `
               <div class="text-[10px] font-mono text-amber-600 dark:text-amber-400 font-semibold tabular-nums" title="Prefectura: ${pnaValStr}m · ${s.pna_estado_rio || ''}">
-                ⚓ ${pnaValStr}m
+                PNA ${pnaValStr}m
               </div>
             ` : ''}
           </div>
@@ -1154,7 +1159,7 @@ const Components = {
     const titleEl = document.getElementById('toast-title');
     const msgEl = document.getElementById('toast-msg');
 
-    if (iconEl) iconEl.textContent = isError ? '✕' : '✓';
+    if (iconEl) iconEl.innerHTML = isError ? '<svg class="w-4 h-4 text-rose-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/></svg>' : '<svg class="w-4 h-4 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>';
     if (iconEl) iconEl.className = isError ? 'text-rose-500 font-bold shrink-0' : 'text-emerald-500 font-bold shrink-0';
     if (titleEl) titleEl.textContent = title;
     if (msgEl) msgEl.textContent = message;

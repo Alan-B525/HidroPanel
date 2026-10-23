@@ -525,12 +525,15 @@ const Charts = {
       this.mainChart = null;
     }
 
-    // Reiniciar dimensiones del canvas
+    // Reiniciar dimensiones del canvas y habilitar reset por doble clic
     canvas.removeAttribute('width');
     canvas.removeAttribute('height');
     canvas.style.width = '100%';
     canvas.style.height = '100%';
     canvas.style.display = 'block';
+    canvas.ondblclick = () => {
+      Charts.resetZoom();
+    };
 
     this.mainChart = new Chart(ctx, {
       type: 'line',
@@ -604,31 +607,39 @@ const Charts = {
                     const yyyy = d.getFullYear();
                     const hh = String(d.getHours()).padStart(2, '0');
                     const min = String(d.getMinutes()).padStart(2, '0');
-                    return `📅 ${dd}/${mm}/${yyyy} ${hh}:${min} hs`;
+                    return `${dd}/${mm}/${yyyy} ${hh}:${min} hs`;
                   }
                 }
-                return `📅 ${item.label}`;
+                return `${item.label}`;
               },
               label: function (context) {
                 const yVal = context.parsed && context.parsed.y !== undefined ? context.parsed.y : context.raw;
                 const dsLabel = context.dataset.label || '';
-                const isPna = dsLabel.toLowerCase().includes('prefectura') || dsLabel.toLowerCase().includes('pna');
-                const icon = isPna ? '⚓' : '🔷';
-                return ` ${icon} ${dsLabel}: ${Number(yVal).toFixed(2)} ${unitSuffix}`;
+                return ` ${dsLabel}: ${Number(yVal).toFixed(2)} ${unitSuffix}`;
               }
             }
           },
-          // Zoom estilo PNA: Selección por arrastre horizontal (Drag to Zoom)
+          // Zoom optimizado para estaciones y control de sala
           zoom: {
-            pan: { enabled: false },
+            pan: {
+              enabled: true,
+              mode: 'x',
+              modifierKey: 'shift'
+            },
             zoom: {
+              wheel: {
+                enabled: true,
+                speed: 0.05,
+                modifierKey: 'ctrl'
+              },
+              pinch: { enabled: true },
               drag: {
                 enabled: true,
+                threshold: 8,
                 backgroundColor: isDark ? 'rgba(56, 189, 248, 0.20)' : 'rgba(2, 132, 199, 0.16)',
                 borderColor: isDark ? '#38bdf8' : '#0284c7',
                 borderWidth: 1.5
               },
-              pinch: { enabled: true },
               mode: 'x',
               onZoomComplete: () => {
                 Charts.toggleFloatingResetBtn('floating-reset-zoom-main', true);
@@ -661,6 +672,14 @@ const Charts = {
     if (this.mainChart && typeof this.mainChart.resetZoom === 'function') {
       this.mainChart.resetZoom();
       this.toggleFloatingResetBtn('floating-reset-zoom-main', false);
+    }
+    if (this.subplotCharts && this.subplotCharts.length > 0) {
+      this.subplotCharts.forEach((c, idx) => {
+        if (c && typeof c.resetZoom === 'function') {
+          c.resetZoom();
+          this.toggleFloatingResetBtn(`subplot-floating-reset-${idx}`, false);
+        }
+      });
     }
   },
 
@@ -725,8 +744,9 @@ const Charts = {
     }
     container.innerHTML = '';
 
-    // Altura en píxeles exacta y garantizada
-    const heightPx = (count <= 2) ? 310 : ((count <= 4) ? 255 : 205);
+    // Altura en píxeles exacta con soporte para laptops L (>= 1440px) y pantallas amplias
+    const isWide = window.innerWidth >= 1440;
+    const heightPx = (count <= 2) ? (isWide ? 360 : 310) : ((count <= 4) ? (isWide ? 310 : 255) : (isWide ? 250 : 205));
 
     // Deduplicar estaciones para los selectores
     const seen = new Set();
@@ -760,7 +780,7 @@ const Charts = {
                     class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-800 dark:text-slate-200 rounded-lg px-2 py-1 focus:outline-none focus:border-sky-500 truncate cursor-pointer hover:border-sky-400 transition font-sans">
               ${distinctStations.map(s => {
                 const alt = (s.ultima_altura !== null && s.ultima_altura !== undefined) ? `${s.ultima_altura.toFixed(2)}m` : '--';
-                const pna = (s.pna_altura !== null && s.pna_altura !== undefined) ? ` | ⚓ ${s.pna_altura.toFixed(2)}m` : '';
+                const pna = (s.pna_altura !== null && s.pna_altura !== undefined) ? ` | PNA ${s.pna_altura.toFixed(2)}m` : '';
                 return `<option value="${s.id}" ${s.id === selectedId ? 'selected' : ''}>${s.nombre || s.codigo} · ${alt}${pna}</option>`;
               }).join('')}
             </select>
@@ -881,7 +901,7 @@ const Charts = {
             const sign = diff > 0 ? '+' : '';
             diffStr = ` · Δ ${sign}${diff.toFixed(2)}`;
           }
-          pnaValStr = `<span class="text-amber-600 dark:text-amber-400 font-bold ml-1.5 font-mono text-[10px]" title="Prefectura: ${pv.toFixed(2)} ${unitSuffix}${diffStr}">⚓ ${pv.toFixed(2)}${diffStr}</span>`;
+          pnaValStr = `<span class="text-amber-600 dark:text-amber-400 font-bold ml-1.5 font-mono text-[10px]" title="Prefectura: ${pv.toFixed(2)} ${unitSuffix}${diffStr}">PNA ${pv.toFixed(2)}${diffStr}</span>`;
         }
         badge.innerHTML = `<span class="text-sky-600 dark:text-sky-400 font-bold font-data tabular-nums">${agpValStr}</span>${pnaValStr}`;
       }
@@ -938,6 +958,9 @@ const Charts = {
       canvas.style.width = '100%';
       canvas.style.height = '100%';
       canvas.style.display = 'block';
+      canvas.ondblclick = () => {
+        Charts.resetSubplotZoom(slotIdx);
+      };
 
       const chartHeight = canvas.clientHeight || 240;
       const gradient = ctx.createLinearGradient(0, 0, 0, chartHeight);
@@ -1188,6 +1211,7 @@ const Charts = {
       );
 
       if (canReuseSubplot) {
+        const isZoomed = typeof prevChart.isZoomedOrPanned === 'function' && prevChart.isZoomedOrPanned();
         if (!useTimeScale) prevChart.data.labels = fallbackLabels;
         datasets.forEach((ds, idx) => {
           if (prevChart.data.datasets[idx]) {
@@ -1202,13 +1226,15 @@ const Charts = {
           };
           prevChart.options.plugins.pnaPlotLines.unitSuffix = unitSuffix;
         }
-        if (subYScales.y && prevChart.options.scales.y) {
-          prevChart.options.scales.y.min = subYScales.y.min;
-          prevChart.options.scales.y.max = subYScales.y.max;
-        }
-        if (subYScales.y1 && prevChart.options.scales.y1) {
-          prevChart.options.scales.y1.min = subYScales.y1.min;
-          prevChart.options.scales.y1.max = subYScales.y1.max;
+        if (!isZoomed) {
+          if (subYScales.y && prevChart.options.scales.y) {
+            prevChart.options.scales.y.min = subYScales.y.min;
+            prevChart.options.scales.y.max = subYScales.y.max;
+          }
+          if (subYScales.y1 && prevChart.options.scales.y1) {
+            prevChart.options.scales.y1.min = subYScales.y1.min;
+            prevChart.options.scales.y1.max = subYScales.y1.max;
+          }
         }
         prevChart.update('none');
         return;
@@ -1288,29 +1314,37 @@ const Charts = {
                       const mm = String(d.getMonth() + 1).padStart(2, '0');
                       const hh = String(d.getHours()).padStart(2, '0');
                       const min = String(d.getMinutes()).padStart(2, '0');
-                      return `📅 ${dd}/${mm} ${hh}:${min} hs`;
+                      return `${dd}/${mm} ${hh}:${min} hs`;
                     }
                   }
                   return item.label;
                 },
                 label: (c) => {
                   const yVal = c.parsed && c.parsed.y !== undefined ? c.parsed.y : c.raw;
-                  const isPna = (c.dataset.label || '').toLowerCase().includes('pna') || (c.dataset.label || '').toLowerCase().includes('prefectura');
-                  const icon = isPna ? '⚓' : '🔷';
-                  return ` ${icon} ${c.dataset.label}: ${Number(yVal).toFixed(2)} ${unitSuffix}`;
+                  return ` ${c.dataset.label}: ${Number(yVal).toFixed(2)} ${unitSuffix}`;
                 }
               }
             },
             zoom: {
-              pan: { enabled: false },
+              pan: {
+                enabled: true,
+                mode: 'x',
+                modifierKey: 'shift'
+              },
               zoom: {
+                wheel: {
+                  enabled: true,
+                  speed: 0.05,
+                  modifierKey: 'ctrl'
+                },
+                pinch: { enabled: true },
                 drag: {
                   enabled: true,
+                  threshold: 8,
                   backgroundColor: isDark ? 'rgba(56, 189, 248, 0.20)' : 'rgba(2, 132, 199, 0.16)',
                   borderColor: isDark ? '#38bdf8' : '#0284c7',
                   borderWidth: 1.5
                 },
-                pinch: { enabled: true },
                 mode: 'x',
                 onZoomComplete: () => {
                   Charts.toggleFloatingResetBtn(`subplot-floating-reset-${slotIdx}`, true);

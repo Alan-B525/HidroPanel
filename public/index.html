@@ -62,11 +62,22 @@
     .dark ::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 9999px; }
     .dark ::-webkit-scrollbar-thumb:hover { background: #334155; }
 
-    /* Contenedor centralizado para evitar estiramientos desproporcionados */
+    /* Contenedor adaptativo: móvil compacto, laptops L y monitores amplios */
     .dashboard-container {
-      max-width: 1240px;
       width: 100%;
+      max-width: 1280px;
       margin: 0 auto;
+      transition: max-width 0.2s ease;
+    }
+    @media (min-width: 1440px) {
+      .dashboard-container {
+        max-width: 1600px;
+      }
+    }
+    @media (min-width: 1920px) {
+      .dashboard-container {
+        max-width: 1820px;
+      }
     }
 
     /* Tarjetas analíticas */
@@ -137,10 +148,10 @@
   <header class="bg-[#0b1f38] border-b-2 border-[#008348] text-white px-3 sm:px-6 py-2 flex items-center justify-between z-30 shrink-0 gap-2 sm:gap-4 shadow-sm select-none">
     
     <!-- IDENTIDAD INSTITUCIONAL (Logo EBY Oficial y Título del Sistema) -->
-    <div class="flex items-center gap-2.5 sm:gap-3 shrink-0">
+    <div class="hidden lg:flex items-center gap-2.5 sm:gap-3 shrink-0">
       <div class="flex items-center gap-2.5 sm:gap-3 cursor-pointer select-none group" onclick="setViewMode('caudales')" title="Ir a Vista de Caudales">
         <img src="icon_eby.svg" alt="Entidad Binacional Yacyretá" class="h-8 sm:h-9 w-auto object-contain transition-opacity group-hover:opacity-90" />
-        <div class="h-5 w-px bg-white/20 hidden sm:block"></div>
+        <div class="h-5 w-px bg-white/20"></div>
         <span class="font-bold text-sm tracking-wide text-white/95 leading-none">HidroPanel</span>
       </div>
     </div>
@@ -149,27 +160,30 @@
     <nav class="flex items-center bg-[#051120]/80 backdrop-blur-md p-1 rounded-lg border border-slate-700/60 shadow-inner gap-1" role="tablist" aria-label="Vistas del sistema">
       
       <!-- VISTA 1: CAUDALES -->
-      <button id="btn-view-caudales" onclick="setViewMode('caudales')" role="tab" aria-selected="true" class="view-btn active flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold text-white bg-[#008348] border border-emerald-400/30 shadow-xs transition-all duration-150 cursor-pointer" title="Balance de erogaciones de Itaipú, cascada del Iguazú y aporte a Yacyretá">
+      <button id="btn-view-caudales" onclick="setViewMode('caudales')" role="tab" aria-selected="true" class="view-btn active flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-md text-xs font-semibold text-white bg-[#008348] border border-emerald-400/30 shadow-xs transition-all duration-150 cursor-pointer" title="Balance de erogaciones de Itaipú, cascada del Iguazú y aporte a Yacyretá">
         <svg class="w-3.5 h-3.5 text-emerald-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
         </svg>
-        <span>Caudales</span>
+        <span class="hidden sm:inline">Caudales</span>
+        <span class="sm:hidden text-[11px]">Caudal</span>
       </button>
 
       <!-- VISTA 2: HIDRÓMETROS -->
-      <button id="btn-view-charts" onclick="setViewMode('charts')" role="tab" aria-selected="false" class="view-btn flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium text-slate-300 hover:text-white hover:bg-white/[0.08] border border-transparent transition-all duration-150 cursor-pointer" title="55 estaciones hidrométricas de la Cuenca del Plata">
+      <button id="btn-view-charts" onclick="setViewMode('charts')" role="tab" aria-selected="false" class="view-btn flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-md text-xs font-medium text-slate-300 hover:text-white hover:bg-white/[0.08] border border-transparent transition-all duration-150 cursor-pointer" title="55 estaciones hidrométricas de la Cuenca del Plata">
         <svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z"/>
         </svg>
-        <span>Hidrómetros</span>
+        <span class="hidden sm:inline">Hidrómetros</span>
+        <span class="sm:hidden text-[11px]">Niveles</span>
       </button>
 
       <!-- VISTA 3: MAPA & RADAR -->
-      <button id="btn-view-map" onclick="setViewMode('map')" role="tab" aria-selected="false" class="view-btn flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium text-slate-300 hover:text-white hover:bg-white/[0.08] border border-transparent transition-all duration-150 cursor-pointer" title="Mapa con capas CARTO Voyager/Dark, presas y radar RainViewer">
+      <button id="btn-view-map" onclick="setViewMode('map')" role="tab" aria-selected="false" class="view-btn flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-md text-xs font-medium text-slate-300 hover:text-white hover:bg-white/[0.08] border border-transparent transition-all duration-150 cursor-pointer" title="Mapa con capas CARTO Voyager/Dark, presas y radar RainViewer">
         <svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"/>
         </svg>
-        <span>Mapa & Radar</span>
+        <span class="hidden sm:inline">Mapa & Radar</span>
+        <span class="sm:hidden text-[11px]">Mapa</span>
       </button>
 
       <!-- VISTA 4: SIMEPAR (Lluvias) -->
@@ -188,13 +202,53 @@
         <svg id="sync-icon" class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
         </svg>
-        <span id="sync-btn-label">Actualizar</span>
+        <span id="sync-btn-label" class="hidden sm:inline">Actualizar</span>
       </button>
     </div>
   </header>
 
   <!-- CARRUSEL DISCRETO DE ALERTAS / TICKER HIDROLÓGICO CONTINUO -->
   <div id="alert-banner-container" class="w-full shrink-0 relative z-40"></div>
+
+  <!-- BARRA DE REPRODUCCIÓN DEL RADAR METEOROLÓGICO (Visible únicamente en vista Mapas & Radar en lugar de alertas) -->
+  <div id="radar-player-topbar" class="hidden w-full shrink-0 relative z-40 bg-[#081525] border-b border-slate-700/60 text-white shadow-xs">
+    <div class="dashboard-container px-3 sm:px-4 py-2 flex flex-wrap items-center justify-between gap-2.5 text-xs">
+      <!-- Grupo Reproducción & Timestamp -->
+      <div class="flex items-center space-x-1.5 sm:space-x-2">
+        <button id="radar-play-btn" onclick="toggleRadarPlay()" class="px-3 py-1 rounded bg-sky-600 hover:bg-sky-500 text-white font-semibold text-xs transition focus:outline-none" title="Reproducir / Pausar animación">
+          Reproducir
+        </button>
+        <button onclick="stepRadar(-1)" class="px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs transition border border-slate-700" title="Cuadro anterior">
+          &larr;
+        </button>
+        <button onclick="stepRadar(1)" class="px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs transition border border-slate-700" title="Cuadro siguiente">
+          &rarr;
+        </button>
+        <div class="flex items-center space-x-1.5 pl-1.5">
+          <span id="radar-timestamp-label" class="font-mono font-bold text-slate-200 text-xs">-- hs</span>
+          <span id="radar-frame-badge" class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-emerald-950/70 text-emerald-400 border border-emerald-800">En vivo</span>
+        </div>
+      </div>
+
+      <!-- Deslizador de Línea de Tiempo -->
+      <div class="flex-1 min-w-[140px] max-w-xs sm:max-w-md flex items-center space-x-2 order-last sm:order-none w-full sm:w-auto">
+        <span class="text-[10px] uppercase font-semibold tracking-wider text-slate-400">Tiempo</span>
+        <input id="radar-slider" type="range" min="0" max="10" value="0" oninput="stepRadarSlider(this.value)" class="w-full cursor-pointer accent-sky-500 h-1.5 bg-slate-800 rounded-lg">
+      </div>
+
+      <!-- Opacidad & Toggle Radar -->
+      <div class="flex items-center space-x-2.5 sm:space-x-3">
+        <div class="flex items-center space-x-1.5">
+          <span class="text-[10px] text-slate-400 font-medium">Opacidad</span>
+          <input type="range" min="0.1" max="1.0" step="0.05" value="0.70" oninput="setRadarOpacity(this.value)" class="w-16 sm:w-20 cursor-pointer accent-sky-500 h-1.5 bg-slate-800 rounded-lg">
+          <span id="radar-opacity-label" class="text-[10px] font-mono font-bold text-slate-400 w-7 text-right">70%</span>
+        </div>
+        <button id="radar-toggle-btn" onclick="toggleRadar()" class="px-2.5 py-1 rounded border border-sky-500/40 text-sky-400 text-xs font-semibold hover:bg-sky-950/40 transition">
+          Radar: Activo
+        </button>
+      </div>
+    </div>
+  </div>
 
   <!-- ============================================================
        CONTENEDOR PRINCIPAL FLUIDO Y CONTENIDO (DASHBOARD CONTAINER)
@@ -465,12 +519,12 @@
                   <tr>
                     <th class="py-2.5 px-3">Central / Presa</th>
                     <th class="py-2.5 px-3">Cota / Nivel</th>
-                    <th class="py-2.5 px-3">Vol. %</th>
+                    <th class="py-2.5 px-3 hidden md:table-cell">Vol. %</th>
                     <th class="py-2.5 px-3">Afluente</th>
-                    <th class="py-2.5 px-3">Turbinada</th>
-                    <th class="py-2.5 px-3">Vertida</th>
+                    <th class="py-2.5 px-3 hidden md:table-cell">Turbinada</th>
+                    <th class="py-2.5 px-3 hidden md:table-cell">Vertida</th>
                     <th class="py-2.5 px-3 font-bold">Defluente</th>
-                    <th class="py-2.5 px-3">Fecha / Hora</th>
+                    <th class="py-2.5 px-3 hidden md:table-cell">Fecha / Hora</th>
                   </tr>
                 </thead>
                 <tbody id="represas-table-body" class="divide-y divide-slate-100 dark:divide-slate-800/40 text-slate-700 dark:text-slate-300 font-mono">
@@ -499,8 +553,8 @@
                 <div class="bg-slate-100 dark:bg-slate-900 p-1 rounded-lg border border-slate-200 dark:border-slate-800 flex items-center space-x-1 text-xs">
                   <button onclick="setLayout(1)" class="btn-layout px-2.5 py-1 rounded font-bold transition active bg-sky-600 text-white" data-layout="1">1</button>
                   <button onclick="setLayout(2)" class="btn-layout px-2.5 py-1 rounded font-medium transition text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white" data-layout="2">2</button>
-                  <button onclick="setLayout(4)" class="btn-layout px-2.5 py-1 rounded font-medium transition text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white" data-layout="4">4</button>
-                  <button onclick="setLayout(8)" class="btn-layout px-2.5 py-1 rounded font-medium transition text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white" data-layout="8">8</button>
+                  <button onclick="setLayout(4)" class="btn-layout px-2.5 py-1 rounded font-medium transition text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hidden md:inline-block" data-layout="4">4</button>
+                  <button onclick="setLayout(8)" class="btn-layout px-2.5 py-1 rounded font-medium transition text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hidden lg:inline-block" data-layout="8">8</button>
                 </div>
               </div>
 
@@ -509,7 +563,7 @@
                 <span class="text-xs font-bold text-slate-700 dark:text-slate-300 mr-1">Curva:</span>
                 <div class="bg-slate-100 dark:bg-slate-900 p-1 rounded-lg border border-slate-200 dark:border-slate-800 flex items-center space-x-1 text-xs">
                   <button id="btn-chart-src-agp" onclick="setChartSource('agp')" class="btn-chart-src px-2.5 py-1 rounded font-bold transition active bg-sky-600 text-white shadow-xs" title="Graficar únicamente mediciones de telemetría AGP">AGP</button>
-                  <button id="btn-chart-src-pna" onclick="setChartSource('pna')" class="btn-chart-src px-2.5 py-1 rounded font-medium transition text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white" title="Graficar únicamente registros de Prefectura PNA">Prefectura PNA</button>
+                  <button id="btn-chart-src-pna" onclick="setChartSource('pna')" class="btn-chart-src px-2.5 py-1 rounded font-medium transition text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white" title="Graficar únicamente registros de Prefectura PNA">PNA</button>
                   <button id="btn-chart-src-ambas" onclick="setChartSource('ambas')" class="btn-chart-src px-2.5 py-1 rounded font-medium transition text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white" title="Superponer ambas curvas con 2 escalas de eje Y independientes">Ambas</button>
                 </div>
               </div>
@@ -597,8 +651,8 @@
             <!-- GRID PRINCIPAL DEL COCKPIT (8 COLS IZQ / 4 COLS DER) -->
             <div class="grid grid-cols-1 xl:grid-cols-12 gap-3 sm:gap-3.5 items-start">
               
-              <!-- COLUMNA IZQUIERDA: GRÁFICO + TABLA (8 COLS) -->
-              <div class="xl:col-span-8 flex flex-col space-y-3 sm:space-y-3.5 min-w-0">
+              <!-- COLUMNA IZQUIERDA: GRÁFICO + TABLA (8 COLS EN DESKTOP) -->
+              <div class="xl:col-span-8 flex flex-col space-y-3 sm:space-y-3.5 min-w-0 order-2 xl:order-1">
                 
                 <!-- GRÁFICO PRINCIPAL DE EVOLUCIÓN TEMPORAL -->
                 <div class="card-panel p-3 sm:p-3.5 flex flex-col relative">
@@ -641,7 +695,7 @@
                           <th class="py-1.5 px-2.5 font-semibold text-[11px] sm:text-xs">Fecha y Hora</th>
                           <th class="py-1.5 px-2.5 font-semibold text-[11px] sm:text-xs text-sky-700 dark:text-sky-400">Medición AGP</th>
                           <th class="py-1.5 px-2.5 font-semibold text-[11px] sm:text-xs text-amber-600 dark:text-amber-400">Prefectura PNA</th>
-                          <th class="py-1.5 px-2.5 font-semibold text-[11px] sm:text-xs">Variación / Tendencia</th>
+                          <th class="py-1.5 px-2.5 font-semibold text-[11px] sm:text-xs hidden sm:table-cell">Variación / Tendencia</th>
                         </tr>
                       </thead>
                       <tbody id="readings-table-body" class="divide-y divide-slate-100 dark:divide-slate-800/40 text-slate-700 dark:text-slate-300 font-mono">
@@ -653,8 +707,8 @@
 
               </div>
 
-              <!-- COLUMNA DERECHA: SITUACIÓN + GAUGE + EXTREMOS + HERRAMIENTAS (4 COLS) -->
-              <div class="xl:col-span-4 flex flex-col space-y-2.5 sm:space-y-3">
+              <!-- COLUMNA DERECHA: SITUACIÓN + GAUGE + EXTREMOS (4 COLS EN DESKTOP, PRIMERO EN MÓVIL) -->
+              <div class="xl:col-span-4 flex flex-col space-y-2.5 sm:space-y-3 order-1 xl:order-2">
                 
                 <!-- CARD 1: NIVEL ACTUAL & MONITOREO DUAL (AGP + PREFECTURA) -->
                 <div class="card-panel p-3 sm:p-3.5 space-y-2.5">
@@ -689,7 +743,7 @@
                   <div class="p-2.5 rounded-xl bg-amber-50/60 dark:bg-amber-950/20 border border-amber-200/80 dark:border-amber-900/40 space-y-1">
                     <div class="flex items-center justify-between text-[10px] text-slate-500 dark:text-slate-400 font-semibold uppercase tracking-wider">
                       <span id="sit-pna-title" class="flex items-center gap-1.5 text-amber-800 dark:text-amber-400 font-bold">
-                        <span>⚓ Prefectura Naval Argentina</span>
+                        <span>Prefectura Naval Argentina</span>
                       </span>
                       <span id="sit-pna-trend" class="text-[10px] px-1.5 py-0.5 rounded font-bold bg-amber-200/60 dark:bg-amber-900/40 text-amber-900 dark:text-amber-200">—</span>
                     </div>
@@ -791,65 +845,14 @@
       <!-- ============================================================
            VISTA 3: MAPA INTERACTIVO & RADAR DE LLUVIAS EN VIVO
            ============================================================ -->
-      <div id="view-map-container" class="hidden flex-1 flex flex-col p-2.5 sm:p-4 lg:p-5 space-y-2.5 overflow-hidden">
-        <div class="dashboard-container flex-1 flex flex-col space-y-2.5 min-h-0">
-          
-          <!-- BARRA DE HERRAMIENTAS DEL MAPA -->
-          <div class="card-panel p-2.5 sm:p-3 flex flex-wrap items-center justify-between gap-2 shrink-0">
-            <div class="flex items-center space-x-2">
-              <span class="text-xs font-bold text-slate-800 dark:text-slate-200">Mapa Georreferenciado:</span>
-              <select id="map-station-select" onchange="onMapStationSelectChange(this.value)" class="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-200 text-xs rounded-lg px-2 py-1 focus:outline-none font-medium">
-                <option value="">Ir a una estación...</option>
-              </select>
-            </div>
-
-            <!-- Zonas Rápidas -->
-            <div class="flex items-center space-x-1 text-xs">
-              <span class="text-slate-400 text-[10px] hidden md:inline">Zonas:</span>
-              <button onclick="zoomMapToRegion('alto_parana')" class="bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 px-2 py-0.5 rounded text-[11px] transition font-semibold text-sky-600 dark:text-sky-400">Alto Paraná</button>
-              <button onclick="zoomMapToRegion('iguazu')" class="bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 px-2 py-0.5 rounded text-[11px] transition">Iguazú / Itaipú</button>
-              <button onclick="zoomMapToRegion('represas')" class="bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 px-2 py-0.5 rounded text-[11px] transition font-semibold text-emerald-600 dark:text-emerald-400">Cascada Completa</button>
-              <button onclick="zoomMapToRegion('paraguay')" class="bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 px-2 py-0.5 rounded text-[11px] transition">Río Paraguay</button>
-              <button onclick="zoomMapToRegion('medio')" class="bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 px-2 py-0.5 rounded text-[11px] transition">Paraná Medio</button>
-              <button onclick="zoomMapToRegion('delta')" class="bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 px-2 py-0.5 rounded text-[11px] transition">Delta & Plata</button>
-            </div>
-
-            <!-- Interruptor Radar RainViewer -->
-            <div class="flex items-center space-x-2 border-l border-slate-200 dark:border-slate-800 pl-2.5">
-              <label class="flex items-center space-x-1.5 text-xs cursor-pointer">
-                <input type="checkbox" id="radar-toggle" onchange="toggleRadar(this.checked)" class="rounded text-sky-600 focus:ring-sky-500">
-                <span class="font-bold text-sky-600 dark:text-sky-400 text-xs">Radar Lluvias</span>
-              </label>
-            </div>
-          </div>
-
-          <!-- PANEL DE CONTROLES DEL RADAR (Visible cuando radar está activo) -->
-          <div id="radar-controls-panel" class="hidden card-panel p-2 sm:p-2.5 flex items-center justify-between gap-2.5 text-xs bg-slate-50 dark:bg-slate-900 shrink-0">
-            <div class="flex items-center space-x-2">
-              <button id="radar-play-btn" onclick="toggleRadarPlay()" class="px-2.5 py-1 rounded-md bg-sky-600 text-white font-bold hover:bg-sky-500 transition">
-                ▶ Reproducir
-              </button>
-              <span id="radar-timestamp-label" class="font-mono font-bold text-slate-700 dark:text-slate-300">-- hs</span>
-            </div>
-
-            <div class="flex-1 max-w-xs flex items-center space-x-2">
-              <span class="text-[10px] text-slate-400">Tiempo:</span>
-              <input id="radar-slider" type="range" min="0" max="10" value="0" oninput="stepRadarSlider(this.value)" class="w-full cursor-pointer accent-sky-600">
-            </div>
-
-            <div class="flex items-center space-x-2">
-              <span class="text-[10px] text-slate-400">Opacidad:</span>
-              <input type="range" min="0.1" max="1.0" step="0.05" value="0.70" oninput="setRadarOpacity(this.value)" class="w-20 cursor-pointer accent-sky-600">
-              <span id="radar-opacity-label" class="text-[10px] font-mono font-bold text-slate-500">70%</span>
-            </div>
-          </div>
-
+      <div id="view-map-container" class="hidden flex-1 flex flex-col p-2 sm:p-3 overflow-hidden">
+        <div class="flex-1 flex flex-col min-h-0 w-full h-full">
           <!-- CONTENEDOR DEL MAPA LEAFLET -->
-          <div class="flex-1 w-full rounded-xl overflow-hidden border border-slate-200 dark:border-slate-800 relative shadow-inner min-h-[360px] sm:min-h-[420px]">
+          <div class="flex-1 w-full rounded-xl overflow-hidden border border-slate-200 dark:border-slate-800 relative shadow-inner h-full min-h-[400px]">
             <div id="map-leaflet" class="w-full h-full"></div>
             
             <!-- LEYENDA RADAR -->
-            <div id="radar-legend-panel" class="hidden absolute bottom-3 left-3 z-[600] card-panel p-2.5 text-[10px] shadow-lg max-w-[170px] space-y-1">
+            <div id="radar-legend-panel" class="absolute bottom-3 left-3 z-[600] card-panel p-2.5 text-[10px] shadow-lg max-w-[170px] space-y-1">
               <div class="font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider text-[9px] mb-1">Radar de Lluvias</div>
               <div class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded" style="background:#83B8EB"></span><span>Débil</span></div>
               <div class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded" style="background:#4FAF6F"></span><span>Moderada</span></div>
@@ -885,7 +888,7 @@
 
               <div class="relative">
                 <button id="simepar-calendar-btn" onclick="toggleSimeparCalendar()" class="flex items-center space-x-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 rounded-lg px-3 py-1.5 text-xs font-semibold text-slate-800 dark:text-slate-100 transition border border-transparent hover:border-slate-300 dark:hover:border-slate-700">
-                  <span class="text-sky-600 dark:text-sky-400">📅</span>
+                  <svg class="w-3.5 h-3.5 text-sky-600 dark:text-sky-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
                   <span id="simepar-calendar-display">Cargando fecha...</span>
                   <span class="text-[10px] text-slate-400">▼</span>
                 </button>
@@ -910,10 +913,6 @@
 
               <button id="btn-simepar-next-day" type="button" onclick="stepSimeparDate(1)" title="Día posterior · Flecha Derecha" class="w-8 h-8 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 rounded-lg flex items-center justify-center transition text-xs font-bold text-slate-700 dark:text-slate-300 cursor-pointer">▶</button>
 
-              <!-- Indicador N / Total Fotogramas -->
-              <span id="simepar-frame-counter" class="text-xs font-mono font-bold px-2 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 tabular-nums" title="Fotograma actual / Total disponibles">
-                —/—
-              </span>
             </div>
 
             <div class="flex items-center space-x-2">
@@ -939,7 +938,7 @@
   <!-- ============================================================
        MODAL DE CONFIGURACIÓN DE UMBRALES HIDROLÓGICOS
        ============================================================ -->
-  <div id="modal-umbrales" class="fixed inset-0 z-50 bg-slate-950/75 backdrop-blur-sm items-center justify-center p-3 sm:p-4" style="display: none;" onclick="handleModalBackdropClick(event)">
+  <div id="modal-umbrales" class="fixed inset-0 z-[2000] bg-slate-950/75 backdrop-blur-sm items-center justify-center p-3 sm:p-4" style="display: none;" onclick="handleModalBackdropClick(event)">
     <div class="bg-white dark:bg-[#0c1a2b] border border-slate-200 dark:border-[#1a2f47] rounded-2xl shadow-2xl max-w-2xl w-full max-h-[92vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-150" onclick="event.stopPropagation()">
       
       <!-- Modal Header -->
@@ -966,8 +965,8 @@
         <!-- BANNER PREFECTURA NAVAL ARGENTINA -->
         <div class="p-3.5 rounded-xl bg-gradient-to-r from-sky-500/10 via-emerald-500/10 to-transparent border border-sky-300 dark:border-sky-800 flex flex-wrap items-center justify-between gap-2.5 shadow-xs">
           <div class="flex items-center space-x-2.5">
-            <div class="w-8 h-8 rounded-lg bg-sky-500/15 flex items-center justify-center text-sky-600 dark:text-sky-300 font-bold text-sm">
-              ⚓
+            <div class="w-8 h-8 rounded-lg bg-sky-500/15 flex items-center justify-center text-sky-600 dark:text-sky-300 font-bold text-xs tracking-tight">
+              PNA
             </div>
             <div>
               <span class="font-bold text-xs text-slate-900 dark:text-slate-100 block">Niveles Prefectura Naval Argentina</span>
@@ -1070,7 +1069,7 @@
               ↺ Restablecer estándar
             </button>
             <button type="submit" id="btn-save-thresholds" class="px-4 py-2 rounded-lg text-xs font-bold text-white bg-[#008348] hover:bg-[#006e3c] active:bg-[#005a31] transition shadow-xs flex items-center space-x-1.5">
-              <span>💾 Guardar Umbrales</span>
+              <svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V3"/></svg><span>Guardar Umbrales</span>
             </button>
           </div>
         </form>
@@ -1123,7 +1122,7 @@
   <!-- ============================================================
        MODAL DE HISTÓRICO HIDROLÓGICO DE REPRESAS Y CENTRALES
        ============================================================ -->
-  <div id="modal-dam-history" class="fixed inset-0 z-50 bg-slate-950/75 backdrop-blur-sm flex items-center justify-center p-1 sm:p-2.5 transition-all duration-200" style="display: none;" onclick="RepresasView.handleDamModalBackdropClick(event)">
+  <div id="modal-dam-history" class="fixed inset-0 z-[2000] bg-slate-950/75 backdrop-blur-sm flex items-center justify-center p-1 sm:p-2.5 transition-all duration-200" style="display: none;" onclick="RepresasView.handleDamModalBackdropClick(event)">
     <div id="modal-dam-dialog" class="bg-white dark:bg-[#0c1a2b] border border-slate-200 dark:border-[#1a2f47] rounded-2xl shadow-2xl w-[98vw] max-w-[1850px] h-[95vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-150 transition-all" onclick="event.stopPropagation()">
 
       <!-- Modal Header -->
@@ -1228,7 +1227,7 @@
 
   <!-- TOAST FLOTANTE DE NOTIFICACIONES -->
   <div id="toast" class="fixed bottom-5 right-5 card-panel px-4 py-3 shadow-xl flex items-center space-x-3 transition-all duration-300 opacity-0 pointer-events-none translate-y-3 z-50 max-w-md">
-    <div id="toast-icon" class="text-emerald-500 font-bold shrink-0">✓</div>
+    <div id="toast-icon" class="text-emerald-500 font-bold shrink-0"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg></div>
     <div class="text-xs">
       <p id="toast-title" class="font-bold text-slate-900 dark:text-white">Notificación</p>
       <p id="toast-msg" class="text-slate-600 dark:text-slate-300 leading-normal">Mensaje</p>
@@ -1267,13 +1266,13 @@
   </script>
 
   <!-- SCRIPTS MODULARES -->
-  <script src="js/api.js?v=41"></script>
-  <script src="js/state.js?v=41"></script>
-  <script src="js/components.js?v=41"></script>
-  <script src="js/charts.js?v=41"></script>
-  <script src="js/represas.js?v=41"></script>
-  <script src="js/map.js?v=41"></script>
-  <script src="js/simepar.js?v=41"></script>
-  <script src="js/app.js?v=41"></script>
+  <script src="js/api.js?v=42"></script>
+  <script src="js/state.js?v=42"></script>
+  <script src="js/components.js?v=42"></script>
+  <script src="js/charts.js?v=42"></script>
+  <script src="js/represas.js?v=42"></script>
+  <script src="js/map.js?v=42"></script>
+  <script src="js/simepar.js?v=42"></script>
+  <script src="js/app.js?v=42"></script>
 </body>
 </html>

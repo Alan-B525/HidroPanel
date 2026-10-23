@@ -155,12 +155,12 @@ const MapView = {
 
   // RainViewer radar
   radarData: null,
-  radarLayer: null,
+  radarLayerMap: null,
   radarFrames: [],
   radarCurrentFrameIndex: 0,
   radarAnimationTimer: null,
   radarOpacity: 0.70,
-  radarActive: false,
+  radarActive: true,
 
   init(containerId, isDark) {
     if (this.map) {
@@ -288,7 +288,7 @@ const MapView = {
       const timeStr = (window.Components && typeof Components.formatDateTime === 'function' ? Components.formatDateTime(s.ultimo_timestamp, true) : (s.ultimo_timestamp || '—'));
 
       const failNotice = isFailed
-        ? `<div style="font-size: 0.72rem; font-weight: 600; color: #b45309; margin-bottom: 4px;">⚠️ Actualización demorada</div>`
+        ? `<div style="font-size: 0.72rem; font-weight: 600; color: #b45309; margin-bottom: 4px;">Actualización demorada</div>`
         : '';
 
       const popupContent = `
@@ -307,13 +307,13 @@ const MapView = {
           </div>
           <div style="margin-top: 8px;">
             <button onclick="window.goToStationCharts(${s.id})" style="background: #0284c7; color: white; border: 0; padding: 6px 10px; border-radius: 6px; font-size: 0.75rem; font-weight: 700; cursor: pointer; width: 100%; display: flex; align-items: center; justify-content: center; gap: 5px; box-shadow: 0 1px 2px rgba(0,0,0,0.1); transition: background 0.15s;" onmouseover="this.style.background='#0369a1'" onmouseout="this.style.background='#0284c7'">
-              <span>📈 Ver en Hidrómetros (1 Gráfico)</span>
+              <span>Ver en Hidrómetros</span>
             </button>
           </div>
         </div>
       `;
 
-      const tooltipContent = `<strong>${s.nombre}</strong>: ${valStr}${isFailed ? ' <span style="color:#d97706; font-weight:bold;">⚠️</span>' : ''}`;
+      const tooltipContent = `<strong>${s.nombre}</strong>: ${valStr}${isFailed ? ' <span style="color:#d97706; font-weight:bold;">(Demorado)</span>' : ''}`;
 
       if (this._stationMarkers.has(s.id)) {
         const marker = this._stationMarkers.get(s.id);
@@ -329,6 +329,10 @@ const MapView = {
         });
         marker.setPopupContent(popupContent);
         marker.setTooltipContent(tooltipContent);
+        marker.off('click');
+        marker.on('click', () => {
+          window.goToStationCharts(s.id);
+        });
       } else {
         const marker = L.circleMarker([s.latitud, s.longitud], {
           radius: radius,
@@ -342,10 +346,6 @@ const MapView = {
         marker.bindPopup(popupContent);
         marker.bindTooltip(tooltipContent, { direction: 'top', offset: [0, -6] });
         marker.on('click', () => {
-          if (onSelectStation) onSelectStation(s.id);
-        });
-        marker.on('dblclick', (e) => {
-          L.DomEvent.stop(e);
           window.goToStationCharts(s.id);
         });
         this.markersGroup.addLayer(marker);
@@ -402,17 +402,14 @@ const MapView = {
 
       // Icono distintivo para presas hidroeléctricas y estaciones de medición
       let markerBg = '#0284c7';
-      let markerIcon = '💧';
+      let markerIconSvg = '<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>';
 
       if (isMeasurementStation) {
         markerBg = '#d97706';
-        markerIcon = '📏';
-      } else if (isYacyreta) {
-        markerBg = '#059669';
-        markerIcon = '⚡';
-      } else if (isSpilling) {
-        markerBg = '#ea580c';
-        markerIcon = '⚡';
+        markerIconSvg = '<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>';
+      } else if (isYacyreta || isSpilling) {
+        markerBg = isYacyreta ? '#059669' : '#ea580c';
+        markerIconSvg = '<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>';
       }
 
       const damIconHtml = `
@@ -423,10 +420,10 @@ const MapView = {
           border: 2px solid #ffffff;
           box-shadow: 0 2px 6px rgba(0,0,0,0.35);
           display: flex; align-items: center; justify-content: center;
-          color: #ffffff; font-size: 11px; font-weight: bold;
+          color: #ffffff;
           cursor: pointer;
         " title="${d.nombre}">
-          ${markerIcon}
+          ${markerIconSvg}
         </div>
       `;
 
@@ -462,9 +459,12 @@ const MapView = {
               </div>
             ` : ''}
 
-            <div style="margin-top: 8px;">
-              <button onclick="window.goToStationCharts('${d.codigo}')" style="background: #d97706; color: white; border: 0; padding: 6px 10px; border-radius: 6px; font-size: 0.75rem; font-weight: 700; cursor: pointer; width: 100%; display: flex; align-items: center; justify-content: center; gap: 5px; box-shadow: 0 1px 2px rgba(0,0,0,0.1); transition: background 0.15s;" onmouseover="this.style.background='#b45309'" onmouseout="this.style.background='#d97706'">
-                <span>📈 Ver en Hidrómetros (1 Gráfico)</span>
+            <div style="margin-top: 8px; display: flex; gap: 6px;">
+              <button onclick="RepresasView.openDamHistoryModal('${d.codigo}')" style="background: #d97706; color: white; border: 0; padding: 6px 8px; border-radius: 6px; font-size: 0.72rem; font-weight: 700; cursor: pointer; flex: 1; display: flex; align-items: center; justify-content: center; box-shadow: 0 1px 2px rgba(0,0,0,0.1); transition: background 0.15s;" onmouseover="this.style.background='#b45309'" onmouseout="this.style.background='#d97706'">
+                <span>Ver Caudales</span>
+              </button>
+              <button onclick="window.goToStationCharts('${d.codigo}')" style="background: #0284c7; color: white; border: 0; padding: 6px 8px; border-radius: 6px; font-size: 0.72rem; font-weight: 700; cursor: pointer; flex: 1; display: flex; align-items: center; justify-content: center; box-shadow: 0 1px 2px rgba(0,0,0,0.1); transition: background 0.15s;" onmouseover="this.style.background='#0369a1'" onmouseout="this.style.background='#0284c7'">
+                <span>Ver Hidrómetro</span>
               </button>
             </div>
           </div>
@@ -492,7 +492,7 @@ const MapView = {
 
             <div style="margin-top: 8px;">
               <button onclick="window.goToStationCharts('ITUZAINGO')" style="background: #059669; color: white; border: 0; padding: 6px 10px; border-radius: 6px; font-size: 0.75rem; font-weight: 700; cursor: pointer; width: 100%; display: flex; align-items: center; justify-content: center; gap: 5px; box-shadow: 0 1px 2px rgba(0,0,0,0.1); transition: background 0.15s;" onmouseover="this.style.background='#047857'" onmouseout="this.style.background='#059669'">
-                <span>📈 Ver en Hidrómetros (1 Gráfico)</span>
+                <span>Ver en Hidrómetros</span>
               </button>
             </div>
           </div>
@@ -504,7 +504,7 @@ const MapView = {
         popupHtml = `
           <div style="font-family: var(--font-body); padding: 4px; min-width: 220px;">
             <div style="font-size: 0.65rem; font-weight: 700; text-transform: uppercase; color: #0284c7; letter-spacing: 0.05em; margin-bottom: 2px;">${d.tipo}</div>
-            <div onclick="window.goToStationCharts('${d.codigo}')" style="cursor: pointer;" title="Ir a pestaña de Hidrómetros">
+            <div onclick="RepresasView.openDamHistoryModal('${d.codigo}')" style="cursor: pointer;" title="Abrir gráfico histórico de variables">
               <div style="font-weight: 800; font-size: 0.95rem; color: #0f172a; margin-bottom: 2px;">${d.nombre}</div>
             </div>
             <div style="font-size: 0.72rem; color: #64748b; margin-bottom: 8px;">${d.operador} • ${d.rio}${data.fuente ? ` • <span style="color: #0284c7; font-weight: 600;">${data.fuente}</span>` : ''}</div>
@@ -512,11 +512,11 @@ const MapView = {
             <!-- Valores Afluente y Defluente -->
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 6px;">
               <div style="background: #f0f9ff; border: 1px solid #bae6fd; border-radius: 6px; padding: 6px;">
-                <div style="font-size: 0.62rem; text-transform: uppercase; font-weight: 700; color: #0369a1;">📥 Afluente</div>
+                <div style="font-size: 0.62rem; text-transform: uppercase; font-weight: 700; color: #0369a1;">Afluente</div>
                 <div style="font-family: var(--font-value); font-size: 1.05rem; font-weight: 800; color: #0284c7; margin-top: 2px; font-variant-numeric: tabular-nums;">${afluStr}</div>
               </div>
               <div style="background: #ecfdf5; border: 1px solid #a7f3d0; border-radius: 6px; padding: 6px;">
-                <div style="font-size: 0.62rem; text-transform: uppercase; font-weight: 700; color: #047857;">📤 Defluente</div>
+                <div style="font-size: 0.62rem; text-transform: uppercase; font-weight: 700; color: #047857;">Defluente</div>
                 <div style="font-family: var(--font-value); font-size: 1.05rem; font-weight: 800; color: #059669; margin-top: 2px; font-variant-numeric: tabular-nums;">${deflStr}</div>
               </div>
             </div>
@@ -541,13 +541,13 @@ const MapView = {
             ` : ''}
 
             <div style="margin-top: 8px;">
-              <button onclick="window.goToStationCharts('${d.codigo}')" style="background: #0284c7; color: white; border: 0; padding: 6px 10px; border-radius: 6px; font-size: 0.75rem; font-weight: 700; cursor: pointer; width: 100%; display: flex; align-items: center; justify-content: center; gap: 5px; box-shadow: 0 1px 2px rgba(0,0,0,0.1); transition: background 0.15s;" onmouseover="this.style.background='#0369a1'" onmouseout="this.style.background='#0284c7'">
-                <span>📈 Ver en Hidrómetros (1 Gráfico)</span>
+              <button onclick="RepresasView.openDamHistoryModal('${d.codigo}')" style="background: #0284c7; color: white; border: 0; padding: 6px 10px; border-radius: 6px; font-size: 0.75rem; font-weight: 700; cursor: pointer; width: 100%; display: flex; align-items: center; justify-content: center; gap: 5px; box-shadow: 0 1px 2px rgba(0,0,0,0.1); transition: background 0.15s;" onmouseover="this.style.background='#0369a1'" onmouseout="this.style.background='#0284c7'">
+                <span>Ver Gráfico de Variables</span>
               </button>
             </div>
           </div>
         `;
-        tooltipText = `<strong>${d.nombre}</strong><br/>📥 Afluente: ${afluStr}<br/>📤 Defluente: ${deflStr}`;
+        tooltipText = `<strong>${d.nombre}</strong><br/>Afluente: ${afluStr}<br/>Defluente: ${deflStr}`;
       }
 
       if (this._damMarkers.has(d.codigo)) {
@@ -555,13 +555,24 @@ const MapView = {
         marker.setIcon(customIcon);
         marker.setPopupContent(popupHtml);
         marker.setTooltipContent(tooltipText);
+        marker.off('click');
+        marker.on('click', () => {
+          if (d.codigo === 'YACYRETA') {
+            window.goToStationCharts('ITUZAINGO');
+          } else if (window.RepresasView && typeof RepresasView.openDamHistoryModal === 'function') {
+            RepresasView.openDamHistoryModal(d.codigo);
+          }
+        });
       } else {
         const marker = L.marker([d.lat, d.lon], { icon: customIcon });
         marker.bindPopup(popupHtml);
         marker.bindTooltip(tooltipText, { direction: 'top', offset: [0, -10] });
-        marker.on('dblclick', (e) => {
-          L.DomEvent.stop(e);
-          window.goToStationCharts(d.codigo);
+        marker.on('click', () => {
+          if (d.codigo === 'YACYRETA') {
+            window.goToStationCharts('ITUZAINGO');
+          } else if (window.RepresasView && typeof RepresasView.openDamHistoryModal === 'function') {
+            RepresasView.openDamHistoryModal(d.codigo);
+          }
         });
         this.damsGroup.addLayer(marker);
         this._damMarkers.set(d.codigo, marker);
@@ -611,50 +622,133 @@ const MapView = {
         this.radarFrames = this.radarData.radar.past;
         this.radarCurrentFrameIndex = this.radarFrames.length - 1;
         this.updateRadarUI();
+        if (this.radarActive && this.map) {
+          this.showRadarFrame(this.radarCurrentFrameIndex, false);
+        }
       }
     } catch (e) {
       console.warn('No se pudo inicializar RainViewer API:', e);
     }
   },
 
-  toggleRadar(active) {
-    this.radarActive = active;
-    const controls = document.getElementById('radar-controls-panel');
-    const legend = document.getElementById('radar-legend-panel');
-
-    if (controls) controls.classList.toggle('hidden', !active);
-    if (legend) legend.classList.toggle('hidden', !active);
-
-    if (active) {
-      this.showRadarFrame(this.radarCurrentFrameIndex);
-    } else {
-      if (this.radarLayer && this.map) {
-        this.map.removeLayer(this.radarLayer);
-        this.radarLayer = null;
-      }
-      this.stopRadarAnimation();
+  getOrCreateRadarLayer(index) {
+    if (!this.radarLayerMap) this.radarLayerMap = new Map();
+    if (this.radarLayerMap.has(index)) {
+      return this.radarLayerMap.get(index);
     }
+    const frame = this.radarFrames[index];
+    if (!frame) return null;
+    const host = this.radarData.host || 'https://tilecache.rainviewer.com';
+    const tileUrl = `${host}${frame.path}/256/{z}/{x}/{y}/2/1_1.png`;
+    const layer = L.tileLayer(tileUrl, {
+      opacity: 0,
+      zIndex: 500,
+      className: 'radar-smooth-tile-layer'
+    });
+    this.radarLayerMap.set(index, layer);
+    return layer;
   },
 
-  showRadarFrame(index) {
+  toggleRadar(active) {
+    if (active === undefined) {
+      active = !this.radarActive;
+    }
+    this.radarActive = active;
+
+    const toggleBtn = document.getElementById('radar-toggle-btn');
+    const legend = document.getElementById('radar-legend-panel');
+
+    if (!active) {
+      this.stopRadarAnimation();
+      if (this.radarLayerMap) {
+        this.radarLayerMap.forEach(layer => {
+          if (this.map && this.map.hasLayer(layer)) {
+            layer.setOpacity(0);
+            this.map.removeLayer(layer);
+          }
+        });
+      }
+      if (legend) legend.classList.add('hidden');
+      if (toggleBtn) {
+        toggleBtn.textContent = 'Radar: Inactivo';
+        toggleBtn.className = 'px-2.5 py-1 rounded border border-slate-300 dark:border-slate-700 text-slate-400 dark:text-slate-500 text-xs font-semibold hover:bg-slate-100 dark:hover:bg-slate-800 transition';
+      }
+    } else {
+      if (legend) legend.classList.remove('hidden');
+      if (toggleBtn) {
+        toggleBtn.textContent = 'Radar: Activo';
+        toggleBtn.className = 'px-2.5 py-1 rounded border border-sky-500/40 text-sky-600 dark:text-sky-400 text-xs font-semibold hover:bg-sky-50 dark:hover:bg-sky-950/40 transition';
+      }
+      this.showRadarFrame(this.radarCurrentFrameIndex, false);
+    }
+    this.updateRadarUI();
+  },
+
+  showRadarFrame(index, smooth = true) {
     if (!this.radarData || !this.radarFrames || this.radarFrames.length === 0 || !this.map) return;
 
     if (index < 0) index = 0;
     if (index >= this.radarFrames.length) index = this.radarFrames.length - 1;
+
+    const prevIndex = this.radarCurrentFrameIndex;
     this.radarCurrentFrameIndex = index;
 
-    const frame = this.radarFrames[index];
-    const host = this.radarData.host || 'https://tilecache.rainviewer.com';
-    const tileUrl = `${host}${frame.path}/256/{z}/{x}/{y}/2/1_1.png`;
-
-    if (this.radarLayer) {
-      this.map.removeLayer(this.radarLayer);
+    if (!this.radarActive) {
+      this.updateRadarUI();
+      return;
     }
 
-    this.radarLayer = L.tileLayer(tileUrl, {
-      opacity: this.radarOpacity,
-      zIndex: 500
-    }).addTo(this.map);
+    const currentLayer = this.getOrCreateRadarLayer(index);
+    if (!currentLayer) return;
+
+    // Asegurarse de que la capa actual esté agregada al mapa
+    if (!this.map.hasLayer(currentLayer)) {
+      currentLayer.addTo(this.map);
+    }
+
+    // Gestionar desvanecimiento suave de la capa anterior
+    const prevLayer = (prevIndex !== index && this.radarLayerMap && this.radarLayerMap.has(prevIndex))
+      ? this.radarLayerMap.get(prevIndex)
+      : null;
+
+    if (prevLayer && this.map.hasLayer(prevLayer)) {
+      if (smooth) {
+        prevLayer.setOpacity(0);
+        setTimeout(() => {
+          if (this.map && this.map.hasLayer(prevLayer) && this.radarCurrentFrameIndex !== prevIndex) {
+            this.map.removeLayer(prevLayer);
+          }
+        }, 400);
+      } else {
+        prevLayer.setOpacity(0);
+        this.map.removeLayer(prevLayer);
+      }
+    }
+
+    // Calcular el siguiente índice para precarga predictiva
+    const nextIndex = (index + 1) >= this.radarFrames.length ? 0 : (index + 1);
+
+    // Retirar del mapa cualquier otra capa residual que no sea la actual, previa o siguiente
+    if (this.radarLayerMap) {
+      this.radarLayerMap.forEach((layer, idx) => {
+        if (idx !== index && idx !== prevIndex && idx !== nextIndex && this.map.hasLayer(layer)) {
+          layer.setOpacity(0);
+          this.map.removeLayer(layer);
+        }
+      });
+    }
+
+    // Transición suave de la capa actual a la opacidad deseada
+    requestAnimationFrame(() => {
+      currentLayer.setOpacity(this.radarOpacity);
+    });
+
+    // Precargar silenciosamente el siguiente cuadro (opacidad 0) para navegación instantánea
+    const nextLayer = this.getOrCreateRadarLayer(nextIndex);
+    if (nextLayer && !this.map.hasLayer(nextLayer)) {
+      nextLayer.setOpacity(0);
+      nextLayer.addTo(this.map);
+    }
 
     this.updateRadarUI();
   },
@@ -662,15 +756,30 @@ const MapView = {
   updateRadarUI() {
     const slider = document.getElementById('radar-slider');
     const label = document.getElementById('radar-timestamp-label');
+    const badge = document.getElementById('radar-frame-badge');
 
-    if (slider) {
+    if (slider && this.radarFrames && this.radarFrames.length > 0) {
       slider.max = Math.max(0, this.radarFrames.length - 1);
       slider.value = this.radarCurrentFrameIndex;
     }
 
-    if (label && this.radarFrames[this.radarCurrentFrameIndex]) {
-      const ts = new Date(this.radarFrames[this.radarCurrentFrameIndex].time * 1000);
+    if (label && this.radarFrames && this.radarFrames[this.radarCurrentFrameIndex]) {
+      const frame = this.radarFrames[this.radarCurrentFrameIndex];
+      const ts = new Date(frame.time * 1000);
       label.textContent = ts.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) + ' hs';
+
+      if (badge) {
+        const isLatest = this.radarCurrentFrameIndex === (this.radarFrames.length - 1);
+        if (isLatest) {
+          badge.textContent = 'En vivo';
+          badge.className = 'text-[10px] font-bold px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-400 border border-emerald-300 dark:border-emerald-800';
+        } else {
+          const latestTime = this.radarFrames[this.radarFrames.length - 1].time;
+          const diffMinutes = Math.round((latestTime - frame.time) / 60);
+          badge.textContent = `-${diffMinutes} min`;
+          badge.className = 'text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400 border border-slate-200 dark:border-slate-700';
+        }
+      }
     }
   },
 
@@ -683,29 +792,62 @@ const MapView = {
   },
 
   playRadarAnimation() {
+    this.stopRadarAnimation();
     const btn = document.getElementById('radar-play-btn');
-    if (btn) btn.innerHTML = '❚❚ Pausar';
+    if (btn) btn.textContent = 'Pausar';
 
-    this.radarAnimationTimer = setInterval(() => {
+    const tick = () => {
+      if (!this.radarActive || !this.radarFrames || this.radarFrames.length === 0) {
+        this.stopRadarAnimation();
+        return;
+      }
+
       let nextIndex = this.radarCurrentFrameIndex + 1;
-      if (nextIndex >= this.radarFrames.length) nextIndex = 0;
-      this.showRadarFrame(nextIndex);
-    }, 600);
+      let delay = 1000; // 1 segundo por cuadro para cadencia meteorológica fluida
+
+      if (nextIndex >= this.radarFrames.length) {
+        nextIndex = 0;
+        // Al llegar al cuadro más reciente (en vivo), pausar 2.2 segundos antes de reiniciar el ciclo
+        delay = 2200;
+      }
+
+      this.showRadarFrame(nextIndex, true);
+      this.radarAnimationTimer = setTimeout(tick, delay);
+    };
+
+    // Si ya estamos en el último cuadro, reiniciar desde el principio para ver toda la evolución temporal
+    if (this.radarCurrentFrameIndex >= this.radarFrames.length - 1) {
+      this.showRadarFrame(0, true);
+    }
+
+    this.radarAnimationTimer = setTimeout(tick, 1000);
   },
 
   stopRadarAnimation() {
     if (this.radarAnimationTimer) {
-      clearInterval(this.radarAnimationTimer);
+      clearTimeout(this.radarAnimationTimer);
       this.radarAnimationTimer = null;
     }
     const btn = document.getElementById('radar-play-btn');
-    if (btn) btn.innerHTML = '▶ Reproducir';
+    if (btn) btn.textContent = 'Reproducir';
+  },
+
+  stepRadar(delta) {
+    this.stopRadarAnimation();
+    if (!this.radarFrames || this.radarFrames.length === 0) return;
+    let newIndex = this.radarCurrentFrameIndex + delta;
+    if (newIndex < 0) newIndex = this.radarFrames.length - 1;
+    if (newIndex >= this.radarFrames.length) newIndex = 0;
+    this.showRadarFrame(newIndex, false);
   },
 
   setRadarOpacity(val) {
     this.radarOpacity = parseFloat(val);
-    if (this.radarLayer) {
-      this.radarLayer.setOpacity(this.radarOpacity);
+    if (this.radarActive && this.radarLayerMap && this.radarLayerMap.has(this.radarCurrentFrameIndex)) {
+      const currentLayer = this.radarLayerMap.get(this.radarCurrentFrameIndex);
+      if (this.map && this.map.hasLayer(currentLayer)) {
+        currentLayer.setOpacity(this.radarOpacity);
+      }
     }
     const label = document.getElementById('radar-opacity-label');
     if (label) label.textContent = `${Math.round(this.radarOpacity * 100)}%`;

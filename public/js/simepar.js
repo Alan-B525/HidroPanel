@@ -61,7 +61,6 @@ const SimeparView = {
     const display = document.getElementById('simepar-calendar-display');
     const prevBtn = document.getElementById('btn-simepar-prev-day');
     const nextBtn = document.getElementById('btn-simepar-next-day');
-    const counterEl = document.getElementById('simepar-frame-counter');
 
     if (display) {
       if (this.selectedDate) {
@@ -79,13 +78,6 @@ const SimeparView = {
       if (prevBtn) prevBtn.disabled = (idx >= this.dates.length - 1);
       if (nextBtn) nextBtn.disabled = (idx <= 0);
 
-      if (counterEl) {
-        const chronologicalNum = this.dates.length - idx;
-        counterEl.textContent = `${chronologicalNum} / ${this.dates.length}`;
-        counterEl.title = `Fotograma ${chronologicalNum} de ${this.dates.length} (${this.selectedDate})`;
-      }
-    } else {
-      if (counterEl) counterEl.textContent = '— / —';
     }
   },
 
@@ -159,11 +151,11 @@ const SimeparView = {
     if (!playBtn) return;
 
     if (this.isPlaying) {
-      if (playIcon) playIcon.textContent = '⏸';
+      if (playIcon) playIcon.textContent = 'Pausa';
       if (playText) playText.textContent = 'Pausar';
       playBtn.className = 'px-2.5 py-1.5 bg-amber-600 hover:bg-amber-500 active:bg-amber-700 text-white rounded-lg flex items-center justify-center transition text-xs font-bold gap-1 shadow-xs cursor-pointer';
     } else {
-      if (playIcon) playIcon.textContent = '▶';
+      if (playIcon) playIcon.textContent = 'Animar';
       if (playText) playText.textContent = 'Animar';
       playBtn.className = 'px-2.5 py-1.5 bg-sky-600 hover:bg-sky-500 active:bg-sky-700 text-white rounded-lg flex items-center justify-center transition text-xs font-bold gap-1 shadow-xs cursor-pointer';
     }

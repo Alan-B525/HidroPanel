@@ -445,6 +445,12 @@
   height: 100%;
 }
 
+/* Transición fluida y suave para cuadros de radar RainViewer */
+.radar-smooth-tile-layer {
+  transition: opacity 0.35s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  will-change: opacity;
+}
+
 /* Controles Flotantes del Radar RainViewer */
 .radar-controls-overlay {
   position: absolute;

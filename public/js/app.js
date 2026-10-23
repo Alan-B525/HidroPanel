@@ -101,7 +101,7 @@ async function loadInitialData() {
           if (seenMap.has(k)) continue;
           seenMap.add(k);
           const altStr = (s.ultima_altura !== null && s.ultima_altura !== undefined) ? `${Number(s.ultima_altura).toFixed(2)}m` : '—';
-          const pnaStr = (s.pna_altura !== null && s.pna_altura !== undefined) ? ` | ⚓ ${Number(s.pna_altura).toFixed(2)}m` : '';
+          const pnaStr = (s.pna_altura !== null && s.pna_altura !== undefined) ? ` | PNA ${Number(s.pna_altura).toFixed(2)}m` : '';
           mapOptions.push(`<option value="${s.id}">${clean} (${altStr}${pnaStr})</option>`);
         }
         mapSelect.innerHTML = mapOptions.join('');
@@ -261,7 +261,8 @@ function setBasinFilter(basin) {
 }
 
 function filterStations() {
-  const query = (document.getElementById('search-station').value || '').toLowerCase().trim();
+  const searchInput = document.getElementById('search-station');
+  const query = (searchInput && searchInput.value ? searchInput.value : '').toLowerCase().trim();
   const basin = State.basinFilter || 'todas';
 
   let list = State.stations;
@@ -328,6 +329,22 @@ async function setViewMode(mode) {
   const caudalesView = document.getElementById('view-caudales-container');
   const mapView = document.getElementById('view-map-container');
   const simeparView = document.getElementById('view-simepar-container');
+  const alertBanner = document.getElementById('alert-banner-container');
+  const radarTopbar = document.getElementById('radar-player-topbar');
+
+  if (mode === 'map') {
+    if (alertBanner) alertBanner.style.display = 'none';
+    if (radarTopbar) {
+      radarTopbar.style.display = 'block';
+      radarTopbar.classList.remove('hidden');
+    }
+  } else {
+    if (alertBanner) alertBanner.style.display = '';
+    if (radarTopbar) {
+      radarTopbar.style.display = 'none';
+      radarTopbar.classList.add('hidden');
+    }
+  }
 
   if (chartsView) {
     chartsView.style.display = mode === 'charts' ? 'flex' : 'none';
@@ -387,6 +404,9 @@ async function setViewMode(mode) {
     if (window.RepresasView && RepresasView.data) {
       MapView.renderDams(RepresasView.data);
     }
+    if (MapView.radarActive && MapView.radarFrames && MapView.radarFrames.length > 0) {
+      MapView.showRadarFrame(MapView.radarCurrentFrameIndex, false);
+    }
     if (MapView.map) MapView.map.invalidateSize();
     setTimeout(() => {
       if (MapView.map) MapView.map.invalidateSize();
@@ -409,6 +429,12 @@ async function setViewMode(mode) {
  * Manejo de Layout de Gráficos (1, 2, 4, 8)
  */
 function setLayout(num) {
+  // En móviles (< 768px), limitar subplots a 1 o 2 para garantizar legibilidad
+  if (window.innerWidth < 768 && num > 2) {
+    num = 1;
+  } else if (window.innerWidth < 1024 && num > 4) {
+    num = 4;
+  }
   State.setLayout(num);
 
   document.querySelectorAll('.btn-layout').forEach(btn => {
@@ -558,8 +584,8 @@ function populateChartsStationSelect() {
     seen.add(key);
 
     const altStr = (s.ultima_altura !== null && s.ultima_altura !== undefined) ? `${Number(s.ultima_altura).toFixed(2)}m` : '—';
-    const pnaStr = (s.pna_altura !== null && s.pna_altura !== undefined) ? ` | ⚓ ${Number(s.pna_altura).toFixed(2)}m` : '';
-    const failNotice = s.falla_reporte ? ' ⚠️' : '';
+    const pnaStr = (s.pna_altura !== null && s.pna_altura !== undefined) ? ` | PNA ${Number(s.pna_altura).toFixed(2)}m` : '';
+    const failNotice = s.falla_reporte ? ' (Sin reporte)' : '';
     const label = `${cleanName} — AGP: ${altStr}${pnaStr}${failNotice}`;
     options.push(`<option value="${s.id}">${label}</option>`);
   }
@@ -644,8 +670,8 @@ function populateThresholdsEditor(station) {
         seen.add(key);
 
         const altStr = (s.ultima_altura !== null && s.ultima_altura !== undefined) ? `${Number(s.ultima_altura).toFixed(2)}m` : '—';
-        const pnaStr = (s.pna_altura !== null && s.pna_altura !== undefined) ? ` | ⚓ PNA: ${Number(s.pna_altura).toFixed(2)}m` : '';
-        const failNotice = s.falla_reporte ? ' ⚠️' : '';
+        const pnaStr = (s.pna_altura !== null && s.pna_altura !== undefined) ? ` | PNA: ${Number(s.pna_altura).toFixed(2)}m` : '';
+        const failNotice = s.falla_reporte ? ' (Sin reporte)' : '';
         options.push(`<option value="${s.id}">${cleanName} (AGP: ${altStr}${pnaStr})${failNotice}</option>`);
       }
       select.innerHTML = options.join('');
@@ -662,7 +688,7 @@ function populateThresholdsEditor(station) {
   if (nameEl) nameEl.textContent = `${station.nombre} (${station.codigo})`;
   if (basinEl) {
     const rioStr = station.rio || 'Cuenca del Plata';
-    const failNotice = station.falla_reporte ? ' <span class="text-amber-500 font-bold ml-1" title="Retraso en reporte">⚠️</span>' : '';
+    const failNotice = station.falla_reporte ? ' <span class="inline-block w-2 h-2 rounded-full bg-amber-500 ml-1" title="Retraso en reporte"></span>' : '';
     basinEl.innerHTML = `Río / Cuenca: ${rioStr} • Muestreo esperado: cada ${station.frecuencia_minutos || 20} min${failNotice}`;
   }
   if (heightEl) {
@@ -673,7 +699,7 @@ function populateThresholdsEditor(station) {
       ? `${Number(station.pna_altura).toFixed(2)} m`
       : null;
     if (pnaStr !== null) {
-      heightEl.innerHTML = `<span class="text-sky-600 dark:text-sky-400 font-bold tabular-nums">${agpStr}</span> <span class="text-slate-400 font-normal">|</span> <span class="text-amber-600 dark:text-amber-400 font-bold tabular-nums" title="Prefectura">⚓ ${pnaStr}</span>`;
+      heightEl.innerHTML = `<span class="text-sky-600 dark:text-sky-400 font-bold tabular-nums">${agpStr}</span> <span class="text-slate-400 font-normal">|</span> <span class="text-amber-600 dark:text-amber-400 font-bold tabular-nums" title="Prefectura">PNA ${pnaStr}</span>`;
     } else {
       heightEl.innerHTML = `<span class="text-sky-600 dark:text-sky-400 font-bold tabular-nums">${agpStr}</span>`;
     }
@@ -776,12 +802,12 @@ function renderThresholdModalQuickList(query = '', activeStationId = null) {
           <div>${s.nombre}</div>
           <div class="text-[10px] font-normal text-slate-400 flex items-center gap-1 font-mono">
             <span>${s.codigo}</span>
-            ${isFail ? `<span class="text-amber-500 font-bold ml-1" title="Última lectura: ${s.ultimo_timestamp || 'Sin datos'}">⚠️</span>` : ''}
+            ${isFail ? `<span class="inline-block w-2 h-2 rounded-full bg-amber-500 ml-1" title="Última lectura: ${s.ultimo_timestamp || 'Sin datos'}"></span>` : ''}
           </div>
         </td>
         <td class="py-2 px-2 text-center">
           <button type="button" onclick="window.toggleStationAlerts(${s.id})" class="px-2 py-0.5 rounded text-[10px] font-bold ${isAct ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 hover:bg-rose-100 hover:text-rose-700 dark:hover:bg-rose-950 dark:hover:text-rose-300' : 'bg-slate-200 text-slate-600 dark:bg-slate-800 dark:text-slate-400 hover:bg-emerald-100 hover:text-emerald-700 dark:hover:bg-emerald-950 dark:hover:text-emerald-300'} transition cursor-pointer" title="${isAct ? 'Clic para desactivar alertas para ' + s.nombre : 'Clic para activar alertas para ' + s.nombre}">
-            ${isAct ? '🔔 Activa' : '🔕 Desactivada'}
+            ${isAct ? '<span class="text-emerald-600 dark:text-emerald-400 font-semibold">Activa</span>' : '<span class="text-slate-400">Inactiva</span>'}
           </button>
         </td>
         <td class="py-2 px-2 text-center text-orange-600 dark:text-orange-400 font-mono tabular-nums">${u.alerta !== null && u.alerta !== undefined ? Number(u.alerta).toFixed(2) : '—'}</td>
@@ -1436,7 +1462,11 @@ window.syncSimeparMap = () => SimeparView.syncMapOnDemand();
 // RADAR
 window.toggleRadar = (active) => MapView.toggleRadar(active);
 window.toggleRadarPlay = () => MapView.toggleRadarPlay();
-window.stepRadarSlider = (val) => MapView.showRadarFrame(parseInt(val));
+window.stepRadar = (delta) => MapView.stepRadar(delta);
+window.stepRadarSlider = (val) => {
+  MapView.stopRadarAnimation();
+  MapView.showRadarFrame(parseInt(val, 10), false);
+};
 window.setRadarOpacity = (val) => MapView.setRadarOpacity(val);
 window.zoomMapToRegion = (reg) => MapView.zoomToRegion(reg);
 window.onMapStationSelectChange = (id) => {
@@ -1474,3 +1504,34 @@ window.toggleStationAlerts = toggleStationAlerts;
 window.renderThresholdModalQuickList = renderThresholdModalQuickList;
 window.setChartSource = setChartSource;
 window.pollRealtimeData = pollRealtimeData;
+
+// ============================================================
+// ADAPTADOR DE REDIMENSIONAMIENTO GLOBAL (Responsive & Laptops L 1440px+)
+// ============================================================
+let _dashboardResizeTimer = null;
+window.addEventListener('resize', () => {
+  clearTimeout(_dashboardResizeTimer);
+  _dashboardResizeTimer = setTimeout(() => {
+    // Si cambia entre móvil y desktop, verificar coherencia de subplots
+    if (window.innerWidth < 768 && State.layout > 2) {
+      setLayout(1);
+      return;
+    }
+
+    if (State.viewMode === 'charts') {
+      if (State.layout === 1 && Charts.mainChart) {
+        Charts.mainChart.resize();
+      } else if (State.layout > 1 && Charts.subplotCharts) {
+        Charts.subplotCharts.forEach(c => c && c.resize());
+      }
+    } else if (State.viewMode === 'caudales' && window.RepresasView) {
+      if (RepresasView.caudalesChart) RepresasView.caudalesChart.resize();
+      if (RepresasView.itaipuChart) RepresasView.itaipuChart.resize();
+      if (RepresasView.damModalState && RepresasView.damModalState.chart) {
+        RepresasView.damModalState.chart.resize();
+      }
+    } else if (State.viewMode === 'map' && window.MapView && MapView.map) {
+      MapView.map.invalidateSize();
+    }
+  }, 80);
+});
