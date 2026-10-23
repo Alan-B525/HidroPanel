@@ -80,18 +80,18 @@
       }
     }
 
-    /* Tarjetas analíticas */
+    /* Tarjetas analíticas con contraste reforzado */
     .card-panel {
       background: #ffffff;
-      border: 1px solid #e2e8f0;
+      border: 1px solid #cbd5e1;
       border-radius: 0.875rem;
-      box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+      box-shadow: 0 1px 3px rgba(15, 23, 42, 0.08), 0 1px 2px rgba(15, 23, 42, 0.04);
       transition: background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
     }
     .dark .card-panel {
-      background: #0d1a29;
-      border: 1px solid #1e2e42;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+      background: #0d1e33;
+      border: 1px solid #1e3a5f;
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.45);
     }
 
     /* Barra de nivel Nivel-Bar Gauge */
@@ -140,7 +140,7 @@
     .dot-evacuacion { background-color: #dc2626; animation: pulse 1.8s infinite; }
   </style>
 </head>
-<body class="h-full flex flex-col font-sans antialiased overflow-hidden bg-slate-100/70 dark:bg-[#07121e] text-slate-800 dark:text-slate-100 transition-colors duration-200">
+<body class="h-full flex flex-col font-sans antialiased overflow-hidden bg-slate-200/60 dark:bg-[#060e18] text-slate-800 dark:text-slate-100 transition-colors duration-200">
 
   <!-- ============================================================
        ENCABEZADO INSTITUCIONAL OFICIAL (Entidad Binacional Yacyretá)
@@ -197,6 +197,18 @@
 
     <!-- ACCIONES DE CABECERA -->
     <div class="flex items-center gap-2 sm:gap-3 shrink-0">
+      <!-- Alternador Tema Claro / Oscuro -->
+      <button id="btn-theme-toggle" type="button" onclick="toggleTheme()" title="Cambiar tema (Claro / Oscuro) · Atajo: T" class="p-1.5 rounded-lg bg-white/10 hover:bg-white/20 active:bg-white/25 text-white/90 hover:text-white border border-white/20 transition shadow-xs cursor-pointer flex items-center justify-center">
+        <!-- Ícono Sol (para pasar a claro) -->
+        <svg id="theme-icon-sun" class="w-4 h-4 text-amber-300" style="display: none;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/>
+        </svg>
+        <!-- Ícono Luna (para pasar a oscuro) -->
+        <svg id="theme-icon-moon" class="w-4 h-4 text-slate-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/>
+        </svg>
+      </button>
+
       <!-- Botón Actualizar Sincronización -->
       <button id="btn-sync-all" type="button" onclick="syncAll()" class="flex items-center gap-1.5 bg-[#008348] hover:bg-[#006e3c] active:bg-[#005a31] text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition-all duration-150 shadow-xs border border-emerald-400/30 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed select-none" title="Actualizar datos bajo demanda (POST /api/sync)">
         <svg id="sync-icon" class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -246,6 +258,9 @@
         <button id="radar-toggle-btn" onclick="toggleRadar()" class="px-2.5 py-1 rounded border border-sky-500/40 text-sky-400 text-xs font-semibold hover:bg-sky-950/40 transition">
           Radar: Activo
         </button>
+        <button id="ina-rivers-toggle-btn" onclick="toggleInaRivers()" class="px-2.5 py-1 rounded border border-emerald-500/40 text-emerald-400 text-xs font-semibold hover:bg-emerald-950/40 transition">
+          Ríos INA: Activo
+        </button>
       </div>
     </div>
   </div>
@@ -258,12 +273,12 @@
     <!-- ============================================================
          ÁREA DE CONTENIDO PRINCIPAL (CAUDALES, HIDRÓMETROS, MAPA, LLUVIAS)
          ============================================================ -->
-    <main class="flex-1 flex flex-col overflow-hidden bg-slate-100/50 dark:bg-[#07121e] relative min-w-0 w-full">
+    <main class="flex-1 flex flex-col overflow-hidden bg-slate-200/50 dark:bg-[#060e18] relative min-w-0 w-full">
 
       <!-- ============================================================
            VISTA 1: CAUDALES DE RÍOS & REPRESAS (BALANCE HIDROLÓGICO HACIA YACYRETÁ)
            ============================================================ -->
-      <div id="view-caudales-container" class="flex-1 flex flex-col overflow-y-auto p-2.5 sm:p-4 lg:p-5 space-y-3 sm:space-y-4">
+      <div id="view-caudales-container" class="flex-1 flex flex-col overflow-y-auto pt-2 pb-3 px-2.5 sm:pt-2.5 sm:pb-4 sm:px-4 lg:pt-3 lg:pb-5 lg:px-5 space-y-2.5 sm:space-y-3">
         <div class="dashboard-container space-y-3 sm:space-y-4">
           
           <!-- ESQUEMA FLUVIAL DE CASCADA DE CENTRALES (Oculto a requerimiento operativo; preservado en DOM para reactivación) -->
@@ -301,7 +316,7 @@
               </div>
 
               <div>
-                <div class="text-[10px] font-bold uppercase tracking-wider text-slate-500">Caudal Defluente Total:</div>
+                <div class="text-[10px] font-bold uppercase tracking-wider text-slate-500">Caudal Efluente Total:</div>
                 <div class="flex items-baseline space-x-1.5 mt-0.5">
                   <span id="rep-it-defl" class="text-2xl sm:text-3xl font-extrabold font-data text-sky-600 dark:text-sky-400 tabular-nums">—</span>
                   <span class="text-xs font-bold text-slate-400">m³/s</span>
@@ -336,7 +351,7 @@
               </div>
 
               <div>
-                <div class="text-[10px] font-bold uppercase tracking-wider text-slate-500">Caudal Defluente Total:</div>
+                <div class="text-[10px] font-bold uppercase tracking-wider text-slate-500">Caudal Efluente Total:</div>
                 <div class="flex items-baseline space-x-1.5 mt-0.5">
                   <span id="rep-bx-defl" class="text-2xl sm:text-3xl font-extrabold font-data text-emerald-600 dark:text-emerald-400 tabular-nums">—</span>
                   <span class="text-xs font-bold text-slate-400">m³/s</span>
@@ -498,9 +513,14 @@
           <div class="card-panel p-4 space-y-3">
             <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 dark:border-slate-800 pb-2">
               <div>
-                <h4 class="text-xs font-bold uppercase tracking-wider text-slate-800 dark:text-slate-200">
-                  Matriz Hidráulica de Presas y Centrales Monitoreadas
-                </h4>
+                <div class="flex items-center gap-2">
+                  <h4 class="text-xs font-bold uppercase tracking-wider text-slate-800 dark:text-slate-200">
+                    Matriz Hidráulica de Presas y Centrales Monitoreadas
+                  </h4>
+                  <span class="source-tag" data-tooltip="Operador Nacional do Sistema Elétrico (Brasil) · API Oficial ONS" tabindex="0">
+                    <span class="source-dot"></span>Fuente: ONS
+                  </span>
+                </div>
                 <p class="text-[11px] text-slate-400">Cota, volumen de embalse y caudales en m³/s</p>
               </div>
 
@@ -523,7 +543,7 @@
                     <th class="py-2.5 px-3">Afluente</th>
                     <th class="py-2.5 px-3 hidden md:table-cell">Turbinada</th>
                     <th class="py-2.5 px-3 hidden md:table-cell">Vertida</th>
-                    <th class="py-2.5 px-3 font-bold">Defluente</th>
+                    <th class="py-2.5 px-3 font-bold">Efluente</th>
                     <th class="py-2.5 px-3 hidden md:table-cell">Fecha / Hora</th>
                   </tr>
                 </thead>
@@ -683,9 +703,14 @@
                 <!-- TABLA DE LECTURAS RECIENTES -->
                 <div class="card-panel p-2.5 sm:p-3">
                   <div class="flex items-center justify-between mb-1.5 pb-1 border-b border-slate-100 dark:border-slate-800">
-                    <h4 class="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
-                      Últimas Mediciones Registradas
-                    </h4>
+                    <div class="flex items-center gap-2">
+                      <h4 class="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
+                        Últimas Mediciones Registradas
+                      </h4>
+                      <span class="source-tag" data-tooltip="Telemetría AGP (Administración General de Puertos) y Prefectura Naval Argentina (PNA)" tabindex="0">
+                        <span class="source-dot"></span>Fuentes: AGP / PNA
+                      </span>
+                    </div>
                     <span id="kpi-points-count" class="text-[11px] font-mono text-slate-400">-- mediciones</span>
                   </div>
                   <div class="overflow-x-auto max-h-[160px] sm:max-h-[190px]">
@@ -768,8 +793,12 @@
                     <div id="nivel-bar-inner" class="nivel-bar-fill h-full bg-emerald-500 rounded-full transition-all duration-500" style="width: 0%;"></div>
                   </div>
 
-                  <!-- Umbrales en leyenda inferior limpia (Alerta y Evacuación) -->
+                  <!-- Umbrales en leyenda inferior limpia (Aguas Bajas, Alerta y Evacuación) -->
                   <div class="flex items-center justify-around text-[10px] sm:text-[11px] text-slate-500 dark:text-slate-400 font-mono pt-1 border-t border-slate-100 dark:border-slate-800/80 gap-2 overflow-x-auto">
+                    <div class="flex items-center gap-1.5 shrink-0 whitespace-nowrap">
+                      <span class="w-2 h-2 rounded-full bg-rose-500"></span>
+                      <span>Aguas Bajas: <strong id="lbl-val-aguas-bajas" class="text-rose-600 dark:text-rose-400 font-bold tabular-nums">—</strong></span>
+                    </div>
                     <div class="flex items-center gap-1.5 shrink-0 whitespace-nowrap">
                       <span class="w-2 h-2 rounded-full bg-orange-500"></span>
                       <span>Alerta: <strong id="lbl-val-alerta" class="text-orange-600 dark:text-orange-400 font-bold tabular-nums">—</strong></span>
@@ -860,6 +889,21 @@
               <div class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded" style="background:#E88420"></span><span>Muy fuerte</span></div>
               <div class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded" style="background:#C42020"></span><span>Torrencial</span></div>
             </div>
+
+            <!-- LEYENDA RÍOS INA (CUENCA DEL PLATA) -->
+            <div id="ina-river-legend-panel" class="absolute bottom-3 right-3 z-[600] card-panel p-2.5 text-[10px] shadow-lg max-w-[190px] space-y-1">
+              <div class="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-1 mb-1">
+                <div class="font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider text-[9px]">Ríos Cuenca del Plata INA</div>
+                <span class="text-[9px] font-mono text-slate-400">SIyAH</span>
+              </div>
+              <div class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded" style="background:#a855f7"></span><span>Aguas bajas (Estiaje)</span></div>
+              <div class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded" style="background:#06b6d4"></span><span>Aguas medias bajas</span></div>
+              <div class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded" style="background:#38bdf8"></span><span>Aguas medias</span></div>
+              <div class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded" style="background:#2563eb"></span><span>Aguas medias altas</span></div>
+              <div class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded" style="background:#f97316"></span><span>Aguas altas</span></div>
+              <div class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded" style="background:#ea580c"></span><span>Alerta</span></div>
+              <div class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded" style="background:#dc2626"></span><span>Evacuación</span></div>
+            </div>
           </div>
 
         </div>
@@ -873,7 +917,12 @@
           
           <div class="card-panel p-3 flex flex-wrap items-center justify-between gap-3 shrink-0">
             <div class="flex items-center space-x-3">
-              <span class="text-xs font-bold text-slate-800 dark:text-slate-200">Precipitación Acumulada Diaria SIMEPAR:</span>
+              <div class="flex items-center gap-2">
+                <span class="text-xs font-bold text-slate-800 dark:text-slate-200">Precipitación Acumulada Diaria SIMEPAR:</span>
+                <span class="source-tag" data-tooltip="Sistema de Tecnologia e Monitoramento Ambiental do Paraná (SIMEPAR) · Radar y Mapas Oficiales" tabindex="0">
+                  <span class="source-dot"></span>Fuente: SIMEPAR
+                </span>
+              </div>
             </div>
 
             <!-- Navegador de Fecha y Calendario Interactivo Centrado -->
@@ -1030,32 +1079,45 @@
             </span>
           </div>
 
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
             
+            <!-- 0. Aguas Bajas -->
+            <div class="p-3 rounded-xl border border-rose-300/70 dark:border-rose-900/50 bg-rose-50/40 dark:bg-rose-950/20 space-y-1.5">
+              <div class="flex items-center justify-between">
+                <span class="text-xs font-bold text-rose-800 dark:text-rose-300 flex items-center gap-1.5">
+                  <span class="w-2.5 h-2.5 rounded-full bg-rose-500"></span>
+                  <span>Aguas Bajas m</span>
+                </span>
+                <span class="text-[10px] text-rose-600/80 font-mono font-semibold">Estiaje</span>
+              </div>
+              <input id="input-thresh-aguas-bajas" type="number" step="0.01" placeholder="Ej: 1.50" 
+                     class="w-full bg-white dark:bg-slate-900 border border-rose-200 dark:border-rose-800 rounded-lg p-2.5 text-xs font-mono font-bold text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-rose-500">
+            </div>
+
             <!-- 1. Alerta -->
-            <div class="p-3.5 rounded-xl border border-orange-300/70 dark:border-orange-900/50 bg-orange-50/50 dark:bg-orange-950/20 space-y-1.5">
+            <div class="p-3 rounded-xl border border-orange-300/70 dark:border-orange-900/50 bg-orange-50/50 dark:bg-orange-950/20 space-y-1.5">
               <div class="flex items-center justify-between">
                 <span class="text-xs font-bold text-orange-800 dark:text-orange-300 flex items-center gap-1.5">
                   <span class="w-2.5 h-2.5 rounded-full bg-orange-500"></span>
-                  <span>1. Nivel de Alerta m</span>
+                  <span>Alerta m</span>
                 </span>
-                <span class="text-[10px] text-orange-600/80 font-mono font-semibold">Aviso preventivo PNA</span>
+                <span class="text-[10px] text-orange-600/80 font-mono font-semibold">Aviso PNA</span>
               </div>
               <input id="input-thresh-alerta" type="number" step="0.01" placeholder="Ej: 12.00" 
                      class="w-full bg-white dark:bg-slate-900 border border-orange-200 dark:border-orange-800 rounded-lg p-2.5 text-xs font-mono font-bold text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-orange-500">
             </div>
 
             <!-- 2. Evacuación -->
-            <div class="p-3.5 rounded-xl border border-rose-300/70 dark:border-rose-900/50 bg-rose-50/50 dark:bg-rose-950/20 space-y-1.5">
+            <div class="p-3 rounded-xl border border-red-300/70 dark:border-red-900/50 bg-red-50/50 dark:bg-red-950/20 space-y-1.5">
               <div class="flex items-center justify-between">
-                <span class="text-xs font-bold text-rose-800 dark:text-rose-300 flex items-center gap-1.5">
-                  <span class="w-2.5 h-2.5 rounded-full bg-rose-600"></span>
-                  <span>2. Nivel de Evacuación m</span>
+                <span class="text-xs font-bold text-red-800 dark:text-red-300 flex items-center gap-1.5">
+                  <span class="w-2.5 h-2.5 rounded-full bg-red-600"></span>
+                  <span>Evacuación m</span>
                 </span>
-                <span class="text-[10px] text-rose-600/80 font-mono font-semibold">Afectación costera PNA</span>
+                <span class="text-[10px] text-red-600/80 font-mono font-semibold">Costera PNA</span>
               </div>
               <input id="input-thresh-evacuacion" type="number" step="0.01" placeholder="Ej: 13.50" 
-                     class="w-full bg-white dark:bg-slate-900 border border-rose-200 dark:border-rose-800 rounded-lg p-2.5 text-xs font-mono font-bold text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-rose-500">
+                     class="w-full bg-white dark:bg-slate-900 border border-red-200 dark:border-red-800 rounded-lg p-2.5 text-xs font-mono font-bold text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-red-500">
             </div>
 
           </div>
@@ -1095,6 +1157,7 @@
                 <tr>
                   <th class="py-2 px-3">Estación</th>
                   <th class="py-2 px-2 text-center">Alertas</th>
+                  <th class="py-2 px-2 text-center text-rose-500">Aguas Bajas m</th>
                   <th class="py-2 px-2 text-center text-orange-600 dark:text-orange-400">Alerta m</th>
                   <th class="py-2 px-2 text-center text-rose-600 dark:text-rose-400">Evacuación m</th>
                   <th class="py-2 px-2 text-center">Acción</th>
@@ -1271,8 +1334,8 @@
   <script src="js/components.js?v=42"></script>
   <script src="js/charts.js?v=42"></script>
   <script src="js/represas.js?v=42"></script>
-  <script src="js/map.js?v=42"></script>
+  <script src="js/map.js?v=43"></script>
   <script src="js/simepar.js?v=42"></script>
-  <script src="js/app.js?v=42"></script>
+  <script src="js/app.js?v=43"></script>
 </body>
 </html>

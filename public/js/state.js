@@ -6,14 +6,14 @@
 const State = {
   stations: [],
   filteredStations: [],
-  selectedStationId: null,
+  selectedStationId: localStorage.getItem('hidropanel_selected_station') ? parseInt(localStorage.getItem('hidropanel_selected_station'), 10) : null,
   selectedStationData: null,
   
-  // Vista actual: 'charts' | 'map' | 'simepar'
-  viewMode: 'charts',
+  // Vista actual persistida: 'caudales' | 'charts' | 'map' | 'simepar'
+  viewMode: localStorage.getItem('hidropanel_view_mode') || 'caudales',
   
-  // Filtro temporal: '24h' | '7d' | '30d' | 'todo'
-  range: '24h',
+  // Filtro temporal persistido
+  range: localStorage.getItem('hidropanel_range') || '24h',
   
   // Fuente activa del gráfico: 'agp' | 'pna' | 'ambas' (por defecto 'agp')
   chartSource: localStorage.getItem('hidropanel_chart_source') || 'agp',
@@ -24,8 +24,8 @@ const State = {
     localStorage.setItem('hidropanel_chart_source', source);
   },
 
-  // Modo de subplots: 1, 2, 4, 8
-  layout: 1,
+  // Modo de subplots persistido
+  layout: parseInt(localStorage.getItem('hidropanel_layout'), 10) || 1,
   subplotStationIds: [null, null, null, null, null, null, null, null],
   subplotCotaModes: ['nivel', 'nivel', 'nivel', 'nivel', 'nivel', 'nivel', 'nivel', 'nivel'],
 
@@ -113,21 +113,27 @@ const State = {
 
   setViewMode(mode) {
     this.viewMode = mode;
+    localStorage.setItem('hidropanel_view_mode', mode);
     this.emit('viewModeChange', mode);
   },
 
   setRange(range) {
     this.range = range;
+    localStorage.setItem('hidropanel_range', range);
     this.emit('rangeChange', range);
   },
 
   setLayout(num) {
     this.layout = num;
+    localStorage.setItem('hidropanel_layout', String(num));
     this.emit('layoutChange', num);
   },
 
   setSelectedStation(stationId) {
     this.selectedStationId = stationId;
+    if (stationId) {
+      localStorage.setItem('hidropanel_selected_station', String(stationId));
+    }
     this.emit('stationSelected', stationId);
   }
 };

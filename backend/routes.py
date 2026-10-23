@@ -12,7 +12,7 @@ from urllib.parse import parse_qs, urlparse
 from typing import Dict, Any, Tuple, Optional
 
 from .services import station_service, sync_service, simepar_service, represas_service, prefectura_service
-from . import thresholds
+from . import thresholds, ina_service
 
 logger = logging.getLogger("hidropanel.routes")
 
@@ -208,6 +208,12 @@ def handle_get(path: str, query_params: Dict[str, list]) -> Tuple[int, str, Any]
                 "sources_status": sources
             }, ensure_ascii=False))
 
+        # 11. Tramos de ríos INA (Corredor exclusivo Iguazú a Corrientes)
+        elif path == "/api/ina/tramos":
+            force = query_params.get("refresh", ["0"])[0] in ("1", "true")
+            data = ina_service.get_corridor_tramos(force_refresh=force)
+            return _respond(200, "application/json; charset=utf-8", json.dumps(data, ensure_ascii=False))
+
         return 404, "application/json; charset=utf-8", json.dumps({
             "success": False, 
             "error": "Ruta no encontrada",
@@ -300,7 +306,14 @@ def handle_post(path: str, body_bytes: bytes) -> Tuple[int, str, str]:
                 alerta = payload.get("alerta")
                 evac = payload.get("evacuacion")
                 alertas_activas = payload.get("alertas_activas")
-                res = thresholds.save_station_thresholds(codigo, alerta=alerta, evacuacion=evac, alertas_activas=alertas_activas)
+                aguas_bajas = payload.get("aguas_bajas")
+                res = thresholds.save_station_thresholds(
+                    codigo,
+                    alerta=alerta,
+                    evacuacion=evac,
+                    alertas_activas=alertas_activas,
+                    aguas_bajas=aguas_bajas
+                )
 
             invalidate_routes_cache()
             res["sources_status"] = sync_service.get_sources_status_dict()

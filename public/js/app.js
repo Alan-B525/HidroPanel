@@ -16,11 +16,18 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Cargar catálogo de estaciones y situación general
   await loadInitialData();
 
-  // Inicializar vista predeterminada: Caudales & Represas
-  setViewMode('caudales');
+  // Restaurar vista persistida (Caudales, Gráficos, Mapa o Simepar)
+  const initialView = State.viewMode || 'caudales';
+  setViewMode(initialView);
 
-  // Aplicar estado inicial de selector de curva
+  // Aplicar estado inicial de selector de curva, rango temporal y layout
   updateChartSourceUI();
+  document.querySelectorAll('.btn-range').forEach(btn => {
+    btn.classList.toggle('active', btn.getAttribute('data-range') === State.range);
+  });
+  document.querySelectorAll('.btn-layout').forEach(btn => {
+    btn.classList.toggle('active', parseInt(btn.getAttribute('data-layout'), 10) === State.layout);
+  });
 
   // Iniciar monitoreo de sincronización automática y ciclo de polling en tiempo real
   initSyncTicker();
@@ -110,10 +117,16 @@ async function loadInitialData() {
       // Poblar selector de estación en vista de gráficos
       populateChartsStationSelect();
 
-      // Seleccionar estación por defecto (Puerto Iguazú, Posadas o la primera)
-      let defaultStation = State.stations.find(s => s.codigo === 'PUERTO_IGUAZU') ||
-                           State.stations.find(s => s.codigo === 'POSADAS') ||
-                           State.stations[0];
+      // Seleccionar estación (priorizar la guardada previamente en localStorage)
+      let defaultStation = null;
+      if (State.selectedStationId) {
+        defaultStation = State.stations.find(s => s.id === State.selectedStationId);
+      }
+      if (!defaultStation) {
+        defaultStation = State.stations.find(s => s.codigo === 'PUERTO_IGUAZU') ||
+                         State.stations.find(s => s.codigo === 'POSADAS') ||
+                         State.stations[0];
+      }
 
       if (defaultStation) {
         await selectStation(defaultStation.id, false);
@@ -333,13 +346,19 @@ async function setViewMode(mode) {
   const radarTopbar = document.getElementById('radar-player-topbar');
 
   if (mode === 'map') {
-    if (alertBanner) alertBanner.style.display = 'none';
+    if (alertBanner) {
+      alertBanner.style.display = 'none';
+      alertBanner.classList.add('hidden');
+    }
     if (radarTopbar) {
       radarTopbar.style.display = 'block';
       radarTopbar.classList.remove('hidden');
     }
   } else {
-    if (alertBanner) alertBanner.style.display = '';
+    if (alertBanner) {
+      alertBanner.style.display = '';
+      alertBanner.classList.remove('hidden');
+    }
     if (radarTopbar) {
       radarTopbar.style.display = 'none';
       radarTopbar.classList.add('hidden');
@@ -738,6 +757,7 @@ function populateThresholdsEditor(station) {
     if (el) el.value = (val !== null && val !== undefined) ? val : '';
   };
 
+  setInp('input-thresh-aguas-bajas', umb.aguas_bajas);
   setInp('input-thresh-alerta', umb.alerta);
   setInp('input-thresh-evacuacion', umb.evacuacion);
 
@@ -810,6 +830,7 @@ function renderThresholdModalQuickList(query = '', activeStationId = null) {
             ${isAct ? '<span class="text-emerald-600 dark:text-emerald-400 font-semibold">Activa</span>' : '<span class="text-slate-400">Inactiva</span>'}
           </button>
         </td>
+        <td class="py-2 px-2 text-center text-rose-500 font-mono tabular-nums">${u.aguas_bajas !== null && u.aguas_bajas !== undefined ? Number(u.aguas_bajas).toFixed(2) : '—'}</td>
         <td class="py-2 px-2 text-center text-orange-600 dark:text-orange-400 font-mono tabular-nums">${u.alerta !== null && u.alerta !== undefined ? Number(u.alerta).toFixed(2) : '—'}</td>
         <td class="py-2 px-2 text-center text-rose-600 dark:text-rose-400 font-mono tabular-nums">${u.evacuacion !== null && u.evacuacion !== undefined ? Number(u.evacuacion).toFixed(2) : '—'}</td>
         <td class="py-2 px-2 text-center">
@@ -906,6 +927,7 @@ async function handleThresholdsFormSubmit(event) {
 
   const activeCheckbox = document.getElementById('input-thresh-active');
   const payload = {
+    aguas_bajas: getNum('input-thresh-aguas-bajas'),
     alerta: getNum('input-thresh-alerta'),
     evacuacion: getNum('input-thresh-evacuacion'),
     alertas_activas: activeCheckbox ? activeCheckbox.checked : true
@@ -1311,6 +1333,12 @@ function initShortcuts() {
         openThresholdsModal();
       }
     }
+    // Tecla 'T' (sin foco en inputs) para alternar tema Claro / Oscuro
+    if (e.key && e.key.toLowerCase() === 't' && !['INPUT', 'SELECT', 'TEXTAREA'].includes(document.activeElement?.tagName)) {
+      e.preventDefault();
+      toggleTheme();
+    }
+
     // Escape para cerrar modal de umbrales, desplegable de alertas y calendario
     if (e.key === 'Escape') {
       closeThresholdsModal();
@@ -1459,8 +1487,9 @@ window.changeSimeparMonth = (delta) => SimeparView.changeMonth(delta);
 window.goToLatestSimeparDate = () => SimeparView.goToLatest();
 window.syncSimeparMap = () => SimeparView.syncMapOnDemand();
 
-// RADAR
+// RADAR & RÍOS INA
 window.toggleRadar = (active) => MapView.toggleRadar(active);
+window.toggleInaRivers = (active) => MapView.toggleInaRivers(active);
 window.toggleRadarPlay = () => MapView.toggleRadarPlay();
 window.stepRadar = (delta) => MapView.stepRadar(delta);
 window.stepRadarSlider = (val) => {

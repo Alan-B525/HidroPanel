@@ -104,11 +104,11 @@ const API = {
     return await res.json();
   },
 
-  async saveThresholds(codigo, { alerta, evacuacion, alertas_activas = true }) {
+  async saveThresholds(codigo, { alerta, evacuacion, alertas_activas = true, aguas_bajas = null }) {
     const res = await fetch(`${this.baseUrl}/api/umbrales`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ codigo, alerta, evacuacion, alertas_activas })
+      body: JSON.stringify({ codigo, alerta, evacuacion, alertas_activas, aguas_bajas })
     });
     if (!res.ok) throw new Error(`HTTP ${res.status} al guardar umbrales`);
     return await res.json();

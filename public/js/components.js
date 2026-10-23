@@ -276,12 +276,14 @@ const Components = {
     const container = document.getElementById(containerId);
     if (!container) return;
 
-    container.classList.remove('hidden');
     container.classList.add('relative');
+    // En la vista de mapa, la barra de alertas DEBE permanecer oculta siempre
     if (window.State && window.State.viewMode === 'map') {
       container.style.display = 'none';
+      container.classList.add('hidden');
     } else {
       container.style.display = '';
+      container.classList.remove('hidden');
     }
 
     const hasAlerts = activeAlerts && activeAlerts.length > 0;
@@ -829,6 +831,7 @@ const Components = {
     const umbrales = kpis.umbrales || {};
     const evac = umbrales.evacuacion;
     const alerta = umbrales.alerta;
+    const aguasBajas = umbrales.aguas_bajas;
 
     if (alt === null) {
       bar.style.width = '0%';
@@ -846,16 +849,22 @@ const Components = {
     // Clases según nivel oficial
     const barColors = {
       normal: 'bg-emerald-500',
+      aguas_bajas: 'bg-rose-500',
       alerta: 'bg-orange-500',
       evacuacion: 'bg-red-600'
     };
-    const st = kpis.estado_hidrologico || 'normal';
+    let st = kpis.estado_hidrologico || 'normal';
+    if (st === 'normal' && aguasBajas !== null && aguasBajas !== undefined && alt <= aguasBajas) {
+      st = 'aguas_bajas';
+    }
     bar.className = `nivel-bar-fill ${barColors[st] || 'bg-emerald-500'}`;
 
-    // Actualizar leyenda inferior de umbrales oficiales (Alerta y Evacuación)
+    // Actualizar leyenda inferior de umbrales oficiales (Aguas Bajas, Alerta y Evacuación)
+    const aguasBajasEl = document.getElementById('lbl-val-aguas-bajas');
     const alertaEl = document.getElementById('lbl-val-alerta');
     const evacEl = document.getElementById('lbl-val-evac');
 
+    if (aguasBajasEl) aguasBajasEl.textContent = (aguasBajas !== null && aguasBajas !== undefined) ? `${Components.formatNumber(aguasBajas, 2)} m` : '—';
     if (alertaEl) alertaEl.textContent = alerta ? `${Components.formatNumber(alerta, 2)} m` : '—';
     if (evacEl) evacEl.textContent = evac ? `${Components.formatNumber(evac, 2)} m` : '—';
   },

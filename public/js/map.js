@@ -152,6 +152,8 @@ const MapView = {
   layerControl: null,
   markersGroup: null,
   damsGroup: null,
+  inaRiverGroup: null,
+  inaRiverActive: localStorage.getItem('hidropanel_map_ina_rivers') !== 'false',
 
   // RainViewer radar
   radarData: null,
@@ -159,8 +161,8 @@ const MapView = {
   radarFrames: [],
   radarCurrentFrameIndex: 0,
   radarAnimationTimer: null,
-  radarOpacity: 0.70,
-  radarActive: true,
+  radarOpacity: localStorage.getItem('hidropanel_radar_opacity') ? parseFloat(localStorage.getItem('hidropanel_radar_opacity')) : 0.70,
+  radarActive: localStorage.getItem('hidropanel_radar_active') !== 'false',
 
   init(containerId, isDark) {
     if (this.map) {
@@ -175,11 +177,34 @@ const MapView = {
       el._leaflet_id = null;
     }
 
+    // Restaurar posición y zoom del mapa desde localStorage
+    let savedCenter = [-26.5, -55.5];
+    let savedZoom = 7;
+    try {
+      const posStr = localStorage.getItem('hidropanel_map_view');
+      if (posStr) {
+        const parsed = JSON.parse(posStr);
+        if (parsed.lat && parsed.lng && parsed.zoom) {
+          savedCenter = [parsed.lat, parsed.lng];
+          savedZoom = parsed.zoom;
+        }
+      }
+    } catch (_) {}
+
     this.map = L.map(containerId, {
-      center: [-26.5, -55.5],
-      zoom: 7,
+      center: savedCenter,
+      zoom: savedZoom,
       zoomControl: true,
       attributionControl: true
+    });
+
+    // Guardar posición al mover el mapa
+    this.map.on('moveend', () => {
+      try {
+        const c = this.map.getCenter();
+        const z = this.map.getZoom();
+        localStorage.setItem('hidropanel_map_view', JSON.stringify({ lat: c.lat, lng: c.lng, zoom: z }));
+      } catch (_) {}
     });
 
     // Definición de capas base utilizando la API Key provista por el usuario
@@ -211,9 +236,15 @@ const MapView = {
       maxZoom: 19
     });
 
+    const esriSatellite = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+      attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community',
+      maxZoom: 18
+    });
+
     this.baseLayers = {
-      'CARTO Voyager (Claro)': cartoVoyager,
       'CARTO Dark Matter (Oscuro)': cartoDark,
+      'Satélite HD (ESRI World Imagery)': esriSatellite,
+      'CARTO Voyager (Claro)': cartoVoyager,
       'Relieve Topográfico (OpenTopoMap)': openTopo,
       'OpenStreetMap': openStreetMap
     };
@@ -225,11 +256,13 @@ const MapView = {
     // Grupos de capas superpuestas
     this.markersGroup = L.layerGroup().addTo(this.map);
     this.damsGroup = L.layerGroup().addTo(this.map);
+    this.inaRiverGroup = L.layerGroup().addTo(this.map);
 
     // Control de capas
     const overlays = {
       'Estaciones Hidrométricas': this.markersGroup,
-      'Centrales & Presas (Caudales)': this.damsGroup
+      'Centrales & Presas (Caudales)': this.damsGroup,
+      'Tramos Fluviales INA (Corredor)': this.inaRiverGroup
     };
 
     this.layerControl = L.control.layers(this.baseLayers, overlays, {
@@ -239,6 +272,9 @@ const MapView = {
 
     // Renderizar presas inmediatamente
     this.renderDams();
+
+    // Cargar tramos fluviales INA del corredor
+    this.loadInaRivers();
 
     // Inicializar radar RainViewer en segundo plano
     this.initRainViewer();
@@ -516,7 +552,7 @@ const MapView = {
                 <div style="font-family: var(--font-value); font-size: 1.05rem; font-weight: 800; color: #0284c7; margin-top: 2px; font-variant-numeric: tabular-nums;">${afluStr}</div>
               </div>
               <div style="background: #ecfdf5; border: 1px solid #a7f3d0; border-radius: 6px; padding: 6px;">
-                <div style="font-size: 0.62rem; text-transform: uppercase; font-weight: 700; color: #047857;">Defluente</div>
+                <div style="font-size: 0.62rem; text-transform: uppercase; font-weight: 700; color: #047857;">Efluente</div>
                 <div style="font-family: var(--font-value); font-size: 1.05rem; font-weight: 800; color: #059669; margin-top: 2px; font-variant-numeric: tabular-nums;">${deflStr}</div>
               </div>
             </div>
@@ -547,7 +583,7 @@ const MapView = {
             </div>
           </div>
         `;
-        tooltipText = `<strong>${d.nombre}</strong><br/>Afluente: ${afluStr}<br/>Defluente: ${deflStr}`;
+        tooltipText = `<strong>${d.nombre}</strong><br/>Afluente: ${afluStr}<br/>Efluente: ${deflStr}`;
       }
 
       if (this._damMarkers.has(d.codigo)) {
@@ -654,6 +690,7 @@ const MapView = {
       active = !this.radarActive;
     }
     this.radarActive = active;
+    localStorage.setItem('hidropanel_radar_active', String(active));
 
     const toggleBtn = document.getElementById('radar-toggle-btn');
     const legend = document.getElementById('radar-legend-panel');
@@ -843,6 +880,7 @@ const MapView = {
 
   setRadarOpacity(val) {
     this.radarOpacity = parseFloat(val);
+    localStorage.setItem('hidropanel_radar_opacity', String(this.radarOpacity));
     if (this.radarActive && this.radarLayerMap && this.radarLayerMap.has(this.radarCurrentFrameIndex)) {
       const currentLayer = this.radarLayerMap.get(this.radarCurrentFrameIndex);
       if (this.map && this.map.hasLayer(currentLayer)) {
@@ -851,6 +889,105 @@ const MapView = {
     }
     const label = document.getElementById('radar-opacity-label');
     if (label) label.textContent = `${Math.round(this.radarOpacity * 100)}%`;
+  },
+
+  // ==========================================================
+  // TRAMOS FLUVIALES INA (CORREDOR IGUAZÚ - PARANÁ - CORRIENTES)
+  // ==========================================================
+  async loadInaRivers() {
+    if (!this.map) return;
+    if (!this.inaRiverGroup) {
+      this.inaRiverGroup = L.layerGroup().addTo(this.map);
+    }
+    try {
+      let res = await fetch('/api/ina/tramos?t=' + Date.now());
+      if (!res.ok) {
+        res = await fetch('ina_tramos.json?t=' + Date.now());
+      }
+      if (!res.ok) return;
+      const data = await res.json();
+      if (!data || !data.features || !data.features.length) return;
+
+      this.inaRiverGroup.clearLayers();
+
+      const geoLayer = L.geoJSON(data, {
+        style: (feature) => {
+          const color = feature.properties?.color || '#38bdf8';
+          return {
+            color: color,
+            weight: 5.5,
+            opacity: 0.85,
+            lineCap: 'round',
+            lineJoin: 'round'
+          };
+        },
+        onEachFeature: (feature, layer) => {
+          const p = feature.properties || {};
+          const tooltipHtml = `
+            <div style="font-family: var(--font-body); padding: 4px; min-width: 170px;">
+              <div style="font-weight: 800; font-size: 0.85rem; color: #0f172a; margin-bottom: 2px;">${p.nombre || p.rio}</div>
+              <div style="font-size: 0.72rem; color: #64748b; margin-bottom: 4px;">${p.rio}</div>
+              <div style="display: flex; align-items: center; gap: 6px; margin-top: 4px; padding: 4px 6px; background: #f8fafc; border-radius: 4px; border: 1px solid #e2e8f0;">
+                <span style="width: 10px; height: 10px; border-radius: 50%; background: ${p.color}; display: inline-block; shrink: 0;"></span>
+                <span style="font-weight: 700; font-size: 0.75rem; color: ${p.color}; text-transform: uppercase;">${p.condicion_label || p.condicion}</span>
+              </div>
+              ${p.valor ? `<div style="font-size: 0.7rem; color: #475569; margin-top: 4px; font-variant-numeric: tabular-nums;">Valor: <strong>${p.valor}</strong> ${p.tendencia ? `(${p.tendencia})` : ''}</div>` : ''}
+              <div style="font-size: 0.65rem; color: #94a3b8; border-top: 1px solid #f1f5f9; padding-top: 3px; margin-top: 4px;">
+                Fuente: Instituto Nacional del Agua (INA)
+              </div>
+            </div>
+          `;
+          layer.bindTooltip(tooltipHtml, {
+            sticky: true,
+            className: 'ina-river-leaflet-tooltip'
+          });
+
+          layer.on('mouseover', function () {
+            this.setStyle({ weight: 8, opacity: 1.0 });
+          });
+          layer.on('mouseout', function () {
+            this.setStyle({ weight: 5.5, opacity: 0.85 });
+          });
+        }
+      });
+
+      this.inaRiverGroup.addLayer(geoLayer);
+    } catch (e) {
+      console.warn('Error cargando tramos fluviales INA:', e);
+    }
+  },
+
+  toggleInaRivers(forceActive) {
+    if (!this.map || !this.inaRiverGroup) return;
+    const newState = (forceActive !== undefined) ? forceActive : !this.inaRiverActive;
+    this.inaRiverActive = newState;
+    localStorage.setItem('hidropanel_map_ina_rivers', String(newState));
+
+    if (this.inaRiverActive) {
+      if (!this.map.hasLayer(this.inaRiverGroup)) {
+        this.map.addLayer(this.inaRiverGroup);
+      }
+    } else {
+      if (this.map.hasLayer(this.inaRiverGroup)) {
+        this.map.removeLayer(this.inaRiverGroup);
+      }
+    }
+
+    const btn = document.getElementById('ina-rivers-toggle-btn');
+    if (btn) {
+      if (this.inaRiverActive) {
+        btn.textContent = 'Ríos INA: Activo';
+        btn.className = 'px-2.5 py-1 rounded border border-emerald-500/40 text-emerald-400 text-xs font-semibold hover:bg-emerald-950/40 transition';
+      } else {
+        btn.textContent = 'Ríos INA: Inactivo';
+        btn.className = 'px-2.5 py-1 rounded border border-slate-700 text-slate-400 text-xs font-medium hover:bg-slate-800 transition';
+      }
+    }
+
+    const legend = document.getElementById('ina-river-legend-panel');
+    if (legend) {
+      legend.style.display = this.inaRiverActive ? 'block' : 'none';
+    }
   }
 };
 

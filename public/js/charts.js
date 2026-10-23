@@ -33,7 +33,8 @@ const pnaPlotLinesPlugin = {
 
     const lines = [
       { key: 'evacuacion', val: umb.evacuacion, label: 'Evacuación', color: '#dc2626', dash: [] },
-      { key: 'alerta', val: umb.alerta, label: 'Alerta', color: '#d97706', dash: [] }
+      { key: 'alerta', val: umb.alerta, label: 'Alerta', color: '#d97706', dash: [] },
+      { key: 'aguas_bajas', val: umb.aguas_bajas, label: 'Aguas Bajas', color: '#e11d48', dash: [4, 4] }
     ];
 
     ctx.save();
@@ -202,10 +203,12 @@ const Charts = {
     const umbrales = (kpis && kpis.umbrales) ? kpis.umbrales : {};
     let alertaVal = umbrales.alerta ?? null;
     let evacVal = umbrales.evacuacion ?? null;
+    let aguasBajasVal = umbrales.aguas_bajas ?? null;
 
     if (isCota) {
       if (alertaVal !== null) alertaVal = Number((alertaVal + offset).toFixed(2));
       if (evacVal !== null) evacVal = Number((evacVal + offset).toFixed(2));
+      if (aguasBajasVal !== null) aguasBajasVal = Number((aguasBajasVal + offset).toFixed(2));
     }
 
     const activeSource = State.chartSource || 'agp';
@@ -504,7 +507,8 @@ const Charts = {
       if (this.mainChart.options.plugins?.pnaPlotLines) {
         this.mainChart.options.plugins.pnaPlotLines.umbrales = {
           alerta: alertaVal,
-          evacuacion: evacVal
+          evacuacion: evacVal,
+          aguas_bajas: aguasBajasVal
         };
         this.mainChart.options.plugins.pnaPlotLines.unitSuffix = unitSuffix;
       }
@@ -580,7 +584,8 @@ const Charts = {
             unitSuffix: unitSuffix,
             umbrales: {
               alerta: alertaVal,
-              evacuacion: evacVal
+              evacuacion: evacVal,
+              aguas_bajas: aguasBajasVal
             }
           },
           tooltip: {
@@ -984,10 +989,12 @@ const Charts = {
       const umbrales = (data.kpis && data.kpis.umbrales) ? data.kpis.umbrales : (station ? station.umbrales : {});
       let alertaVal = umbrales?.alerta ?? null;
       let evacVal = umbrales?.evacuacion ?? null;
+      let aguasBajasVal = umbrales?.aguas_bajas ?? null;
 
       if (applyCota) {
         if (alertaVal !== null) alertaVal = Number((alertaVal + offset).toFixed(2));
         if (evacVal !== null) evacVal = Number((evacVal + offset).toFixed(2));
+        if (aguasBajasVal !== null) aguasBajasVal = Number((aguasBajasVal + offset).toFixed(2));
       }
 
       // Amortiguación Y y soporte según State.chartSource
@@ -1222,7 +1229,8 @@ const Charts = {
         if (prevChart.options.plugins?.pnaPlotLines) {
           prevChart.options.plugins.pnaPlotLines.umbrales = {
             alerta: alertaVal,
-            evacuacion: evacVal
+            evacuacion: evacVal,
+            aguas_bajas: aguasBajasVal
           };
           prevChart.options.plugins.pnaPlotLines.unitSuffix = unitSuffix;
         }
@@ -1290,7 +1298,8 @@ const Charts = {
               unitSuffix: unitSuffix,
               umbrales: {
                 alerta: alertaVal,
-                evacuacion: evacVal
+                evacuacion: evacVal,
+                aguas_bajas: aguasBajasVal
               }
             },
             tooltip: {

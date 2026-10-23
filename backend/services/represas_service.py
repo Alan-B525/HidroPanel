@@ -1234,16 +1234,16 @@ def get_dam_historical_data(dam_code: str, month_str: Optional[str] = None) -> D
         puntos.sort(key=lambda p: p["t"])
 
         variables = [
-            {"id": "defluente", "nombre": "Defluente", "unidad": "m³/s", "color": "#10b981", "eje": "y", "default": True},
+            {"id": "defluente", "nombre": "Efluente", "unidad": "m³/s", "color": "#10b981", "eje": "y", "default": True},
             {"id": "turbinada", "nombre": "Turbinado", "unidad": "m³/s", "color": "#0284c7", "eje": "y", "default": True},
             {"id": "vertida", "nombre": "Vertido", "unidad": "m³/s", "color": "#f97316", "eje": "y", "default": True},
             {"id": "afluente", "nombre": "Afluente", "unidad": "m³/s", "color": "#8b5cf6", "eje": "y", "default": False},
-            {"id": "cota", "nombre": "Cota Montante", "unidad": "msnm", "color": "#06b6d4", "eje": "y1", "default": False},
-            {"id": "jusante", "nombre": "Nivel Jusante", "unidad": "msnm", "color": "#64748b", "eje": "y1", "default": False},
-            {"id": "vol_util", "nombre": "Vol. Útil", "unidad": "%", "color": "#ec4899", "eje": "y2", "default": False},
-            {"id": "outras", "nombre": "Otras Estruct.", "unidad": "m³/s", "color": "#a855f7", "eje": "y", "default": False},
+            {"id": "cota", "nombre": "A. Arriba", "unidad": "msnm", "color": "#06b6d4", "eje": "y1", "default": False},
+            {"id": "jusante", "nombre": "A. Abajo", "unidad": "msnm", "color": "#64748b", "eje": "y1", "default": False},
+            {"id": "vol_util", "nombre": "% Útil", "unidad": "%", "color": "#ec4899", "eje": "y2", "default": False},
+            {"id": "outras", "nombre": "Otros", "unidad": "m³/s", "color": "#a855f7", "eje": "y", "default": False},
             {"id": "transferida", "nombre": "Transferido", "unidad": "m³/s", "color": "#14b8a6", "eje": "y", "default": False},
-            {"id": "vertida_nao_turb", "nombre": "Vert. No Turb.", "unidad": "m³/s", "color": "#f43f5e", "eje": "y", "default": False}
+            {"id": "vertida_nao_turb", "nombre": "Vert. 2", "unidad": "m³/s", "color": "#f43f5e", "eje": "y", "default": False}
         ]
 
         for v in variables:

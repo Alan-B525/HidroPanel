@@ -100,6 +100,10 @@ def init_thresholds_table(conn: sqlite3.Connection):
             conn.execute("ALTER TABLE umbrales_config ADD COLUMN alertas_activas INTEGER DEFAULT 1;")
         except sqlite3.OperationalError:
             pass
+        try:
+            conn.execute("ALTER TABLE umbrales_config ADD COLUMN aguas_bajas REAL;")
+        except sqlite3.OperationalError:
+            pass
 
 
 def _get_db_connection() -> sqlite3.Connection:
@@ -115,7 +119,7 @@ def load_custom_thresholds():
         conn = _get_db_connection()
         init_thresholds_table(conn)
         cursor = conn.cursor()
-        cursor.execute("SELECT codigo, alerta, evacuacion, alertas_activas FROM umbrales_config")
+        cursor.execute("SELECT codigo, alerta, evacuacion, alertas_activas, aguas_bajas FROM umbrales_config")
         rows = cursor.fetchall()
         loaded = {}
         for r in rows:
@@ -124,6 +128,7 @@ def load_custom_thresholds():
                 "alerta": r[1],
                 "evacuacion": r[2],
                 "alertas_activas": bool(r[3] if len(r) > 3 and r[3] is not None else 1),
+                "aguas_bajas": r[4] if len(r) > 4 else None,
                 "custom": True
             }
         _CUSTOM_THRESHOLDS = loaded
@@ -134,7 +139,7 @@ def load_custom_thresholds():
 
 def get_station_thresholds(station_code: str) -> Dict[str, Any]:
     """
-    Obtiene los umbrales oficiales para una estación (Alerta y Evacuación):
+    Obtiene los umbrales oficiales para una estación (Alerta, Evacuación y Aguas Bajas):
     Prioriza configuración guardada en SQLite;
     si no existe, retorna los valores oficiales base del catálogo PNA.
     """
@@ -146,6 +151,7 @@ def get_station_thresholds(station_code: str) -> Dict[str, Any]:
         return {
             "alerta": custom.get("alerta"),
             "evacuacion": custom.get("evacuacion"),
+            "aguas_bajas": custom.get("aguas_bajas"),
             "alertas_activas": custom.get("alertas_activas", True),
             "custom": True
         }
@@ -156,11 +162,12 @@ def get_station_thresholds(station_code: str) -> Dict[str, Any]:
         return {
             "alerta": base.get("alerta"),
             "evacuacion": base.get("evacuacion"),
+            "aguas_bajas": None,
             "alertas_activas": True,
             "custom": False
         }
 
-    return {"alerta": None, "evacuacion": None, "alertas_activas": True, "custom": False}
+    return {"alerta": None, "evacuacion": None, "aguas_bajas": None, "alertas_activas": True, "custom": False}
 
 
 def get_station_alert_info(station_code: str, altura: Optional[float] = None) -> Dict[str, Any]:
@@ -248,10 +255,11 @@ def save_station_thresholds(codigo: str,
                             alerta: Optional[float] = None, 
                             evacuacion: Optional[float] = None, 
                             alertas_activas: Optional[bool] = None,
+                            aguas_bajas: Optional[float] = None,
                             db_conn: Optional[sqlite3.Connection] = None,
                             **kwargs) -> Dict[str, Any]:
     """
-    Guarda o actualiza umbrales oficiales (Alerta y Evacuación) en SQLite.
+    Guarda o actualiza umbrales oficiales (Alerta, Evacuación y Aguas Bajas) en SQLite.
     Elimina cualquier remanente de vigilancia o emergencia.
     """
     norm_code = codigo.upper().strip()
@@ -269,6 +277,7 @@ def save_station_thresholds(codigo: str,
 
     ale = _coerce(alerta) if alerta is not None else current.get("alerta")
     eva = _coerce(evacuacion) if evacuacion is not None else current.get("evacuacion")
+    ab = _coerce(aguas_bajas) if aguas_bajas is not None else current.get("aguas_bajas")
     
     act = bool(alertas_activas) if alertas_activas is not None else current.get("alertas_activas", True)
     act_int = 1 if act else 0
@@ -283,16 +292,17 @@ def save_station_thresholds(codigo: str,
         init_thresholds_table(conn)
         with conn:
             conn.execute("""
-                INSERT INTO umbrales_config (codigo, alerta, evacuacion, vigilancia, emergencia, alertas_activas, actualizado_en)
-                VALUES (?, ?, ?, NULL, NULL, ?, ?)
+                INSERT INTO umbrales_config (codigo, alerta, evacuacion, vigilancia, emergencia, alertas_activas, aguas_bajas, actualizado_en)
+                VALUES (?, ?, ?, NULL, NULL, ?, ?, ?)
                 ON CONFLICT(codigo) DO UPDATE SET
                     alerta = excluded.alerta,
                     evacuacion = excluded.evacuacion,
                     vigilancia = NULL,
                     emergencia = NULL,
                     alertas_activas = excluded.alertas_activas,
+                    aguas_bajas = excluded.aguas_bajas,
                     actualizado_en = excluded.actualizado_en
-            """, (norm_code, ale, eva, act_int, now_str))
+            """, (norm_code, ale, eva, act_int, ab, now_str))
     finally:
         if should_close:
             conn.close()
@@ -300,11 +310,12 @@ def save_station_thresholds(codigo: str,
     _CUSTOM_THRESHOLDS[norm_code] = {
         "alerta": ale,
         "evacuacion": eva,
+        "aguas_bajas": ab,
         "alertas_activas": act,
         "custom": True
     }
 
-    logger.info(f"Umbrales guardados para {norm_code}: Alerta={ale}, Evacuación={eva}, Activo={act}")
+    logger.info(f"Umbrales guardados para {norm_code}: Alerta={ale}, Evacuación={eva}, Aguas Bajas={ab}, Activo={act}")
     return {
         "success": True,
         "codigo": norm_code,

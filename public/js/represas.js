@@ -1056,17 +1056,19 @@ const RepresasView = {
       });
     }
 
-    container.innerHTML = variables.map(v => {
+    // Filtrar solo variables que tengan datos en la estación para evitar scroll horizontal
+    const variablesConDatos = variables.filter(v => v.has_data !== false);
+    const varsToShow = variablesConDatos.length > 0 ? variablesConDatos : variables;
+
+    container.innerHTML = varsToShow.map(v => {
       const isChecked = this.damModalState.activeVariables.has(v.id);
-      const hasData = v.has_data !== false;
-      const opacityClass = hasData ? '' : 'opacity-40 hover:opacity-75';
 
       return `
-        <label class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-lg text-[11px] font-semibold cursor-pointer border transition select-none shrink-0 whitespace-nowrap ${opacityClass} ${
+        <label class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-lg text-[11px] font-semibold cursor-pointer border transition select-none shrink-0 whitespace-nowrap ${
           isChecked
             ? 'bg-slate-100 dark:bg-slate-800 border-slate-300 dark:border-slate-700 text-slate-900 dark:text-slate-100 shadow-2xs'
             : 'bg-transparent border-transparent text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'
-        }" title="${v.nombre}">
+        }" title="${v.nombre} (${v.unidad || ''})">
           <input type="checkbox" id="dam-chk-${v.id}" ${isChecked ? 'checked' : ''} onchange="RepresasView.toggleDamVariable('${v.id}', this.checked)" class="w-3.5 h-3.5 rounded text-sky-600 focus:ring-sky-500 border-slate-300 dark:border-slate-600 cursor-pointer">
           <span class="w-2 h-2 rounded-full shrink-0" style="background-color: ${v.color || '#0284c7'};"></span>
           <span>${v.nombre}</span>
