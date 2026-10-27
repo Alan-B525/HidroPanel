@@ -51,14 +51,16 @@ const RepresasView = {
 
     const fmt = (v) => (v !== undefined && v !== null && !isNaN(v) ? Number(v).toLocaleString('es-AR', { maximumFractionDigits: 1 }) : '—');
 
-    // 1. Hero Total hacia Yacyretá
+    // 1. Hero Total hacia Yacyretá / Caudal R11
     const totalEl = document.getElementById('rep-total-yacyreta');
+    const r11ValEl = document.getElementById('rep-r11-chart-val');
     const itAporteEl = document.getElementById('rep-aporte-itaipu');
     const igAporteEl = document.getElementById('rep-aporte-iguazu');
     const itPctEl = document.getElementById('rep-pct-itaipu');
     const igPctEl = document.getElementById('rep-pct-iguazu');
 
     if (totalEl) totalEl.textContent = fmt(bal.caudal_total_m3s);
+    if (r11ValEl && bal.caudal_total_m3s != null) r11ValEl.textContent = fmt(bal.caudal_total_m3s);
     if (itAporteEl) itAporteEl.textContent = bal.aporte_itaipu_m3s != null ? `${fmt(bal.aporte_itaipu_m3s)} m³/s` : '—';
     if (igAporteEl) igAporteEl.textContent = bal.aporte_iguazu_m3s != null ? `${fmt(bal.aporte_iguazu_m3s)} m³/s` : '—';
     if (itPctEl) itPctEl.textContent = bal.pct_itaipu != null ? `${bal.pct_itaipu}%` : '';
@@ -518,6 +520,16 @@ const RepresasView = {
       scalarTurbinada.push(itTurb);
       scalarVertida.push(itVert);
     });
+
+    // Actualizar valor en vivo de Caudal R11 en el encabezado del gráfico
+    const r11ValEl = document.getElementById('rep-r11-chart-val');
+    if (r11ValEl && scalarTotal.length > 0) {
+      const validPoints = scalarTotal.filter(v => v !== null && !isNaN(v));
+      if (validPoints.length > 0) {
+        const lastTot = validPoints[validPoints.length - 1];
+        r11ValEl.textContent = Number(lastTot).toLocaleString('es-AR', { maximumFractionDigits: 1 });
+      }
+    }
 
     const gridColor = isDark ? 'rgba(255, 255, 255, 0.06)' : 'rgba(15, 23, 42, 0.06)';
     const textColor = isDark ? '#94a3b8' : '#64748b';
