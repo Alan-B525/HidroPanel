@@ -211,6 +211,11 @@ const Charts = {
       if (aguasBajasVal !== null) aguasBajasVal = Number((aguasBajasVal + offset).toFixed(2));
     }
 
+    // Determinar nombre del puerto y compatibilidad de escala
+    const station = State.stations.find(s => s.id === State.selectedStationId);
+    const portName = (station ? (station.nombre || station.codigo) : '').toUpperCase();
+    const isSameScale = State.isSameScaleStation(station);
+
     const activeSource = State.chartSource || 'agp';
     const hasAgpData = agpPoints.length > 0 || fallbackAgpData.some(v => v !== null);
     const hasPnaData = pnaPoints.length > 0 || fallbackPnaData.some(v => v !== null);
@@ -244,7 +249,7 @@ const Charts = {
       datasets.push({
         label: isCota ? 'Prefectura PNA · Cota' : 'Prefectura PNA',
         data: useTimeScale ? pnaPoints : fallbackPnaData,
-        yAxisID: 'y1',
+        yAxisID: isSameScale ? 'y' : 'y1',
         borderColor: pnaColor,
         backgroundColor: 'transparent',
         borderWidth: 1.8,
@@ -311,10 +316,6 @@ const Charts = {
         order: 1
       });
     }
-
-    // Determinar nombre del puerto para el encabezado oficial PNA
-    const station = State.stations.find(s => s.id === State.selectedStationId);
-    const portName = (station ? (station.nombre || station.codigo) : '').toUpperCase();
 
     // Configuración de escalas X e Y con títulos PNA
     const xScaleConfig = useTimeScale
@@ -387,50 +388,77 @@ const Charts = {
 
     let yScalesConfig;
     if (showBoth) {
-      yScalesConfig = {
-        y: {
-          type: 'linear',
-          position: 'left',
-          title: {
-            display: true,
-            text: isCota ? 'AGP Cota msnm' : 'Altura AGP m',
-            color: agpColor,
-            font: { family: 'Inter', size: 11, weight: '700' },
-            padding: { bottom: 6 }
-          },
-          min: agpLimits.min,
-          max: agpLimits.max,
-          grid: { color: gridColor, borderDash: [3, 3] },
-          ticks: {
-            color: agpColor,
-            font: { family: 'Space Grotesk', size: 10, weight: '600' },
-            callback: function (val) {
-              return Number(val).toFixed(2) + ' ' + unitSuffix;
+      if (isSameScale) {
+        // En estaciones de misma escala (Ituzaingó), unificamos en escala única Y a la izquierda
+        yScalesConfig = {
+          y: {
+            type: 'linear',
+            position: 'left',
+            title: {
+              display: true,
+              text: isCota ? 'Cota msnm' : 'Nivel / Altura m',
+              color: textColor,
+              font: { family: 'Inter', size: 11, weight: '700' },
+              padding: { bottom: 6 }
+            },
+            min: allLimits.min,
+            max: allLimits.max,
+            grid: { color: gridColor, borderDash: [3, 3] },
+            ticks: {
+              color: textColor,
+              font: { family: 'Space Grotesk', size: 10, weight: '600' },
+              callback: function (val) {
+                return Number(val).toFixed(2) + ' ' + unitSuffix;
+              }
             }
           }
-        },
-        y1: {
-          type: 'linear',
-          position: 'right',
-          title: {
-            display: true,
-            text: isCota ? 'PNA Cota msnm' : 'Prefectura PNA m',
-            color: pnaColor,
-            font: { family: 'Inter', size: 11, weight: '700' },
-            padding: { bottom: 6 }
+        };
+      } else {
+        yScalesConfig = {
+          y: {
+            type: 'linear',
+            position: 'left',
+            title: {
+              display: true,
+              text: isCota ? 'AGP Cota msnm' : 'Altura AGP m',
+              color: agpColor,
+              font: { family: 'Inter', size: 11, weight: '700' },
+              padding: { bottom: 6 }
+            },
+            min: agpLimits.min,
+            max: agpLimits.max,
+            grid: { color: gridColor, borderDash: [3, 3] },
+            ticks: {
+              color: agpColor,
+              font: { family: 'Space Grotesk', size: 10, weight: '600' },
+              callback: function (val) {
+                return Number(val).toFixed(2) + ' ' + unitSuffix;
+              }
+            }
           },
-          min: pnaLimits.min,
-          max: pnaLimits.max,
-          grid: { drawOnChartArea: false },
-          ticks: {
-            color: pnaColor,
-            font: { family: 'Space Grotesk', size: 10, weight: '600' },
-            callback: function (val) {
-              return Number(val).toFixed(2) + ' ' + unitSuffix;
+          y1: {
+            type: 'linear',
+            position: 'right',
+            title: {
+              display: true,
+              text: isCota ? 'PNA Cota msnm' : 'Prefectura PNA m',
+              color: pnaColor,
+              font: { family: 'Inter', size: 11, weight: '700' },
+              padding: { bottom: 6 }
+            },
+            min: pnaLimits.min,
+            max: pnaLimits.max,
+            grid: { drawOnChartArea: false },
+            ticks: {
+              color: pnaColor,
+              font: { family: 'Space Grotesk', size: 10, weight: '600' },
+              callback: function (val) {
+                return Number(val).toFixed(2) + ' ' + unitSuffix;
+              }
             }
           }
-        }
-      };
+        };
+      }
     } else if (showOnlyPna) {
       yScalesConfig = {
         y: {
@@ -674,14 +702,28 @@ const Charts = {
    * Restablece el zoom del gráfico principal
    */
   resetZoom() {
-    if (this.mainChart && typeof this.mainChart.resetZoom === 'function') {
-      this.mainChart.resetZoom();
+    if (this.mainChart) {
+      if (typeof this.mainChart.resetZoom === 'function') {
+        try { this.mainChart.resetZoom(); } catch (e) {}
+      }
+      if (this.mainChart.scales && this.mainChart.scales.x) {
+        delete this.mainChart.scales.x.options.min;
+        delete this.mainChart.scales.x.options.max;
+      }
+      this.mainChart.update('none');
       this.toggleFloatingResetBtn('floating-reset-zoom-main', false);
     }
     if (this.subplotCharts && this.subplotCharts.length > 0) {
       this.subplotCharts.forEach((c, idx) => {
-        if (c && typeof c.resetZoom === 'function') {
-          c.resetZoom();
+        if (c) {
+          if (typeof c.resetZoom === 'function') {
+            try { c.resetZoom(); } catch (e) {}
+          }
+          if (c.scales && c.scales.x) {
+            delete c.scales.x.options.min;
+            delete c.scales.x.options.max;
+          }
+          c.update('none');
           this.toggleFloatingResetBtn(`subplot-floating-reset-${idx}`, false);
         }
       });
@@ -693,9 +735,49 @@ const Charts = {
    */
   resetSubplotZoom(index) {
     const chart = this.subplotCharts[index];
-    if (chart && typeof chart.resetZoom === 'function') {
-      chart.resetZoom();
+    if (chart) {
+      if (typeof chart.resetZoom === 'function') {
+        try { chart.resetZoom(); } catch (e) {}
+      }
+      if (chart.scales && chart.scales.x) {
+        delete chart.scales.x.options.min;
+        delete chart.scales.x.options.max;
+      }
+      chart.update('none');
       this.toggleFloatingResetBtn(`subplot-floating-reset-${index}`, false);
+    }
+  },
+
+  /**
+   * Cambia la fuente de datos de un subplot individual ('agp' | 'pna' | 'ambas')
+   */
+  setSubplotSource(slotIdx, source) {
+    if (!['agp', 'pna', 'ambas'].includes(source)) return;
+    State.setSubplotSource(slotIdx, source);
+
+    const btnAgp = document.getElementById(`subplot-btn-src-agp-${slotIdx}`);
+    const btnPna = document.getElementById(`subplot-btn-src-pna-${slotIdx}`);
+    const btnAmbas = document.getElementById(`subplot-btn-src-ambas-${slotIdx}`);
+
+    if (btnAgp) {
+      btnAgp.className = source === 'agp'
+        ? 'px-1.5 py-0.5 rounded font-bold transition bg-sky-600 text-white shadow-xs'
+        : 'px-1.5 py-0.5 rounded font-medium transition text-slate-500 hover:text-slate-900 dark:hover:text-white';
+    }
+    if (btnPna) {
+      btnPna.className = source === 'pna'
+        ? 'px-1.5 py-0.5 rounded font-bold transition bg-amber-600 text-white shadow-xs'
+        : 'px-1.5 py-0.5 rounded font-medium transition text-slate-500 hover:text-slate-900 dark:hover:text-white';
+    }
+    if (btnAmbas) {
+      btnAmbas.className = source === 'ambas'
+        ? 'px-1.5 py-0.5 rounded font-bold transition bg-sky-700 text-white shadow-xs'
+        : 'px-1.5 py-0.5 rounded font-medium transition text-slate-500 hover:text-slate-900 dark:hover:text-white';
+    }
+
+    const stationId = State.subplotStationIds[slotIdx];
+    if (stationId) {
+      this.loadSubplotData(slotIdx, stationId, false);
     }
   },
 
@@ -792,6 +874,11 @@ const Charts = {
           </div>
           
           <div class="flex items-center space-x-1.5 shrink-0">
+            <!-- Selector individual de Fuente (Pills o Badge fijo para fuentes unicas/externas) -->
+            <div id="subplot-src-container-${i}" class="flex items-center">
+              <!-- Inyectado dinamicamente en loadSubplotData -->
+            </div>
+
             <!-- Selector individual de Cota para Posadas -->
             <div id="subplot-cota-toggle-${i}" class="${isPosadas ? 'flex' : 'hidden'} items-center bg-slate-100 dark:bg-slate-900 p-0.5 rounded-md border border-slate-200 dark:border-slate-800 text-[10px]" title="Modo Cota / Nivel para Posadas">
               <button id="subplot-btn-nivel-${i}" type="button" onclick="Charts.setSubplotCotaMode(${i}, 'nivel')" class="px-1.5 py-0.5 rounded font-bold transition ${isSlotCota ? 'text-slate-500 hover:text-slate-900 dark:hover:text-white' : 'bg-sky-600 text-white shadow-xs'}">Nivel</button>
@@ -862,13 +949,53 @@ const Charts = {
       if (loader && !silent) loader.classList.add('hidden');
       if (!data || !data.success) return;
 
-      const station = State.stations.find(s => s.id === stationId);
+      const station = State.stations.find(s => s.id === stationId) || (data.estacion ? data.estacion : null);
       const isPosadas = State.isPosadasStation(station);
+      const isSameScale = State.isSameScaleStation(station);
       const applyCota = isPosadas && (State.subplotCotaModes[slotIdx] === 'cota');
       const offset = applyCota ? (Number(State.posadasOffset) || 71.53) : 0;
       const unitSuffix = applyCota ? 'msnm' : 'm';
 
       const portName = (station ? (station.nombre || station.codigo) : 'Estación').toUpperCase();
+
+      // Deteccion de disponibilidad de fuentes
+      const rawPointsAgp = data.puntos || [];
+      const rawPointsPna = data.puntos_pna || [];
+      const hasAgpData = rawPointsAgp.length > 0;
+      const hasPnaData = rawPointsPna.length > 0;
+      const stSource = (station && station.source) ? station.source.toUpperCase() : 'AGP';
+      const isExternalSource = ['ONS', 'COPEL', 'ENGIE', 'ITAIPU'].includes(stSource);
+
+      // Renderizar o actualizar contenedor de fuentes del subplot
+      const srcContainer = document.getElementById(`subplot-src-container-${slotIdx}`);
+      let slotSource = State.getSubplotSource(slotIdx);
+
+      if (srcContainer) {
+        if (isExternalSource) {
+          srcContainer.innerHTML = `<span class="source-tag text-[9px] px-1.5 py-0.5" data-tooltip="Fuente oficial única: ${stSource}"><span class="source-dot"></span>${stSource}</span>`;
+          slotSource = 'agp';
+        } else if (!hasPnaData && hasAgpData) {
+          srcContainer.innerHTML = `<span class="source-tag text-[9px] px-1.5 py-0.5" data-tooltip="Telemetría oficial única: AGP"><span class="source-dot"></span>AGP</span>`;
+          slotSource = 'agp';
+        } else if (!hasAgpData && hasPnaData) {
+          srcContainer.innerHTML = `<span class="source-tag text-[9px] px-1.5 py-0.5" data-tooltip="Reporte oficial único: Prefectura PNA"><span class="source-dot"></span>PNA</span>`;
+          slotSource = 'pna';
+        } else if (hasAgpData && hasPnaData) {
+          // Selector interactivo AGP | PNA | Ambas
+          const isAgp = slotSource === 'agp';
+          const isPna = slotSource === 'pna';
+          const isAmbas = slotSource === 'ambas';
+          srcContainer.innerHTML = `
+            <div class="flex items-center bg-slate-100 dark:bg-slate-900 p-0.5 rounded-md border border-slate-200 dark:border-slate-800 text-[10px]" title="Fuente de datos para esta estación">
+              <button id="subplot-btn-src-agp-${slotIdx}" type="button" onclick="Charts.setSubplotSource(${slotIdx}, 'agp')" class="px-1.5 py-0.5 rounded font-bold transition ${isAgp ? 'bg-sky-600 text-white shadow-xs' : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'}">AGP</button>
+              <button id="subplot-btn-src-pna-${slotIdx}" type="button" onclick="Charts.setSubplotSource(${slotIdx}, 'pna')" class="px-1.5 py-0.5 rounded font-bold transition ${isPna ? 'bg-amber-600 text-white shadow-xs' : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'}">PNA</button>
+              <button id="subplot-btn-src-ambas-${slotIdx}" type="button" onclick="Charts.setSubplotSource(${slotIdx}, 'ambas')" class="px-1.5 py-0.5 rounded font-bold transition ${isAmbas ? 'bg-sky-700 text-white shadow-xs' : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'}">Ambas</button>
+            </div>
+          `;
+        } else {
+          srcContainer.innerHTML = `<span class="text-[10px] text-slate-400 font-mono">Sin datos</span>`;
+        }
+      }
 
       // Actualizar visibilidad del toggle de cota
       const toggleContainer = document.getElementById(`subplot-cota-toggle-${slotIdx}`);
@@ -997,12 +1124,12 @@ const Charts = {
         if (aguasBajasVal !== null) aguasBajasVal = Number((aguasBajasVal + offset).toFixed(2));
       }
 
-      // Amortiguación Y y soporte según State.chartSource
-      const activeSource = State.chartSource || 'agp';
+      // Amortiguación Y y soporte según la fuente del subplot (individual o heredada)
+      const activeSource = slotSource || 'agp';
       const hasSubAgp = agpPoints.length > 0 || fallbackAgpData.some(v => v !== null);
       const hasSubPna = pnaPoints.length > 0 || fallbackPnaData.some(v => v !== null);
       const showSubBoth = (activeSource === 'ambas') && hasSubAgp && hasSubPna;
-      const showSubPnaOnly = (activeSource === 'pna') || (!hasSubAgp && hasSubPna && activeSource !== 'agp');
+      const showSubPnaOnly = (activeSource === 'pna' && hasSubPna) || (!hasSubAgp && hasSubPna);
       const showSubAgpOnly = !showSubBoth && !showSubPnaOnly;
 
       const computeSubLimits = (values) => {
@@ -1049,7 +1176,7 @@ const Charts = {
         datasets.push({
           label: 'Prefectura PNA',
           data: useTimeScale ? pnaPoints : fallbackPnaData,
-          yAxisID: 'y1',
+          yAxisID: isSameScale ? 'y' : 'y1',
           borderColor: pnaColor,
           backgroundColor: 'transparent',
           borderWidth: 1.6,
@@ -1116,46 +1243,71 @@ const Charts = {
 
       let subYScales;
       if (showSubBoth) {
-        subYScales = {
-          y: {
-            type: 'linear',
-            position: 'left',
-            title: {
-              display: true,
-              text: applyCota ? 'AGP Cota' : 'AGP m',
-              color: agpColor,
-              font: { family: 'Inter', size: 9, weight: '700' },
-              padding: { bottom: 2 }
-            },
-            min: subAgpLimits.min,
-            max: subAgpLimits.max,
-            grid: { color: gridColor, borderDash: [2, 2] },
-            ticks: {
-              color: agpColor,
-              font: { size: 9, family: 'Space Grotesk' },
-              callback: (v) => Number(v).toFixed(1)
+        if (isSameScale) {
+          // Ituzaingó comparte una sola escala en subplots
+          subYScales = {
+            y: {
+              type: 'linear',
+              position: 'left',
+              title: {
+                display: true,
+                text: applyCota ? 'Cota msnm' : 'Nivel m',
+                color: textColor,
+                font: { family: 'Inter', size: 9, weight: '700' },
+                padding: { bottom: 2 }
+              },
+              min: subAllLimits.min,
+              max: subAllLimits.max,
+              grid: { color: gridColor, borderDash: [2, 2] },
+              ticks: {
+                color: textColor,
+                font: { size: 9, family: 'Space Grotesk' },
+                callback: (v) => Number(v).toFixed(1)
+              }
             }
-          },
-          y1: {
-            type: 'linear',
-            position: 'right',
-            title: {
-              display: true,
-              text: applyCota ? 'PNA Cota' : 'PNA m',
-              color: pnaColor,
-              font: { family: 'Inter', size: 9, weight: '700' },
-              padding: { bottom: 2 }
+          };
+        } else {
+          subYScales = {
+            y: {
+              type: 'linear',
+              position: 'left',
+              title: {
+                display: true,
+                text: applyCota ? 'AGP Cota' : 'AGP m',
+                color: agpColor,
+                font: { family: 'Inter', size: 9, weight: '700' },
+                padding: { bottom: 2 }
+              },
+              min: subAgpLimits.min,
+              max: subAgpLimits.max,
+              grid: { color: gridColor, borderDash: [2, 2] },
+              ticks: {
+                color: agpColor,
+                font: { size: 9, family: 'Space Grotesk' },
+                callback: (v) => Number(v).toFixed(1)
+              }
             },
-            min: subPnaLimits.min,
-            max: subPnaLimits.max,
-            grid: { drawOnChartArea: false },
-            ticks: {
-              color: pnaColor,
-              font: { size: 9, family: 'Space Grotesk' },
-              callback: (v) => Number(v).toFixed(1)
+            y1: {
+              type: 'linear',
+              position: 'right',
+              title: {
+                display: true,
+                text: applyCota ? 'PNA Cota' : 'PNA m',
+                color: pnaColor,
+                font: { family: 'Inter', size: 9, weight: '700' },
+                padding: { bottom: 2 }
+              },
+              min: subPnaLimits.min,
+              max: subPnaLimits.max,
+              grid: { drawOnChartArea: false },
+              ticks: {
+                color: pnaColor,
+                font: { size: 9, family: 'Space Grotesk' },
+                callback: (v) => Number(v).toFixed(1)
+              }
             }
-          }
-        };
+          };
+        }
       } else if (showSubPnaOnly) {
         subYScales = {
           y: {

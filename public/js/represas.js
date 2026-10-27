@@ -91,6 +91,48 @@ const RepresasView = {
 
     const formatDt = (val) => (window.Components && typeof Components.formatDateTime === 'function' ? Components.formatDateTime(val, true) : (val || '—'));
 
+    const formatDiscreetTime = (val) => {
+      if (!val || val === '—' || val === '--' || val === 'Sin datos' || val === '-' || val === 'null') return '—';
+      const s = String(val).trim();
+      // Match ISO 'YYYY-MM-DDTHH:MM' or 'YYYY-MM-DD HH:MM'
+      let m = s.match(/^(\d{4})-(\d{2})-(\d{2})[T\s](\d{1,2}):(\d{2})/);
+      if (m) {
+        const y = parseInt(m[1], 10);
+        const mo = parseInt(m[2], 10);
+        const d = parseInt(m[3], 10);
+        const hh = m[4].padStart(2, '0');
+        const mm = m[5];
+        const today = new Date();
+        const isToday = (today.getFullYear() === y && (today.getMonth() + 1) === mo && today.getDate() === d);
+        return isToday ? `${hh}:${mm} hs` : `${String(d).padStart(2, '0')}/${String(mo).padStart(2, '0')} ${hh}:${mm} hs`;
+      }
+      // Match 'DD/MM/YYYY HH:MM'
+      m = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})[T\s](\d{1,2}):(\d{2})/);
+      if (m) {
+        const d = parseInt(m[1], 10);
+        const mo = parseInt(m[2], 10);
+        let y = parseInt(m[3], 10);
+        if (y < 100) y += 2000;
+        const hh = m[4].padStart(2, '0');
+        const mm = m[5];
+        const today = new Date();
+        const isToday = (today.getFullYear() === y && (today.getMonth() + 1) === mo && today.getDate() === d);
+        return isToday ? `${hh}:${mm} hs` : `${String(d).padStart(2, '0')}/${String(mo).padStart(2, '0')} ${hh}:${mm} hs`;
+      }
+      m = s.match(/\b(\d{1,2}):(\d{2})\b/);
+      if (m) {
+        return `${m[1].padStart(2, '0')}:${m[2]} hs`;
+      }
+      return s;
+    };
+
+    const updateCardTime = (el, rawDate, sourceName) => {
+      if (!el) return;
+      el.textContent = formatDiscreetTime(rawDate);
+      const full = formatDt(rawDate);
+      el.title = full !== '—' ? `Última medición: ${full} (${sourceName})` : 'Sin datos';
+    };
+
     // 3. Tarjeta Itaipú (ONS)
     const itDeflEl = document.getElementById('rep-it-defl');
     const itTurbEl = document.getElementById('rep-it-turb');
@@ -105,9 +147,7 @@ const RepresasView = {
     if (itAfluEl) itAfluEl.textContent = it.afluente != null ? `${fmt(it.afluente)} m³/s` : '—';
     if (itCotaEl) itCotaEl.textContent = it.cota != null ? `${fmt(it.cota)} msnm` : '—';
     if (itTimeEl) {
-      itTimeEl.innerHTML = window.Components && typeof Components.renderFreshnessBadge === 'function'
-        ? Components.renderFreshnessBadge('ONS', it.fecha)
-        : formatDt(it.fecha);
+      updateCardTime(itTimeEl, it.fecha, 'ONS');
     }
 
     // 4. Tarjeta Baixo Iguaçu (ONS) - Datos directos de la central sin mezclar
@@ -118,15 +158,16 @@ const RepresasView = {
     const bxCotaEl = document.getElementById('rep-bx-cota');
     const bxTimeEl = document.getElementById('rep-bx-time');
 
+    const bxDam = data.centrales_lista ? data.centrales_lista.find(c => c.codigo === 'IGUHBI') : null;
+    const bxFecha = (bxDam && bxDam.fecha) ? bxDam.fecha : ig.fecha;
+
     if (bxDeflEl) bxDeflEl.textContent = fmt(ig.baixo_iguazu_defluente);
     if (bxTurbEl) bxTurbEl.textContent = ig.baixo_iguazu_turbinada != null ? `${fmt(ig.baixo_iguazu_turbinada)} m³/s` : '—';
     if (bxVertEl) bxVertEl.textContent = ig.baixo_iguazu_vertida != null ? `${fmt(ig.baixo_iguazu_vertida)} m³/s` : '—';
     if (bxAfluEl) bxAfluEl.textContent = ig.baixo_iguazu_afluente != null ? `${fmt(ig.baixo_iguazu_afluente)} m³/s` : '—';
     if (bxCotaEl) bxCotaEl.textContent = ig.baixo_iguazu_cota != null ? `${fmt(ig.baixo_iguazu_cota)} msnm` : '—';
     if (bxTimeEl) {
-      bxTimeEl.innerHTML = window.Components && typeof Components.renderFreshnessBadge === 'function'
-        ? Components.renderFreshnessBadge('ONS', ig.fecha)
-        : formatDt(ig.fecha);
+      updateCardTime(bxTimeEl, bxFecha, 'ONS');
     }
 
     // 5. Tarjeta Porto Capanema (COPEL / ANA) - Solo fuente propia de Capanema
@@ -135,12 +176,13 @@ const RepresasView = {
     const capTimeEl = document.getElementById('rep-cap-time');
 
     const cap = data.capanema || {};
+    const capDam = data.centrales_lista ? data.centrales_lista.find(c => c.codigo === 'CAPANEMA') : null;
+    const capFecha = (capDam && capDam.fecha) ? capDam.fecha : cap.fecha;
+
     if (capCaudalEl) capCaudalEl.textContent = fmt(cap.caudal);
     if (capReglaEl) capReglaEl.textContent = cap.regla != null ? `${Number(cap.regla).toFixed(2)} m` : '—';
     if (capTimeEl) {
-      capTimeEl.innerHTML = window.Components && typeof Components.renderFreshnessBadge === 'function'
-        ? Components.renderFreshnessBadge('COPEL', cap.fecha)
-        : formatDt(cap.fecha);
+      updateCardTime(capTimeEl, capFecha, 'COPEL');
     }
 
     // 6. Tarjeta Cataratas (COPEL / Parques) - Solo fuente propia de Cataratas
@@ -156,9 +198,7 @@ const RepresasView = {
     if (catCaudalEl) catCaudalEl.textContent = fmt(catCaudal);
     if (catReglaEl) catReglaEl.textContent = catRegla != null ? `${Number(catRegla).toFixed(2)} m` : '—';
     if (catTimeEl) {
-      catTimeEl.innerHTML = window.Components && typeof Components.renderFreshnessBadge === 'function'
-        ? Components.renderFreshnessBadge('COPEL', catFecha)
-        : formatDt(catFecha);
+      updateCardTime(catTimeEl, catFecha, 'COPEL');
     }
 
     // 7. Etiqueta de actualización ONS
@@ -516,15 +556,17 @@ const RepresasView = {
       }
     };
 
-    // 1. Gráfico de Caudal Total a Yacyretá vs Aportes (Estilo PNA)
+    // 1. Gráfico de Caudal R11 (Estilo PNA)
     const canvasCaudales = document.getElementById('chartCaudalesYacyreta');
     if (canvasCaudales) {
       if (this.caudalesChart && this._caudalesIsDark === isDark && this.caudalesChart.data.datasets.length === 3) {
         if (!useTimeScale) this.caudalesChart.data.labels = labels;
         this.caudalesChart.data.datasets[0].data = useTimeScale ? timeTotal : scalarTotal;
+        this.caudalesChart.data.datasets[0].label = 'R11';
         this.caudalesChart.data.datasets[1].data = useTimeScale ? timeItaipu : scalarItaipu;
+        this.caudalesChart.data.datasets[1].label = 'Itaipú';
         this.caudalesChart.data.datasets[2].data = useTimeScale ? timeIguazu : scalarIguazu;
-        this.caudalesChart.data.datasets[2].label = 'Río Iguazú';
+        this.caudalesChart.data.datasets[2].label = 'Cataratas';
         this.caudalesChart.update('none');
       } else {
         if (this.caudalesChart) this.caudalesChart.destroy();
@@ -551,13 +593,22 @@ const RepresasView = {
           gradItaipu.addColorStop(1, 'rgba(2, 132, 199, 0.00)');
         }
 
+        const gradIguazu = ctxC.createLinearGradient(0, 0, 0, hC);
+        if (isDark) {
+          gradIguazu.addColorStop(0, 'rgba(245, 158, 11, 0.20)');
+          gradIguazu.addColorStop(1, 'rgba(245, 158, 11, 0.00)');
+        } else {
+          gradIguazu.addColorStop(0, 'rgba(245, 158, 11, 0.16)');
+          gradIguazu.addColorStop(1, 'rgba(245, 158, 11, 0.00)');
+        }
+
         this.caudalesChart = new Chart(ctxC, {
           type: 'line',
           data: {
             labels: useTimeScale ? undefined : labels,
             datasets: [
               {
-                label: 'Total',
+                label: 'R11',
                 data: useTimeScale ? timeTotal : scalarTotal,
                 borderColor: '#10b981',
                 backgroundColor: gradTotal,
@@ -570,7 +621,7 @@ const RepresasView = {
                 spanGaps: true
               },
               {
-                label: 'Aporte Itaipú',
+                label: 'Itaipú',
                 data: useTimeScale ? timeItaipu : scalarItaipu,
                 borderColor: isDark ? '#38bdf8' : '#0284c7',
                 backgroundColor: gradItaipu,
@@ -582,16 +633,16 @@ const RepresasView = {
                 spanGaps: true
               },
               {
-                label: 'Río Iguazú',
+                label: 'Cataratas',
                 data: useTimeScale ? timeIguazu : scalarIguazu,
                 borderColor: '#f59e0b',
-                backgroundColor: 'transparent',
-                fill: false,
+                backgroundColor: gradIguazu,
+                fill: 'start',
                 borderWidth: 2,
-                borderDash: [6, 4],
                 tension: 0.12,
                 pointRadius: scalarIguazu.length > 100 ? 0 : 2,
                 pointHoverRadius: 5,
+                pointBackgroundColor: '#f59e0b',
                 spanGaps: true
               }
             ]

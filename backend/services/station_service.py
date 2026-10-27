@@ -113,6 +113,7 @@ def get_all_stations() -> List[Dict[str, Any]]:
                 e.frecuencia_minutos,
                 e.ultimo_timestamp, 
                 e.total_registros, 
+                e.url,
                 m.altura as ultima_altura
             FROM estaciones e
             LEFT JOIN mediciones m ON m.estacion_id = e.id AND m.timestamp = e.ultimo_timestamp
@@ -166,11 +167,24 @@ def get_all_stations() -> List[Dict[str, Any]]:
 
         river_name = STATION_RIVERS.get(d["codigo"], "Paraná")
 
+        # Detección precisa de fuente original (AGP, ONS, COPEL, etc.)
+        raw_url = str(d.get("url") or "").strip()
+        if raw_url.startswith("ONS:"):
+            detected_source = "ONS"
+        elif raw_url.startswith("COPEL:"):
+            detected_source = "COPEL"
+        elif raw_url.startswith("ENGIE:"):
+            detected_source = "ENGIE"
+        elif raw_url.startswith("ITAIPU:"):
+            detected_source = "ITAIPU"
+        else:
+            detected_source = "AGP"
+
         # Inyección de claves de CONTRATO DTO UNIFICADO
         d["station_id"] = str(d["codigo"])
         d["station_name"] = str(d["nombre"])
         d["river"] = river_name
-        d["source"] = "AGP"
+        d["source"] = detected_source
         d["measured_at"] = m_at_iso
         d["fetched_at"] = fetched_at
         d["level_m"] = agp_alt
@@ -193,7 +207,7 @@ def get_all_stations() -> List[Dict[str, Any]]:
         d["diferencia_agp_pna"] = round(agp_alt - pna_alt, 2) if (agp_alt is not None and pna_alt is not None) else None
         d["ultima_altura"] = agp_alt
         d["ultimo_timestamp"] = agp_ts
-        d["fuente_reciente"] = "AGP"
+        d["fuente_reciente"] = detected_source
 
         thresholds = get_station_thresholds(d["codigo"])
         d["umbrales"] = thresholds
@@ -222,16 +236,28 @@ def get_all_stations_dto() -> List[Dict[str, Any]]:
 def get_station_measurements(station_id: int, rango: str = "24h") -> Optional[Dict[str, Any]]:
     with get_db() as conn:
         cursor = conn.cursor()
-        cursor.execute("SELECT id, codigo, nombre, latitud, longitud, frecuencia_minutos, ultimo_timestamp FROM estaciones WHERE id = ?", (station_id,))
+        cursor.execute("SELECT id, codigo, nombre, latitud, longitud, frecuencia_minutos, ultimo_timestamp, url FROM estaciones WHERE id = ?", (station_id,))
         station_row = cursor.fetchone()
         if not station_row:
             return None
 
         station_info = dict(station_row)
+        raw_st_url = str(station_info.get("url") or "").strip()
+        if raw_st_url.startswith("ONS:"):
+            st_source = "ONS"
+        elif raw_st_url.startswith("COPEL:"):
+            st_source = "COPEL"
+        elif raw_st_url.startswith("ENGIE:"):
+            st_source = "ENGIE"
+        elif raw_st_url.startswith("ITAIPU:"):
+            st_source = "ITAIPU"
+        else:
+            st_source = "AGP"
+        station_info["source"] = st_source
         thresholds = get_station_thresholds(station_info["codigo"])
         station_info["umbrales"] = thresholds
 
-        cutoff_date = calculate_range_cutoff(cursor, station_id, rango)
+        cutoff_date = calculate_range_cutoff(cursor, station_id, rango, table_name="mediciones")
         where_clause = "WHERE estacion_id = ?"
         params: List[Any] = [station_id]
         if cutoff_date:
@@ -341,11 +367,12 @@ def get_station_measurements(station_id: int, rango: str = "24h") -> Optional[Di
         if recientes:
             recientes[-1]["variacion"] = None
 
+        cutoff_pna = calculate_range_cutoff(cursor, station_id, rango, table_name="mediciones_prefectura")
         pna_where = "WHERE estacion_id = ?"
         pna_params: List[Any] = [station_id]
-        if cutoff_date:
+        if cutoff_pna:
             pna_where += " AND timestamp >= ?"
-            pna_params.append(cutoff_date)
+            pna_params.append(cutoff_pna)
 
         cursor.execute(f"SELECT timestamp, altura, estado_rio FROM mediciones_prefectura {pna_where} ORDER BY timestamp ASC", pna_params)
         puntos_pna = [{"t": r["timestamp"], "y": round(r["altura"], 2), "estado": r["estado_rio"]} for r in cursor.fetchall()]

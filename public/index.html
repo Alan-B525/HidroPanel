@@ -308,11 +308,14 @@
             <!-- ITAIPÚ BINACIONAL -->
             <div id="card-dam-itaipu" onclick="RepresasView.openDamHistoryModal('PNITAI')" onkeydown="if(event.key==='Enter'||event.key===' ')RepresasView.openDamHistoryModal('PNITAI')" class="card-panel p-3.5 flex flex-col justify-between space-y-2.5 cursor-pointer hover:border-sky-500/60 dark:hover:border-sky-500/60 hover:shadow-md transition-all group" title="Haga clic para ver el histórico de caudales y niveles" role="button" tabindex="0">
               <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-800/80 pb-2">
-                <div class="flex items-center gap-2">
-                  <span class="w-2 h-2 rounded-full bg-sky-500"></span>
-                  <h4 class="font-bold text-slate-900 dark:text-white text-sm group-hover:text-sky-600 dark:group-hover:text-sky-400 transition-colors">Itaipú Binacional</h4>
+                <div class="flex items-center gap-2 min-w-0">
+                  <span class="w-2 h-2 rounded-full bg-sky-500 shrink-0"></span>
+                  <h4 class="font-bold text-slate-900 dark:text-white text-sm group-hover:text-sky-600 dark:group-hover:text-sky-400 transition-colors truncate">Itaipú Binacional</h4>
                 </div>
-                <svg class="w-3.5 h-3.5 text-slate-400 group-hover:text-sky-500 opacity-60 group-hover:opacity-100 shrink-0 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24" title="Ver histórico"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a2 2 0 01-2 2H6a2 2 0 01-2-2V4z"/></svg>
+                <div class="flex items-center gap-1.5 shrink-0">
+                  <span id="rep-it-time" class="text-[11px] font-mono text-slate-400 dark:text-slate-500 tabular-nums font-normal" title="Hora de medición">—:— hs</span>
+                  <svg class="w-3.5 h-3.5 text-slate-400 group-hover:text-sky-500 opacity-60 group-hover:opacity-100 shrink-0 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24" title="Ver histórico"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a2 2 0 01-2 2H6a2 2 0 01-2-2V4z"/></svg>
+                </div>
               </div>
 
               <div>
@@ -343,11 +346,14 @@
             <!-- BAIXO IGUAÇU -->
             <div id="card-dam-baixo" onclick="RepresasView.openDamHistoryModal('IGUHBI')" onkeydown="if(event.key==='Enter'||event.key===' ')RepresasView.openDamHistoryModal('IGUHBI')" class="card-panel p-3.5 flex flex-col justify-between space-y-2.5 cursor-pointer hover:border-emerald-500/60 dark:hover:border-emerald-500/60 hover:shadow-md transition-all group" title="Haga clic para ver el histórico de caudales y niveles" role="button" tabindex="0">
               <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-800/80 pb-2">
-                <div class="flex items-center gap-2">
-                  <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
-                  <h4 class="font-bold text-slate-900 dark:text-white text-sm group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">Baixo Iguaçu</h4>
+                <div class="flex items-center gap-2 min-w-0">
+                  <span class="w-2 h-2 rounded-full bg-emerald-500 shrink-0"></span>
+                  <h4 class="font-bold text-slate-900 dark:text-white text-sm group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors truncate">Baixo Iguaçu</h4>
                 </div>
-                <svg class="w-3.5 h-3.5 text-slate-400 group-hover:text-emerald-500 opacity-60 group-hover:opacity-100 shrink-0 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24" title="Ver histórico"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a2 2 0 01-2 2H6a2 2 0 01-2-2V4z"/></svg>
+                <div class="flex items-center gap-1.5 shrink-0">
+                  <span id="rep-bx-time" class="text-[11px] font-mono text-slate-400 dark:text-slate-500 tabular-nums font-normal" title="Hora de medición">—:— hs</span>
+                  <svg class="w-3.5 h-3.5 text-slate-400 group-hover:text-emerald-500 opacity-60 group-hover:opacity-100 shrink-0 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24" title="Ver histórico"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a2 2 0 01-2 2H6a2 2 0 01-2-2V4z"/></svg>
+                </div>
               </div>
 
               <div>
@@ -378,11 +384,14 @@
             <!-- PORTO CAPANEMA -->
             <div id="card-dam-capanema" onclick="RepresasView.openDamHistoryModal('CAPANEMA')" onkeydown="if(event.key==='Enter'||event.key===' ')RepresasView.openDamHistoryModal('CAPANEMA')" class="card-panel p-3.5 flex flex-col justify-between space-y-2.5 cursor-pointer hover:border-amber-500/60 dark:hover:border-amber-500/60 hover:shadow-md transition-all group" title="Haga clic para ver el histórico de caudales y niveles" role="button" tabindex="0">
               <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-800/80 pb-2">
-                <div class="flex items-center gap-2">
-                  <span class="w-2 h-2 rounded-full bg-amber-500"></span>
-                  <h4 class="font-bold text-slate-900 dark:text-white text-sm group-hover:text-amber-600 dark:group-hover:text-amber-400 transition-colors">Porto Capanema</h4>
+                <div class="flex items-center gap-2 min-w-0">
+                  <span class="w-2 h-2 rounded-full bg-amber-500 shrink-0"></span>
+                  <h4 class="font-bold text-slate-900 dark:text-white text-sm group-hover:text-amber-600 dark:group-hover:text-amber-400 transition-colors truncate">Porto Capanema</h4>
                 </div>
-                <svg class="w-3.5 h-3.5 text-slate-400 group-hover:text-amber-500 opacity-60 group-hover:opacity-100 shrink-0 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24" title="Ver histórico"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a2 2 0 01-2 2H6a2 2 0 01-2-2V4z"/></svg>
+                <div class="flex items-center gap-1.5 shrink-0">
+                  <span id="rep-cap-time" class="text-[11px] font-mono text-slate-400 dark:text-slate-500 tabular-nums font-normal" title="Hora de medición">—:— hs</span>
+                  <svg class="w-3.5 h-3.5 text-slate-400 group-hover:text-amber-500 opacity-60 group-hover:opacity-100 shrink-0 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24" title="Ver histórico"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a2 2 0 01-2 2H6a2 2 0 01-2-2V4z"/></svg>
+                </div>
               </div>
 
               <div>
@@ -413,11 +422,14 @@
             <!-- ESTACIÓN CATARATAS -->
             <div id="card-dam-cataratas" onclick="RepresasView.openDamHistoryModal('CATARATAS')" onkeydown="if(event.key==='Enter'||event.key===' ')RepresasView.openDamHistoryModal('CATARATAS')" class="card-panel p-3.5 flex flex-col justify-between space-y-2.5 cursor-pointer hover:border-amber-500/60 dark:hover:border-amber-500/60 hover:shadow-md transition-all group" title="Haga clic para ver el histórico de caudales y niveles" role="button" tabindex="0">
               <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-800/80 pb-2">
-                <div class="flex items-center gap-2">
-                  <span class="w-2 h-2 rounded-full bg-amber-500"></span>
-                  <h4 class="font-bold text-slate-900 dark:text-white text-sm group-hover:text-amber-600 dark:group-hover:text-amber-400 transition-colors">Cataratas</h4>
+                <div class="flex items-center gap-2 min-w-0">
+                  <span class="w-2 h-2 rounded-full bg-amber-500 shrink-0"></span>
+                  <h4 class="font-bold text-slate-900 dark:text-white text-sm group-hover:text-amber-600 dark:group-hover:text-amber-400 transition-colors truncate">Cataratas</h4>
                 </div>
-                <svg class="w-3.5 h-3.5 text-slate-400 group-hover:text-amber-500 opacity-60 group-hover:opacity-100 shrink-0 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24" title="Ver histórico"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a2 2 0 01-2 2H6a2 2 0 01-2-2V4z"/></svg>
+                <div class="flex items-center gap-1.5 shrink-0">
+                  <span id="rep-cat-time" class="text-[11px] font-mono text-slate-400 dark:text-slate-500 tabular-nums font-normal" title="Hora de medición">—:— hs</span>
+                  <svg class="w-3.5 h-3.5 text-slate-400 group-hover:text-amber-500 opacity-60 group-hover:opacity-100 shrink-0 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24" title="Ver histórico"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a2 2 0 01-2 2H6a2 2 0 01-2-2V4z"/></svg>
+                </div>
               </div>
 
               <div>
@@ -448,13 +460,13 @@
 
           <!-- GRÁFICOS COMPARATIVOS DE CAUDALES -->
           <div class="grid grid-cols-1 lg:grid-cols-2 gap-3.5">
-            <!-- Gráfico 1: Caudal Total a Yacyretá vs Aportes -->
+            <!-- Gráfico 1: Caudal R11 -->
             <div class="card-panel p-3.5 sm:p-4 flex flex-col min-h-[320px] relative">
               <div class="flex items-center justify-between mb-2 pb-1.5 border-b border-slate-100 dark:border-slate-800">
                 <div>
                   <h4 class="text-xs font-bold uppercase tracking-wider text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
                     <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
-                    <span>Caudal Hacia Yacyretá vs Aportes</span>
+                    <span>Caudal R11</span>
                   </h4>
                   <span class="text-[10px] text-slate-400">Últimas 36 horas • m³/s</span>
                 </div>

@@ -369,27 +369,40 @@ def seed_stations_catalog():
     logger.info("Catálogo de estaciones verificado y actualizado con esquema de alta concurrencia.")
 
 
-def calculate_range_cutoff(cursor: sqlite3.Cursor, station_id: int, rango: str) -> Optional[str]:
+def calculate_range_cutoff(cursor: sqlite3.Cursor, station_id: int, rango: str, table_name: str = "mediciones") -> Optional[str]:
     """
-    Calcula la fecha de corte 'desde' según el rango seleccionado.
-    Prioriza la fecha más reciente de la estación seleccionada para garantizar que siempre se muestren
-    sus mediciones completas (24h, 7d, 30d) incluso si hubo desfases en la telemetría de otras estaciones.
+    Calcula la fecha de corte 'desde' según el rango seleccionado y la fuente/tabla específica (mediciones o mediciones_prefectura).
+    Evita desfasajes temporales cuando una fuente tiene datos más recientes o desactualizados respecto a otra.
     """
     if rango == "todo":
         return None
 
-    # 1. Intentar con la última medición registrada para esta estación
-    cursor.execute("SELECT MAX(timestamp) FROM mediciones WHERE estacion_id = ?", (station_id,))
-    row = cursor.fetchone()
-    max_ts_str = row[0] if row and row[0] else None
+    max_ts_str = None
+    target_table = "mediciones_prefectura" if table_name == "mediciones_prefectura" else "mediciones"
+    try:
+        cursor.execute(f"SELECT MAX(timestamp) FROM {target_table} WHERE estacion_id = ?", (station_id,))
+        row = cursor.fetchone()
+        max_ts_str = row[0] if row and row[0] else None
+    except Exception:
+        max_ts_str = None
 
-    # 2. Si no hay mediciones directas en ese query, consultar ultimo_timestamp de la estación
+    # Si la tabla específica no tiene registros para esta estación, consultar la otra tabla
+    if not max_ts_str:
+        alt_table = "mediciones" if target_table == "mediciones_prefectura" else "mediciones_prefectura"
+        try:
+            cursor.execute(f"SELECT MAX(timestamp) FROM {alt_table} WHERE estacion_id = ?", (station_id,))
+            row = cursor.fetchone()
+            max_ts_str = row[0] if row and row[0] else None
+        except Exception:
+            max_ts_str = None
+
+    # Fallback al ultimo_timestamp de la estación
     if not max_ts_str:
         cursor.execute("SELECT ultimo_timestamp FROM estaciones WHERE id = ?", (station_id,))
         row = cursor.fetchone()
         max_ts_str = row[0] if row and row[0] else None
 
-    # 3. Fallback al máximo global del catálogo
+    # Fallback al máximo global del catálogo
     if not max_ts_str:
         cursor.execute("SELECT MAX(ultimo_timestamp) FROM estaciones")
         row = cursor.fetchone()

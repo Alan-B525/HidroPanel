@@ -13,12 +13,12 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Aplicar estado inicial de barra lateral
   updateSidebarUI(State.sidebarCollapsed);
 
-  // Cargar catálogo de estaciones y situación general
-  await loadInitialData();
-
-  // Restaurar vista persistida (Caudales, Gráficos, Mapa o Simepar)
+  // Restaurar vista persistida inmediatamente para que los contenedores DOM estén visibles al cargar gráficos
   const initialView = State.viewMode || 'caudales';
   setViewMode(initialView);
+
+  // Cargar catálogo de estaciones y situación general (y renderizar gráficos con el DOM ya visible)
+  await loadInitialData();
 
   // Aplicar estado inicial de selector de curva, rango temporal y layout
   updateChartSourceUI();
@@ -413,7 +413,13 @@ async function setViewMode(mode) {
           Charts.mainChart.resize();
           Charts.mainChart.update('none');
         }
-      }, 60);
+      }, 80);
+      setTimeout(() => {
+        if (Charts.mainChart) {
+          Charts.mainChart.resize();
+          Charts.mainChart.update('none');
+        }
+      }, 200);
     }
   } else if (mode === 'map') {
     MapView.init('map-leaflet', State.theme === 'dark');
@@ -463,6 +469,11 @@ function setLayout(num) {
   const singleView = document.getElementById('single-plot-view');
   const multiView = document.getElementById('multi-plot-view');
   const posadasPanel = document.getElementById('posadas-cota-panel');
+
+  // Resetear cualquier zoom remanente al cambiar entre cuadrículas
+  if (window.Charts) {
+    Charts.resetZoom();
+  }
 
   if (num === 1) {
     if (singleView) {
