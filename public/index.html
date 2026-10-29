@@ -699,10 +699,15 @@
                       <span class="w-2 h-2 rounded-full bg-[#008348]"></span>
                       <span>Evolución Temporal de Altura</span>
                     </h3>
+                    <!-- Botón para alternar visibilidad de la tabla de mediciones -->
+                    <button id="btn-toggle-readings-table" type="button" onclick="toggleReadingsTable()" class="text-[11px] font-semibold px-2.5 py-1 rounded-md border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 dark:text-slate-400 transition flex items-center gap-1.5">
+                      <svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+                      <span id="btn-toggle-readings-text">Ver Tabla</span>
+                    </button>
                   </div>
 
-                  <div class="relative w-full" style="height: 380px; min-height: 320px;">
-                    <canvas id="mainHeightChart" style="width: 100%; height: 100%; display: block;"></canvas>
+                  <div class="relative w-full" style="height: 540px; min-height: 440px;">
+                    <canvas id="mainHeightChart"></canvas>
 
                     <!-- Botón Flotante Reiniciar Zoom (Estilo PNA) -->
                     <button id="floating-reset-zoom-main" type="button" onclick="Charts.resetZoom()" class="hidden absolute top-2 right-2 z-10 px-2.5 py-1 rounded-md text-xs font-semibold bg-white/95 dark:bg-slate-900/95 text-sky-700 dark:text-sky-300 border border-slate-200 dark:border-slate-700 shadow-sm hover:bg-sky-50 dark:hover:bg-slate-800 transition items-center gap-1.5 backdrop-blur-xs">
@@ -718,8 +723,8 @@
                   </div>
                 </div>
 
-                <!-- TABLA DE LECTURAS RECIENTES -->
-                <div class="card-panel p-2.5 sm:p-3">
+                <!-- TABLA DE LECTURAS RECIENTES (Colapsable) -->
+                <div id="panel-recent-readings" class="card-panel p-2.5 sm:p-3 hidden">
                   <div class="flex items-center justify-between mb-1.5 pb-1 border-b border-slate-100 dark:border-slate-800">
                     <div class="flex items-center gap-2">
                       <h4 class="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">

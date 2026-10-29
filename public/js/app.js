@@ -129,7 +129,12 @@ async function loadInitialData() {
       }
 
       if (defaultStation) {
-        await selectStation(defaultStation.id, false);
+        if (State.viewMode === 'charts') {
+          await selectStation(defaultStation.id, false);
+        } else {
+          State.selectedStationId = defaultStation.id;
+          Components.renderStationList(State.filteredStations, defaultStation.id, window.selectStation);
+        }
       } else {
         Components.renderStationList(State.filteredStations, null, window.selectStation);
       }
@@ -211,38 +216,40 @@ async function selectStation(stationId, flyMap = true) {
       // Renderizar Tabla
       Components.renderRecentTable(res.recientes, isCota, offset);
 
-      // Renderizar Gráficos (Single o Subplots)
-      if (State.layout === 1) {
-        Charts.renderMainChart(
-          'mainHeightChart',
-          res.puntos || [],
-          res.kpis,
-          isCota,
-          offset,
-          State.theme === 'dark',
-          res.puntos_pna || []
-        );
-        setTimeout(() => {
-          if (Charts.mainChart) Charts.mainChart.resize();
-        }, 50);
-      } else {
-        const grid = document.getElementById('subplots-grid');
-        if (!grid || grid.children.length !== State.layout) {
-          State.ensureDefaultSubplotStations();
-          Charts.renderSubplots(
-            'subplots-grid',
-            State.layout,
-            State.subplotStationIds,
-            State.stations,
-            State.range,
+      // Renderizar Gráficos solo si la vista activa es de hidrómetros/gráficos
+      if (State.viewMode === 'charts') {
+        if (State.layout === 1) {
+          Charts.renderMainChart(
+            'mainHeightChart',
+            res.puntos || [],
+            res.kpis,
+            isCota,
+            offset,
             State.theme === 'dark',
-            window.selectStation
+            res.puntos_pna || []
           );
+          setTimeout(() => {
+            if (Charts.mainChart) Charts.mainChart.resize();
+          }, 50);
         } else {
-          State.subplotStationIds[0] = stationId;
-          const sel0 = document.getElementById('subplot-select-0');
-          if (sel0) sel0.value = stationId;
-          Charts.loadSubplotData(0, stationId, false);
+          const grid = document.getElementById('subplots-grid');
+          if (!grid || grid.children.length !== State.layout) {
+            State.ensureDefaultSubplotStations();
+            Charts.renderSubplots(
+              'subplots-grid',
+              State.layout,
+              State.subplotStationIds,
+              State.stations,
+              State.range,
+              State.theme === 'dark',
+              window.selectStation
+            );
+          } else {
+            State.subplotStationIds[0] = stationId;
+            const sel0 = document.getElementById('subplot-select-0');
+            if (sel0) sel0.value = stationId;
+            Charts.loadSubplotData(0, stationId, false);
+          }
         }
       }
 
@@ -402,24 +409,40 @@ async function setViewMode(mode) {
     }
   } else if (mode === 'charts') {
     if (State.layout > 1) {
-      setLayout(State.layout);
+      const grid = document.getElementById('subplots-grid');
+      const hasSubplots = grid && grid.children.length === State.layout && Charts.subplotCharts.length > 0;
+      if (!hasSubplots) {
+        setLayout(State.layout);
+      } else {
+        setTimeout(() => {
+          if (Charts.subplotCharts) {
+            Charts.subplotCharts.forEach(c => c && c.canvas && document.body.contains(c.canvas) && c.resize());
+          }
+        }, 60);
+        setTimeout(() => {
+          if (Charts.subplotCharts) {
+            Charts.subplotCharts.forEach(c => c && c.canvas && document.body.contains(c.canvas) && c.resize());
+          }
+        }, 200);
+      }
     } else {
       const targetId = State.selectedStationId || (State.stations && State.stations[0] ? State.stations[0].id : null);
-      if (targetId) {
+      if (targetId && (!Charts.mainChart || !document.body.contains(Charts.mainChart.canvas))) {
         selectStation(targetId, false);
+      } else {
+        setTimeout(() => {
+          if (Charts.mainChart) {
+            Charts.mainChart.resize();
+            Charts.mainChart.update('none');
+          }
+        }, 60);
+        setTimeout(() => {
+          if (Charts.mainChart) {
+            Charts.mainChart.resize();
+            Charts.mainChart.update('none');
+          }
+        }, 200);
       }
-      setTimeout(() => {
-        if (Charts.mainChart) {
-          Charts.mainChart.resize();
-          Charts.mainChart.update('none');
-        }
-      }, 80);
-      setTimeout(() => {
-        if (Charts.mainChart) {
-          Charts.mainChart.resize();
-          Charts.mainChart.update('none');
-        }
-      }, 200);
     }
   } else if (mode === 'map') {
     MapView.init('map-leaflet', State.theme === 'dark');
@@ -483,6 +506,12 @@ function setLayout(num) {
     if (multiView) {
       multiView.style.display = 'none';
       multiView.classList.add('hidden');
+    }
+    const panelTable = document.getElementById('panel-recent-readings');
+    if (panelTable) {
+      panelTable.classList.add('hidden');
+      const btnText = document.getElementById('btn-toggle-readings-text');
+      if (btnText) btnText.textContent = 'Ver Tabla';
     }
     if (State.selectedStationId) {
       selectStation(State.selectedStationId, false);
@@ -1394,6 +1423,22 @@ window.setPosadasMode = setPosadasMode;
 window.setPosadasOffset = setPosadasOffset;
 window.downloadCSV = downloadCSV;
 window.resetZoom = () => Charts.resetZoom();
+window.toggleReadingsTable = () => {
+  const panel = document.getElementById('panel-recent-readings');
+  const btnText = document.getElementById('btn-toggle-readings-text');
+  if (!panel) return;
+  const isHidden = panel.classList.contains('hidden');
+  if (isHidden) {
+    panel.classList.remove('hidden');
+    if (btnText) btnText.textContent = 'Ocultar Tabla';
+  } else {
+    panel.classList.add('hidden');
+    if (btnText) btnText.textContent = 'Ver Tabla';
+  }
+  if (window.Charts && Charts.mainChart) {
+    setTimeout(() => Charts.mainChart.resize(), 60);
+  }
+};
 window.syncAll = syncAll;
 window.syncCurrentStation = syncAll;
 window.syncAllStations = syncAll;

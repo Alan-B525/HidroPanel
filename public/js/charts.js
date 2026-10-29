@@ -557,12 +557,6 @@ const Charts = {
       this.mainChart = null;
     }
 
-    // Reiniciar dimensiones del canvas y habilitar reset por doble clic
-    canvas.removeAttribute('width');
-    canvas.removeAttribute('height');
-    canvas.style.width = '100%';
-    canvas.style.height = '100%';
-    canvas.style.display = 'block';
     canvas.ondblclick = () => {
       Charts.resetZoom();
     };
@@ -902,7 +896,7 @@ const Charts = {
 
         <!-- Canvas del Gráfico con altura en píxeles garantizada -->
         <div class="relative w-full" style="height: ${heightPx}px; min-height: ${heightPx}px;">
-          <canvas id="subplot-canvas-${i}" style="width: 100%; height: 100%; display: block;"></canvas>
+          <canvas id="subplot-canvas-${i}"></canvas>
 
           <!-- Botón flotante Reiniciar Zoom -->
           <button id="subplot-floating-reset-${i}" onclick="Charts.resetSubplotZoom(${i})" class="hidden absolute top-2 right-2 z-10 px-2 py-0.5 rounded text-[11px] font-semibold bg-white/95 dark:bg-slate-900/95 text-sky-600 dark:text-sky-400 border border-slate-200 dark:border-slate-700 shadow-xs hover:bg-sky-50 dark:hover:bg-slate-800 transition backdrop-blur-xs items-center gap-1">
@@ -923,21 +917,51 @@ const Charts = {
       }
     }
 
+    // Observer de redimensionamiento dinámico para mantener siempre dimensiones exactas de canvas
+    if (window.ResizeObserver && !this._subplotsResizeObserver) {
+      this._subplotsResizeObserver = new ResizeObserver(() => {
+        if (State.viewMode !== 'charts' || State.layout <= 1) return;
+        requestAnimationFrame(() => {
+          if (Charts.subplotCharts) {
+            Charts.subplotCharts.forEach(c => {
+              if (c && c.canvas && document.body.contains(c.canvas)) {
+                c.resize();
+              }
+            });
+          }
+        });
+      });
+      this._subplotsResizeObserver.observe(container);
+    }
+
     // Asegurar reflow y adaptación de Chart.js
     setTimeout(() => {
       this.subplotCharts.forEach(c => {
-        if (c) {
+        if (c && c.canvas && document.body.contains(c.canvas)) {
           c.resize();
           c.update('none');
         }
       });
-    }, 60);
+    }, 80);
+    setTimeout(() => {
+      this.subplotCharts.forEach(c => {
+        if (c && c.canvas && document.body.contains(c.canvas)) {
+          c.resize();
+          c.update('none');
+        }
+      });
+    }, 250);
   },
 
   /**
    * Carga datos para un Subplot individual con estética PNA idéntica al gráfico principal
    */
+  _subplotReqTokens: {},
   async loadSubplotData(slotIdx, stationId, silent = false) {
+    this._subplotReqTokens = this._subplotReqTokens || {};
+    const token = (this._subplotReqTokens[slotIdx] || 0) + 1;
+    this._subplotReqTokens[slotIdx] = token;
+
     const canvas = document.getElementById(`subplot-canvas-${slotIdx}`);
     if (!canvas) return;
 
@@ -946,6 +970,7 @@ const Charts = {
 
     try {
       const data = await API.getMeasurements(stationId, State.range);
+      if (this._subplotReqTokens[slotIdx] !== token) return;
       if (loader && !silent) loader.classList.add('hidden');
       if (!data || !data.success) return;
 
@@ -1084,12 +1109,6 @@ const Charts = {
       const fallbackAgpData = allUniqueTimes.map(t => agpMap.get(t) ?? null);
       const fallbackPnaData = allUniqueTimes.map(t => pnaMap.get(t) ?? null);
 
-      // Limpiar y preparar canvas
-      canvas.removeAttribute('width');
-      canvas.removeAttribute('height');
-      canvas.style.width = '100%';
-      canvas.style.height = '100%';
-      canvas.style.display = 'block';
       canvas.ondblclick = () => {
         Charts.resetSubplotZoom(slotIdx);
       };
@@ -1366,7 +1385,9 @@ const Charts = {
         prevMeta.useTimeScale === useTimeScale &&
         prevChart.data &&
         prevChart.data.datasets &&
-        prevChart.data.datasets.length === datasets.length
+        prevChart.data.datasets.length === datasets.length &&
+        prevChart.canvas &&
+        document.body.contains(prevChart.canvas)
       );
 
       if (canReuseSubplot) {
@@ -1396,6 +1417,10 @@ const Charts = {
             prevChart.options.scales.y1.max = subYScales.y1.max;
           }
         }
+        const parentW = canvas.parentElement ? canvas.parentElement.clientWidth : 0;
+        if (parentW > 0 && Math.abs(prevChart.width - parentW) > 4) {
+          prevChart.resize();
+        }
         prevChart.update('none');
         return;
       }
@@ -1404,12 +1429,6 @@ const Charts = {
         this.subplotCharts[slotIdx].destroy();
         this.subplotCharts[slotIdx] = null;
       }
-
-      canvas.removeAttribute('width');
-      canvas.removeAttribute('height');
-      canvas.style.width = '100%';
-      canvas.style.height = '100%';
-      canvas.style.display = 'block';
 
       const chart = new Chart(ctx, {
         type: 'line',
